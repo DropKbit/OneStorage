@@ -29,6 +29,8 @@ OIDC 的撤销不会删除独立本地登录产生的凭据、仓库委托签名
 
 ## 迁移与验收
 
+本地和生产的逐项结果见 [验收记录](VERIFICATION-v23.md)。
+
 应用 `0018_oidc.sql` 后发布主 Worker。新增表与字段；现有用户默认 `has_password=1`，现有凭据提供方字段为空。不改变 Git 对象、R2 布局、DO 类、应用网关或编译 Worker。保留原有加密密钥。升级前导出 D1 并在隔离 SQLite 副本验证迁移和约束；D1 导出不等于 R2/DO 全站备份。
 
 `npm run check` 包含 OIDC 密码学和 D1 事务单元测试。`npm run test:oidc` 使用 Playwright 和独立受密码保护的 Cloudflare 身份测试 Worker，覆盖管理界面、真实跨域回调、账户关联、MFA、撤销 PAT、普通账户注册和本地密码设置。测试程序在结束时解绑身份、删除测试提供方并停用临时账户。生产运行必须显式设置 `ALLOW_REMOTE_ACCEPTANCE=1`、`TEST_ORIGIN` 和私有 `ONESTORAGE_TOKEN_FILE`。
