@@ -253,6 +253,17 @@ test("recovery consumes one key once, revokes sessions/PAT/delegation keys and p
   f.db.exec(
     "INSERT INTO signing_keys(id,user_id,name,format,public_key,fingerprint) VALUES('sig','u','signing','ssh','public','fp')",
   );
+  f.db.exec(
+    "INSERT INTO oidc_providers(id,name,issuer,client_id,config,enabled) VALUES('provider','SSO','https://id.example','client','{}',1)",
+  );
+  f.db.exec(
+    "INSERT INTO oidc_identities(id,provider_id,subject,user_id) VALUES('identity','provider','subject','u')",
+  );
+  f.db
+    .prepare(
+      "INSERT INTO oidc_flows(state_hash,browser_hash,provider_id,revision,mode,user_id,encrypted,expires_at,created_at) VALUES('flow','browser','provider',1,'login','u','sealed',?,?)",
+    )
+    .run(Date.now() + 600000, Date.now());
   const body = {
     username: "PERSON",
     key: issued.data.key.toUpperCase(),
@@ -270,6 +281,11 @@ test("recovery consumes one key once, revokes sessions/PAT/delegation keys and p
   assert.equal(f.db.prepare("SELECT count(*) n FROM credentials").get()!.n, 0);
   assert.equal(f.db.prepare("SELECT count(*) n FROM api_keys").get()!.n, 0);
   assert.equal(f.db.prepare("SELECT count(*) n FROM signing_keys").get()!.n, 1);
+  assert.equal(f.db.prepare("SELECT count(*) n FROM oidc_flows").get()!.n, 0);
+  assert.equal(
+    f.db.prepare("SELECT count(*) n FROM oidc_identities").get()!.n,
+    1,
+  );
   assert.equal(
     f.db.prepare("SELECT count(*) n FROM password_recovery").get()!.n,
     0,
