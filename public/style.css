@@ -1390,3 +1390,52 @@ button.text {
 .issue-card input[type="checkbox"] {
   align-self: flex-start;
 }
+
+.search-form {
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.search-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.search-result {
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.search-result h2 {
+  font-size: 18px;
+  margin: 8px 0;
+}
+.search-result p {
+  white-space: pre-wrap;
+  color: var(--muted);
+}
+.search-result mark {
+  background: #fef08a;
+  color: #172033;
+  border-radius: 2px;
+}
+@media (max-width: 850px) {
+  .search-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .search-filters {
+    grid-template-columns: 1fr;
+  }
+  .search-form,
+  .search-result {
+    padding: 16px;
+  }
+}
+
+.search-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 16px;
+}

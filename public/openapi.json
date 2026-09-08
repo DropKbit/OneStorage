@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.27.0",
+    "version": "0.28.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3882,6 +3882,207 @@
             }
           }
         ]
+      }
+    },
+    "/api/search": {
+      "get": {
+        "operationId": "searchCollaboration",
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search accessible projects, issues, merge requests and current Wiki pages",
+        "description": "Literal title/body substring search; ASCII case-insensitive, other Unicode exact. Current D1 permission checks and live credential validation. Anonymous public search, session or PAT supported; delegated JWT and deploy tokens denied. No implicit administrator access. No Git code/comments/Wiki history. Ordered by type, immutable project ID and string item ID; cursor pagination is a live view, not an export snapshot. No fixed project cap. State filters omit projects/Wiki. No index migration or per-project Git RPC; SQL scans matching accessible documents, so latency depends on corpus size.",
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "Required single-line literal text, trimmed",
+            "required": true
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "project",
+                "issue",
+                "merge",
+                "wiki"
+              ],
+              "default": "all"
+            },
+            "description": "Content type",
+            "required": false
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Current space slug, empty means all accessible spaces",
+            "required": false
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "open",
+                "closed",
+                "merged"
+              ],
+              "default": "all"
+            },
+            "description": "Issue/merge state",
+            "required": false
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "include",
+                "exclude",
+                "only"
+              ],
+              "default": "include"
+            },
+            "description": "Archive filter",
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 30
+            },
+            "description": "Page size",
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Opaque cursor bound to filters and principal; retain filters on next request",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live authorized results; private no-store response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "results",
+                    "has_more",
+                    "next_cursor"
+                  ],
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "project",
+                              "issue",
+                              "merge",
+                              "wiki"
+                            ]
+                          },
+                          "repo_id": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string",
+                            "description": "Empty for project, decimal string for Issue/MR, slug for Wiki"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "excerpt": {
+                            "type": "string",
+                            "maxLength": 320
+                          },
+                          "state": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "archived_at": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "date": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "has_more": {
+                      "type": "boolean"
+                    },
+                    "next_cursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or mismatched cursor"
+          },
+          "401": {
+            "description": "Invalid, expired or revoked credential"
+          },
+          "403": {
+            "description": "Unsupported credential type"
+          }
+        }
       }
     },
     "/api/repos/{namespace}/{repo}/packages": {

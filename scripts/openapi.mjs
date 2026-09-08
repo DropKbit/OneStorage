@@ -1,3 +1,4 @@
+import { addSearchPaths } from "./search-openapi.mjs";
 import { addPackagePaths } from "./package-openapi.mjs";
 import { addDeployTokenPaths } from "./deploy-token-openapi.mjs";
 import { addOIDCPaths } from "./oidc-openapi.mjs";
@@ -281,6 +282,7 @@ for (const feature of parity.features) {
   (paths[path] ||= {})[method] = op;
 }
 addOIDCPaths(paths);
+addSearchPaths(paths);
 addPackagePaths(paths);
 addDeployTokenPaths(paths);
 addPlatformPaths(paths);

@@ -1,3 +1,4 @@
+import { registerSearch } from "./search";
 import { registerDeployTokenRoutes } from "./deploy-token-routes";
 import {
   assertDeployAccess,
@@ -342,6 +343,7 @@ const staticPaths = new Set([
   "/deploy-tokens.js",
   "/packages.js",
   "/app.js",
+  "/search.js",
   "/forge.js",
   "/manage.js",
   "/ci-variables.js",
@@ -488,13 +490,14 @@ app.use("*", async (c, next) => {
     fail(403, "Read-only access token");
   await next();
 });
+registerSearch(app);
 registerIdentityRoutes(app);
 registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.27.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.28.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({

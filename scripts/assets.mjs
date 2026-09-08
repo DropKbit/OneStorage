@@ -35,6 +35,7 @@ await update(
 const forge = hash(await readFile("public/forge.js"));
 let app = await readFile("public/app.js", "utf8");
 for (const name of [
+  "search",
   "deploy-tokens",
   "packages",
   "manage",

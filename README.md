@@ -1,5 +1,7 @@
 # OneStorage
 
+v0.28 增加跨项目协作搜索：项目、Issue、合并请求和当前 Wiki 统一检索，支持空间/状态/归档筛选、稳定分页与实时权限校验，见 [使用说明](docs/SEARCH-v28.md)。全局代码索引仍待实现，现有项目内代码搜索保留。
+
 v0.27 支持当前实例内的私有 npm 依赖原生云构建：显式部署令牌授权、锁文件与 SHA-512 校验、独立 WASM 编译、工作流依赖撤权门禁，见 [私有包构建](docs/CI-PRIVATE-PACKAGES-v27.md) 和 [本地/生产验收](docs/VERIFICATION-v27.md)。
 
 v0.26 增加项目/空间部署令牌：独立 Git 只读、包读取/发布/撤回权限，支持轮换、到期与撤销，跨空间转移自动收回范围，见 [部署令牌](docs/DEPLOY-TOKENS-v26.md) 和 [本地/生产验收](docs/VERIFICATION-v26.md)。
