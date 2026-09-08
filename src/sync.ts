@@ -37,9 +37,15 @@ export async function scheduleSync(env: Env, repo: Repo) {
   if (!repo.base_repo) fail(400, "Repository has no upstream configured");
   const id = crypto.randomUUID();
   const inserted = await env.DB.prepare(
-    "INSERT INTO sync_jobs(id,repo_id,direction,lease_until) SELECT ?,?,'pull',0 WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL)",
+    "INSERT INTO sync_jobs(id,repo_id,direction,lease_until,lifecycle_revision) SELECT ?,?,'pull',0,? WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL AND lifecycle_revision=?)",
   )
-    .bind(id, repo.id, repo.id)
+    .bind(
+      id,
+      repo.id,
+      repo.lifecycle_revision || 0,
+      repo.id,
+      repo.lifecycle_revision || 0,
+    )
     .run();
   if (!inserted.meta.changes) fail(409, "Repository archived or deleted");
   if (env.EVENTS) await env.EVENTS.send({ id: "sync:" + id });
@@ -57,11 +63,19 @@ export async function publishSyncJobs(env: Env) {
 }
 export async function consumeSync(env: Env, id: string) {
   const job = await env.DB.prepare(
-    "SELECT j.*,r.namespace,r.name,r.owner_id,r.default_branch FROM sync_jobs j JOIN repositories r ON r.id=j.repo_id WHERE j.id=? AND r.deleted_at IS NULL AND r.archived_at IS NULL",
+    "SELECT j.*,r.namespace,r.name,r.owner_id,r.default_branch,r.lifecycle_revision AS current_revision FROM sync_jobs j JOIN repositories r ON r.id=j.repo_id WHERE j.id=? AND r.deleted_at IS NULL AND r.archived_at IS NULL",
   )
     .bind(id)
     .first<any>();
   if (!job || job.status !== "pending") return true;
+  if (job.lifecycle_revision !== job.current_revision) {
+    await env.DB.prepare(
+      "UPDATE sync_jobs SET status='cancelled',error='Project lifecycle changed',lease_until=0 WHERE id=? AND status='pending'",
+    )
+      .bind(id)
+      .run();
+    return true;
+  }
   if (job.lease_until > Date.now()) return false;
   const leased = await env.DB.prepare(
     "UPDATE sync_jobs SET attempts=attempts+1,lease_until=? WHERE id=? AND status='pending' AND lease_until<=? RETURNING attempts",
@@ -75,6 +89,7 @@ export async function consumeSync(env: Env, id: string) {
     method: "POST",
     headers: {
       "x-repo-id": job.repo_id,
+      "x-lifecycle-revision": String(job.lifecycle_revision),
       "x-repo-owner-id": job.owner_id,
       "x-default-branch": job.default_branch,
     },

@@ -3,7 +3,8 @@ import { fail } from "./security";
 /** Read-only POSTs do not mutate the source project. Personal stars/watches and access revocation remain available. */
 export function archivedApiWrite(method: string, operation: string) {
   if (["GET", "HEAD", "OPTIONS"].includes(method)) return false;
-  if (["lifecycle", "star", "watch"].includes(operation)) return false;
+  if (["lifecycle", "transfer", "star", "watch"].includes(operation))
+    return false;
   if (operation === "" && method === "DELETE") return false;
   if (/^members(?:\/|$)/.test(operation)) return false;
   if (/^ci\/runners\//.test(operation) && method === "DELETE") return false;
@@ -16,7 +17,12 @@ export function assertRepositoryWritable(repo: Repo | null, request: Request) {
   if (!repo?.archived_at) return;
   const url = new URL(request.url),
     path = url.pathname;
-  if (path === "/internal/delete" || path === "/internal/lifecycle") return;
+  if (
+    path === "/internal/delete" ||
+    path === "/internal/lifecycle" ||
+    path === "/internal/transfer"
+  )
+    return;
   if (
     ["GET", "HEAD"].includes(request.method) &&
     url.searchParams.get("service") !== "git-receive-pack"
@@ -83,4 +89,14 @@ export async function changeProjectState(
   )
     .bind(repoId)
     .first();
+}
+
+/** Reject requests authorized in an earlier namespace, even if the project was subsequently restored. */
+export function assertProjectRevision(repo: Repo | null, request: Request) {
+  const expected = request.headers.get("x-lifecycle-revision");
+  if (
+    expected !== null &&
+    (!repo || expected !== String(repo.lifecycle_revision || 0))
+  )
+    fail(409, "Project moved or lifecycle changed; reload before writing");
 }

@@ -1,3 +1,5 @@
+import { repositoryAt } from "./project-transfer";
+import { projectDatabase } from "./project-db";
 import { archivedApiWrite, archiveError } from "./project-state";
 import {
   registerIssueWorkflows,
@@ -114,12 +116,9 @@ async function repoAccess(
 ): Promise<Repo> {
   const namespace = c.req.param("namespace"),
     name = c.req.param("repo");
-  const r = await c.env.DB.prepare(
-    "SELECT * FROM repositories WHERE namespace=? AND name=? AND deleted_at IS NULL",
-  )
-    .bind(namespace, name)
-    .first<Repo>();
-  if (!r) fail(404, "Repository not found");
+  const located = await repositoryAt(c.env, namespace || "", name || "");
+  if (!located) fail(404, "Repository not found");
+  const { repo: r, moved } = located;
   const delegated = c.get("delegation");
   if (delegated) {
     const operation = c.req.path.split("/").slice(5).join("/");
@@ -140,18 +139,52 @@ async function repoAccess(
   const user = c.get("user");
   const role = await repositoryRole(c.env, r, user);
   c.set("repoRole", role);
+  if (moved) {
+    if (r.visibility !== "public" && roleRank[role] < 1)
+      fail(404, "Repository not found");
+    if (!["GET", "HEAD"].includes(c.req.method))
+      fail(409, "Project moved; fetch the current project URL before writing");
+    const url = new URL(c.req.url);
+    url.pathname =
+      "/api/repos/" +
+      r.namespace +
+      "/" +
+      encodeURIComponent(r.name) +
+      url.pathname
+        .split("/")
+        .slice(5)
+        .map((s) => "/" + s)
+        .join("");
+    throw new HTTPException(307, {
+      res: new Response(null, {
+        status: 307,
+        headers: { Location: url.href, "Cache-Control": "no-store" },
+      }),
+    });
+  }
   if (
     (r.visibility === "public" || roleRank[role] >= 1) &&
     r.archived_at &&
     archivedApiWrite(c.req.method, c.req.path.split("/").slice(5).join("/"))
   )
     fail(409, "Repository archived; an owner must unarchive it before writing");
-  if (level === "read" && (r.visibility === "public" || roleRank[role] >= 1))
+  if (level === "read" && (r.visibility === "public" || roleRank[role] >= 1)) {
+    c.env = {
+      ...c.env,
+      DB: projectDatabase(c.env.DB, r.id, r.lifecycle_revision || 0),
+    };
     return r;
+  }
   if (!user) fail(401, "Authentication required");
   if (level === "read") fail(404, "Repository not found");
   if (c.get("scope") === "read") fail(403, "Read-only token");
-  if (roleRank[role] >= (level === "maintain" ? 3 : 2)) return r;
+  if (roleRank[role] >= (level === "maintain" ? 3 : 2)) {
+    c.env = {
+      ...c.env,
+      DB: projectDatabase(c.env.DB, r.id, r.lifecycle_revision || 0),
+    };
+    return r;
+  }
   fail(403, "Insufficient repository permissions");
 }
 async function engine(
@@ -170,6 +203,7 @@ async function engine(
   headers.delete("x-write-policy");
   headers.delete("x-namespace");
   headers.set("x-repo-id", repo.id);
+  headers.set("x-lifecycle-revision", String(repo.lifecycle_revision || 0));
   headers.set("x-default-branch", repo.default_branch);
   headers.set("x-repo-owner-id", repo.owner_id);
   headers.set(
@@ -234,6 +268,7 @@ app.onError((err, c) => {
       400,
     );
   if (err instanceof HTTPException) {
+    if (err.res) return err.getResponse();
     if (err.status === 401)
       c.header("WWW-Authenticate", 'Basic realm="OneStorage", charset="UTF-8"');
     return c.json({ error: err.message }, err.status);
@@ -379,7 +414,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.10.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.11.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -831,6 +866,26 @@ app.get("/api/repos/:namespace/:repo", async (c) => {
     clone_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}.git`,
   });
 });
+app.post("/api/repos/:namespace/:repo/transfer", async (c) => {
+  const r = await repoAccess(c, "maintain");
+  if (c.get("delegation") || c.get("repoRole") !== "owner")
+    fail(403, "Project owner required");
+  const b = await input(
+    c,
+    z.object({
+      namespace: slug,
+      name: repoName.optional(),
+      revision: z.number().int().min(0),
+    }),
+  );
+  return c.json(
+    await engineJSON(c, r, "/internal/transfer", {
+      ...b,
+      name: b.name || r.name,
+      actor_id: requireUser(c).id,
+    }),
+  );
+});
 app.put("/api/repos/:namespace/:repo/lifecycle", async (c) => {
   const r = await repoAccess(c, "maintain");
   if (c.get("delegation") || c.get("repoRole") !== "owner")
@@ -1159,12 +1214,9 @@ app.all("/:namespace/:git/*", async (c, next) => {
   repoName.parse(name);
   slug.parse(c.req.param("namespace"));
   // Hono route params are immutable: authorize through the same repository policy using an explicit lookup.
-  const r = await c.env.DB.prepare(
-    "SELECT * FROM repositories WHERE namespace=? AND name=? AND deleted_at IS NULL",
-  )
-    .bind(c.req.param("namespace"), name)
-    .first<Repo>();
-  if (!r) fail(404, "Repository not found");
+  const located = await repositoryAt(c.env, c.req.param("namespace"), name);
+  if (!located) fail(404, "Repository not found");
+  const { repo: r, moved } = located;
   const suffix = new URL(c.req.url).pathname.split("/").slice(3).join("/"),
     u = c.get("user");
   if (gitNamespace === "import" && r.base_repo)
@@ -1216,6 +1268,20 @@ app.all("/:namespace/:git/*", async (c, next) => {
     fail(u ? 404 : 401, "Repository not found or authentication required");
   if (writing && (!write || c.get("scope") !== "write"))
     fail(u ? 403 : 401, "Write access required");
+  // Git may POST to its original base even after following discovery redirects.
+  // Authorization above used the current destination and every forwarded request carries its revision.
+  if (moved && c.req.method === "GET") {
+    const url = new URL(c.req.url);
+    url.pathname =
+      "/" +
+      r.namespace +
+      "/" +
+      encodeURIComponent(r.name) +
+      (gitNamespace ? "+" + gitNamespace : "") +
+      ".git/" +
+      suffix;
+    return c.redirect(url.href, 307);
+  }
   if (writing && r.archived_at) fail(409, "Repository archived");
   if (suffix.startsWith("info/lfs/") && r.base_repo && !githubLFS(r))
     fail(409, "LFS is unavailable for generic or public GitHub sync");

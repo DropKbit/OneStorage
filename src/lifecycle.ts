@@ -86,6 +86,7 @@ export async function lifecycle(
         method: "POST",
         headers: {
           "x-repo-id": b.source,
+          "x-lifecycle-revision": String(source.lifecycle_revision || 0),
           "x-default-branch": source.default_branch,
           "content-type": "application/json",
         },

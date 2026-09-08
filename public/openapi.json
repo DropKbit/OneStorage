@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -267,6 +267,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -612,6 +615,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -682,6 +688,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -839,6 +848,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -1035,6 +1047,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -1113,6 +1128,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -1275,6 +1293,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -1369,6 +1390,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -1515,6 +1539,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -1583,6 +1610,9 @@
         "responses": {
           "200": {
             "description": "Operation succeeded"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -1687,6 +1717,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -1789,6 +1822,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -2329,6 +2365,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -2511,6 +2550,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -2686,6 +2728,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -2956,6 +3001,9 @@
               }
             }
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
             "content": {
@@ -3034,6 +3082,9 @@
                 }
               }
             }
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "default": {
             "description": "Validation, permission, conflict or capacity error",
@@ -3989,6 +4040,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -4098,6 +4152,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -4216,6 +4273,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -4417,6 +4477,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -4472,6 +4535,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -4974,6 +5040,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -5190,6 +5259,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -5496,6 +5568,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -5892,6 +5967,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -6066,6 +6144,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -6186,6 +6267,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -6249,6 +6333,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -6367,6 +6454,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -7279,6 +7369,9 @@
           "200": {
             "description": "Success"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -7340,6 +7433,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -7403,6 +7499,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -7649,6 +7748,9 @@
           "201": {
             "description": "Created"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -7845,6 +7947,9 @@
           },
           "201": {
             "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -8162,6 +8267,9 @@
           "200": {
             "description": "Successful operation"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -8229,6 +8337,9 @@
         "responses": {
           "200": {
             "description": "Successful operation"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -8524,6 +8635,9 @@
           "200": {
             "description": "Successful operation"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -8671,6 +8785,9 @@
         "responses": {
           "200": {
             "description": "Successful operation"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
           },
           "400": {
             "description": "Invalid input"
@@ -8956,6 +9073,9 @@
           "200": {
             "description": "Successful operation"
           },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
           "400": {
             "description": "Invalid input"
           },
@@ -9181,6 +9301,86 @@
           },
           "409": {
             "description": "Stale lifecycle revision, ownership changed, initialization or upstream reconciliation pending"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/transfer": {
+      "post": {
+        "operationId": "transfer_project",
+        "tags": [
+          "Project lifecycle"
+        ],
+        "summary": "Transfer or rename a project without changing its UUID",
+        "description": "Source owner and destination namespace owner required. Cross-namespace transfers cancel CI and sync, revoke runner/Git/webhook integrations and disable public applications. Same-namespace renames preserve integrations. Existing aliases are access-checked, reserved and always resolve to the current UUID. Revision conflicts roll back the entire operation.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "namespace",
+                  "revision"
+                ],
+                "properties": {
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current project metadata including unchanged id and new lifecycle_revision"
+          },
+          "400": {
+            "description": "Invalid input or unchanged address"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Ownership required; read-only/delegated tokens rejected"
+          },
+          "404": {
+            "description": "Project inaccessible"
+          },
+          "409": {
+            "description": "Address conflict, stale revision, ownership changed, initialization or upstream reconciliation pending"
           }
         }
       }

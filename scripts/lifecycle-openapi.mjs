@@ -60,4 +60,63 @@ export function addLifecyclePaths(paths) {
       },
     },
   };
+
+  paths["/api/repos/{namespace}/{repo}/transfer"] = {
+    post: {
+      operationId: "transfer_project",
+      tags: ["Project lifecycle"],
+      summary: "Transfer or rename a project without changing its UUID",
+      description:
+        "Source owner and destination namespace owner required. Cross-namespace transfers cancel CI and sync, revoke runner/Git/webhook integrations and disable public applications. Same-namespace renames preserve integrations. Existing aliases are access-checked, reserved and always resolve to the current UUID. Revision conflicts roll back the entire operation.",
+      parameters: ["namespace", "repo"].map((name) => ({
+        name,
+        in: "path",
+        required: true,
+        schema: { type: "string" },
+      })),
+      security: [{ bearerAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["namespace", "revision"],
+              properties: {
+                namespace: { type: "string" },
+                name: { type: "string" },
+                revision: { type: "integer", minimum: 0 },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description:
+            "Current project metadata including unchanged id and new lifecycle_revision",
+        },
+        400: { description: "Invalid input or unchanged address" },
+        401: { description: "Authentication required" },
+        403: {
+          description:
+            "Ownership required; read-only/delegated tokens rejected",
+        },
+        404: { description: "Project inaccessible" },
+        409: {
+          description:
+            "Address conflict, stale revision, ownership changed, initialization or upstream reconciliation pending",
+        },
+      },
+    },
+  };
+  for (const [path, item] of Object.entries(paths))
+    if (path.startsWith("/api/repos/{namespace}/{repo}"))
+      for (const method of ["get", "head"])
+        if (item[method])
+          item[method].responses[307] = {
+            description:
+              "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access.",
+          };
 }

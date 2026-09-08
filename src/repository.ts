@@ -1,5 +1,7 @@
+import { transferProject } from "./project-transfer";
 import {
   assertRepositoryWritable,
+  assertProjectRevision,
   changeProjectState,
   archiveError,
 } from "./project-state";
@@ -21,7 +23,7 @@ import { lifecycle, collectDeleted } from "./lifecycle";
 import { DurableObject } from "cloudflare:workers";
 import { HTTPException } from "hono/http-exception";
 import type { Env } from "./types";
-import { boundedBody, fail, branch } from "./security";
+import { boundedBody, fail, branch, slug, repoName } from "./security";
 import { ObjectStore, Refs, LIMITS, text } from "./git/objects";
 import { namespaceRepositories } from "./git/namespaces";
 import { normalizePolicies } from "./delegation";
@@ -152,13 +154,20 @@ export class Repository extends DurableObject<Env> {
           )
             .bind(id)
             .first<Repo>();
+    if (metadata || !["GET", "HEAD"].includes(request.method))
+      assertProjectRevision(metadata, request);
     assertRepositoryWritable(metadata, request);
-    if (url.pathname === "/internal/lifecycle" && request.method === "POST") {
+    if (
+      ["/internal/lifecycle", "/internal/transfer"].includes(url.pathname) &&
+      request.method === "POST"
+    ) {
       if (!metadata) fail(404, "Repository not found");
       const body = z
         .object({
           actor_id: z.string(),
-          archived: z.boolean(),
+          archived: z.boolean().optional(),
+          namespace: slug.optional(),
+          name: repoName.optional(),
           revision: z.number().int().min(0),
         })
         .parse(JSON.parse(text(await boundedBody(request, 4096))));
@@ -180,6 +189,21 @@ export class Repository extends DurableObject<Env> {
         );
         await this.ctx.storage.delete(key);
       }
+      if (url.pathname === "/internal/transfer") {
+        if (!body.namespace || !body.name)
+          fail(400, "Destination namespace and name required");
+        return Response.json(
+          await transferProject(
+            this.env,
+            metadata,
+            body.actor_id,
+            body.namespace,
+            body.name,
+            body.revision,
+          ),
+        );
+      }
+      if (body.archived === undefined) fail(400, "Archived state required");
       return Response.json(
         await changeProjectState(
           this.env,
