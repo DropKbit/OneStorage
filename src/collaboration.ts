@@ -195,10 +195,11 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
           require_ci: z.boolean().default(false),
           require_resolved: z.boolean().default(false),
           require_codeowners: z.boolean().default(false),
+          require_queue: z.boolean().default(false),
         })
         .parse(await jsonInput(c));
     await c.env.DB.prepare(
-      "INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci,require_resolved,require_codeowners) VALUES(?,?,?,?,?,?,?) ON CONFLICT(repo_id,branch) DO UPDATE SET require_mr=excluded.require_mr,approvals=excluded.approvals,require_ci=excluded.require_ci,require_resolved=excluded.require_resolved,require_codeowners=excluded.require_codeowners",
+      "INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci,require_resolved,require_codeowners,require_queue) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(repo_id,branch) DO UPDATE SET require_mr=excluded.require_mr,approvals=excluded.approvals,require_ci=excluded.require_ci,require_resolved=excluded.require_resolved,require_codeowners=excluded.require_codeowners,require_queue=excluded.require_queue",
     )
       .bind(
         r.id,
@@ -208,6 +209,7 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
         +b.require_ci,
         +b.require_resolved,
         +b.require_codeowners,
+        +b.require_queue,
       )
       .run();
     await h.audit(c, "protection.update", r.id, b.branch);
@@ -266,6 +268,62 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
       gate: { ...context.gate, allowed: context.gate.allowed && !stale },
       stale,
     });
+  });
+  app.get(base + "/merge-queue", async (c) => {
+    const repo = await access(c);
+    const mr = c.req.query("mr_id")
+      ? z.coerce.number().int().positive().parse(c.req.query("mr_id"))
+      : null;
+    const rows = await c.env.DB.batch([
+      c.env.DB.prepare(
+        "SELECT q.*,u.username AS actor FROM merge_queue q JOIN users u ON u.id=q.actor_id WHERE q.repo_id=? AND (? IS NULL OR q.mr_id=?) AND q.state IN('queued','checking','blocked') ORDER BY q.id LIMIT 100",
+      ).bind(repo.id, mr, mr),
+      c.env.DB.prepare(
+        "SELECT q.*,u.username AS actor FROM merge_queue q JOIN users u ON u.id=q.actor_id WHERE q.repo_id=? AND (? IS NULL OR q.mr_id=?) AND q.state NOT IN('queued','checking','blocked') ORDER BY q.id DESC LIMIT 20",
+      ).bind(repo.id, mr, mr),
+    ]);
+    const safe = (r: any) => {
+      const { actor_epoch, config_fingerprint, ...rest } = r;
+      return rest;
+    };
+    return c.json({
+      entries: rows[0].results.map(safe),
+      history: rows[1].results.map(safe),
+    });
+  });
+  app.post(base + "/merges/:id/queue", async (c) => {
+    const { repo, mr } = await mrFor(c, "maintain");
+    const b = z
+      .object({
+        revision: z.number().int().min(0),
+        strategy: z
+          .enum(["ff_prefer", "ff_only", "merge"])
+          .default("ff_prefer"),
+        squash: z.boolean().default(false),
+      })
+      .parse(await jsonInput(c));
+    const { actor_epoch, config_fingerprint, ...entry } = await h.engine(
+      c,
+      repo,
+      "/internal/merge-queue-enqueue",
+      {
+        ...b,
+        id: mr.id,
+        actor_id: identity(c).id,
+        credential: c.get("credential"),
+      },
+    );
+    return c.json(entry, 201);
+  });
+  app.delete(base + "/merge-queue/:entry", async (c) => {
+    const repo = await access(c, "maintain");
+    return c.json(
+      await h.engine(c, repo, "/internal/merge-queue-cancel", {
+        id: z.coerce.number().int().positive().parse(c.req.param("entry")),
+        actor_id: identity(c).id,
+        credential: c.get("credential"),
+      }),
+    );
   });
   app.post(base + "/merges/:id/reviews", async (c) => {
     const { repo, mr } = await mrFor(c, "read"),

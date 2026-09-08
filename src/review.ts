@@ -10,12 +10,14 @@ export interface Protection {
   require_ci: number;
   require_resolved?: number;
   require_codeowners?: number;
+  require_queue?: number;
 }
 export async function reviewGate(
   env: Env,
   repo: Repo,
   mr: any,
   store?: ObjectStore,
+  options: { skipCI?: boolean; queueRun?: { id: string; sha: string } } = {},
 ) {
   const rule = await env.DB.prepare(
     "SELECT * FROM branch_protections WHERE repo_id=? AND branch=?",
@@ -66,11 +68,17 @@ export async function reviewGate(
       approved.add(r.user_id);
     } else changes++;
   }
-  const ci = await env.DB.prepare(
-    "SELECT id,status FROM ci_runs WHERE repo_id=? AND sha=? AND parent_id IS NULL ORDER BY rowid DESC LIMIT 1",
-  )
-    .bind(repo.id, mr.source_sha)
-    .first<any>();
+  const ci = options.queueRun
+    ? await env.DB.prepare(
+        "SELECT id,status FROM ci_runs WHERE id=? AND repo_id=? AND sha=? AND parent_id IS NULL AND trigger='merge_request'",
+      )
+        .bind(options.queueRun.id, repo.id, options.queueRun.sha)
+        .first<any>()
+    : await env.DB.prepare(
+        "SELECT id,status FROM ci_runs WHERE repo_id=? AND sha=? AND parent_id IS NULL ORDER BY rowid DESC LIMIT 1",
+      )
+        .bind(repo.id, mr.source_sha)
+        .first<any>();
   const unresolved =
     (
       await env.DB.prepare(
@@ -91,8 +99,16 @@ export async function reviewGate(
   if (changes) reasons.push("Reviewer requested changes");
   if (approvals < (rule?.approvals || 0))
     reasons.push("Required approvals: " + rule!.approvals);
-  if (rule?.require_ci && ci?.status !== "succeeded")
-    reasons.push("Latest pipeline for this source commit must succeed");
+  if (
+    !options.skipCI &&
+    (rule?.require_ci || options.queueRun) &&
+    ci?.status !== "succeeded"
+  )
+    reasons.push(
+      options.queueRun
+        ? "Queue candidate pipeline must succeed"
+        : "Latest pipeline for this source commit must succeed",
+    );
   const codeowners = rule?.require_codeowners
     ? await codeownerGate(
         env,
@@ -148,14 +164,27 @@ export async function protectRefs(
       rule.approvals ||
       rule.require_ci ||
       rule.require_resolved ||
-      rule.require_codeowners
+      rule.require_codeowners ||
+      rule.require_queue
     ) {
       if (!merge || merge.target !== rule.branch)
         fail(
           403,
           "Protected branch requires a reviewed merge request: " + rule.branch,
         );
-      const gate = await reviewGate(env, repo, merge, store);
+      if (rule.require_queue && !merge.queue_entry)
+        fail(403, "Protected branch requires the merge queue: " + rule.branch);
+      if (merge.queue_entry && merge.queue_entry.candidate_sha !== next)
+        fail(409, "Queue must publish the tested candidate");
+      const gate = await reviewGate(
+        env,
+        repo,
+        merge,
+        store,
+        merge.queue_entry
+          ? { queueRun: { id: merge.queue_entry.run_id, sha: next } }
+          : {},
+      );
       if (!gate.allowed) fail(409, gate.reasons.join("; "));
     }
   }

@@ -6,6 +6,8 @@ import { pathToFileURL } from "node:url";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
+import { DatabaseSync } from "node:sqlite";
+import { fixture as reviewFixture } from "./support/review-fixture";
 
 async function repositoryClass() {
   const bundled = await build({
@@ -45,6 +47,185 @@ async function repositoryClass() {
   }
   return Repository;
 }
+
+test("real merge queue DO preserves exact candidate/result across failed D1 projection and eviction", async () => {
+  const Repository = await repositoryClass(),
+    f = reviewFixture();
+  const id = "00000000-0000-4000-8000-000000000031";
+  const base = await f.commit({ "base.txt": "base" }),
+    source = await f.commit(
+      { "base.txt": "base", "feature.txt": "feature" },
+      base,
+    );
+  f.mr(source, base);
+  await f.store.flush();
+  for (const [key, value] of [...f.objects])
+    f.objects.set(key.replace("repos/r/", "repos/" + id + "/"), value);
+  f.db.exec(
+    `PRAGMA foreign_keys=OFF; UPDATE repositories SET id='${id}' WHERE id='r'; UPDATE members SET repo_id='${id}' WHERE repo_id='r'; UPDATE merge_requests SET repo_id='${id}' WHERE repo_id='r'; UPDATE branch_protections SET repo_id='${id}',require_codeowners=0,require_queue=1 WHERE repo_id='r'; PRAGMA foreign_keys=ON;`,
+  );
+  f.db
+    .prepare("INSERT INTO ci_pipelines(repo_id,config,enabled) VALUES(?,?,0)")
+    .run(
+      id,
+      JSON.stringify({
+        runner: "worker",
+        steps: [{ type: "file", path: "base.txt" }],
+      }),
+    );
+  f.db.exec(
+    "INSERT INTO credentials(hash,id,user_id,name,kind,expires_at) VALUES('credential','credential','o','test','session',9999999999999)",
+  );
+  const index = new DatabaseSync(":memory:"),
+    state = new Map<string, any>([
+      ["project-version", 0],
+      ["refs.v2", { "refs/heads/main": base, "refs/heads/feature": source }],
+    ]);
+  const storage: any = {
+    sql: {
+      exec(query: string, ...args: any[]) {
+        if (!args.length && query.includes(";")) {
+          index.exec(query);
+          return { toArray: () => [] };
+        }
+        const stmt = index.prepare(query),
+          rows = stmt.columns().length
+            ? stmt.all(...args)
+            : (stmt.run(...args), []);
+        return {
+          toArray: () => rows,
+          one: () => {
+            assert.equal(rows.length, 1);
+            return rows[0];
+          },
+          [Symbol.iterator]: () => rows[Symbol.iterator](),
+        };
+      },
+    },
+    transactionSync(fn: () => any) {
+      index.exec("SAVEPOINT tx");
+      try {
+        const result = fn();
+        index.exec("RELEASE tx");
+        return result;
+      } catch (e) {
+        index.exec("ROLLBACK TO tx;RELEASE tx");
+        throw e;
+      }
+    },
+    get: async (key: string) => structuredClone(state.get(key)),
+    put: async (key: string | Record<string, any>, value: any) => {
+      for (const [k, v] of typeof key === "string"
+        ? [[key, value]]
+        : Object.entries(key))
+        state.set(k, structuredClone(v));
+    },
+    delete: async (key: string | string[]) => {
+      for (const k of Array.isArray(key) ? key : [key]) state.delete(k);
+    },
+    list: async ({ prefix = "", limit = 1000 } = {}) =>
+      new Map(
+        [...state].filter(([key]) => key.startsWith(prefix)).slice(0, limit),
+      ),
+    getAlarm: async () => state.get("alarm") || null,
+    setAlarm: async (n: number) => {
+      state.set("alarm", n);
+    },
+  };
+  let doRepo = new Repository({ storage }, f.env);
+  const send = async (path: string, body?: any) =>
+    doRepo.fetch(
+      new Request("http://repository" + path, {
+        method: body === undefined ? "GET" : "POST",
+        headers: { "x-repo-id": id, "x-lifecycle-revision": "0" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
+  const queued = await send("/internal/merge-queue-enqueue", {
+    id: 1,
+    actor_id: "o",
+    credential: "credential",
+    revision: 0,
+    strategy: "merge",
+  });
+  assert.equal(queued.status, 200);
+  await doRepo.alarm();
+  await doRepo.alarm();
+  const entry = f.db.prepare("SELECT * FROM merge_queue WHERE id=1").get()!;
+  assert.ok(entry.candidate_sha);
+  assert.ok(entry.run_id);
+  assert.equal(state.get("refs.v2")["refs/heads/main"], base);
+  f.db
+    .prepare("UPDATE ci_runs SET status='succeeded' WHERE id=?")
+    .run(entry.run_id);
+  const batch = f.env.DB.batch;
+  f.env.DB.batch = async () => {
+    throw Error("projection unavailable");
+  };
+  await assert.rejects(doRepo.alarm(), /projection unavailable/);
+  f.env.DB.batch = batch;
+  assert.equal(state.get("refs.v2")["refs/heads/main"], entry.candidate_sha);
+  assert.equal(state.get("merge-result:1").queue_id, 1);
+  assert.ok(state.get("merge-projection:1"));
+  assert.equal(
+    f.db.prepare("SELECT state FROM merge_requests WHERE id=1").get()!.state,
+    "open",
+  );
+  doRepo = new Repository({ storage }, f.env);
+  await doRepo.alarm();
+  await doRepo.alarm();
+  assert.equal(
+    f.db.prepare("SELECT state FROM merge_queue WHERE id=1").get()!.state,
+    "merged",
+  );
+  assert.equal(
+    f.db.prepare("SELECT merged_sha FROM merge_requests WHERE id=1").get()!
+      .merged_sha,
+    entry.candidate_sha,
+  );
+  assert.equal(state.has("merge-projection:1"), false);
+  assert.equal(
+    f.db
+      .prepare(
+        "SELECT count(*) AS n FROM audit WHERE action='merge_queue.merged'",
+      )
+      .get()!.n,
+    1,
+  );
+  assert.equal(
+    (
+      await send("/internal/merge-queue-cancel", {
+        id: 1,
+        actor_id: "o",
+        credential: "credential",
+      })
+    ).status,
+    409,
+  );
+  // Published fork-source reads bypass an unrelated long-running target writer.
+  let release!: () => void;
+  const hold = new Promise<void>((r) => {
+    release = r;
+  });
+  doRepo.handle = async () => {
+    await hold;
+    return new Response("done");
+  };
+  const busy = send("/writer", {});
+  const snapshot = await Promise.race([
+    send("/internal/queue-source?ref=refs%2Fheads%2Fmain"),
+    new Promise<Response>((_, reject) => {
+      const t = setTimeout(
+        () => reject(Error("source read waited for writer")),
+        1000,
+      );
+      t.unref();
+    }),
+  ]);
+  assert.equal((await snapshot.json()).sha, entry.candidate_sha);
+  release();
+  await busy;
+});
 
 test("busy repository alarms return without joining the HTTP queue; idle alarms still collect", async () => {
   const Repository = await repositoryClass();

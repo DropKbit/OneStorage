@@ -1,4 +1,9 @@
 import { assertDeployGitRequest } from "./deploy-tokens";
+import {
+  advanceQueue,
+  queueMutation,
+  validateQueuePublication,
+} from "./merge-queue";
 import { RequestGate } from "./git/request-gate";
 import {
   acquireSnapshot,
@@ -66,6 +71,23 @@ export class Repository extends DurableObject<Env> {
   private objectIndex?: GitObjectIndex;
   async fetch(request: Request): Promise<Response> {
     try {
+      // Internal cross-fork queue checks never wait on the other repository's writer gate.
+      // Only published refs are visible; no R2 reads or nested source locks are acquired.
+      if (
+        request.method === "GET" &&
+        new URL(request.url).pathname === "/internal/queue-source"
+      ) {
+        const id = request.headers.get("x-repo-id") || "";
+        if (!/^[0-9a-f-]{36}$/.test(id)) fail(400, "Invalid repository");
+        if (await this.ctx.storage.get("deleted"))
+          fail(404, "Repository deleted");
+        await checkProjectVersion(this.env, this.ctx.storage, id, request);
+        const ref = new URL(request.url).searchParams.get("ref") || "";
+        if (!ref.startsWith("refs/heads/")) fail(400, "Branch required");
+        branch.parse(ref.slice(11));
+        const refs = (await this.ctx.storage.get<Refs>("refs.v2")) || {};
+        return Response.json({ sha: refs[ref] || null });
+      }
       const response = await this.gate.run(
         shareableOperation(request),
         async (ready) => {
@@ -149,6 +171,29 @@ export class Repository extends DurableObject<Env> {
       })) {
         await dispatchEvent(this.env, event);
         await this.ctx.storage.delete(key);
+      }
+      const queueRepo = await this.ctx.storage.get<string>("merge-queue");
+      if (queueRepo) {
+        await this.ctx.storage.setAlarm(Date.now() + 15000);
+        const live = await this.env.DB.prepare(
+          "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+        )
+          .bind(queueRepo)
+          .first<Repo>();
+        if (!live || live.archived_at)
+          await this.ctx.storage.delete("merge-queue");
+        else
+          await this.handle(
+            new Request("http://repository/internal/merge-queue-tick", {
+              method: "POST",
+              headers: {
+                "x-repo-id": live.id,
+                "x-lifecycle-revision": String(live.lifecycle_revision),
+                "x-default-branch": live.default_branch,
+                "x-actor": "OneStorage merge queue",
+              },
+            }),
+          );
       }
       const id = await this.ctx.storage.get<string>("sync-reconcile");
       if (
@@ -424,6 +469,9 @@ export class Repository extends DurableObject<Env> {
             sha: next["refs/heads/" + reviewedMerge.target],
             issue_ids: reviewedMerge.issue_ids,
             actor_id: reviewedMerge.actor_id,
+            ...(reviewedMerge.queue_entry
+              ? { queue_id: reviewedMerge.queue_entry.id }
+              : {}),
           };
           values["merge-projection:" + reviewedMerge.id] = {
             repo_id: id,
@@ -474,6 +522,14 @@ export class Repository extends DurableObject<Env> {
       defaultBranch,
       {
         beforePublish: async (before, after, ephemeral) => {
+          if (reviewedMerge?.queue_entry && metadata)
+            await validateQueuePublication(
+              this.env,
+              metadata,
+              select(false),
+              reviewedMerge.queue_entry,
+              reviewedMerge,
+            );
           if (!ephemeral && metadata)
             await protectRefs(
               this.env,
@@ -509,6 +565,78 @@ export class Repository extends DurableObject<Env> {
     const ephemeral = request.headers.get("x-namespace") === "ephemeral",
       repo = select(ephemeral),
       path = url.pathname;
+    if (path === "/internal/merge-queue-tick" && request.method === "POST") {
+      if (!metadata) fail(404, "Repository not found");
+      await advanceQueue(
+        this.env,
+        this.ctx.storage,
+        metadata,
+        repo,
+        async (entry, mr) => {
+          reviewedMerge = {
+            ...mr,
+            actor_id: entry.actor_id,
+            queue_entry: entry,
+            issue_ids: await plannedIssueClosures(
+              this.env,
+              metadata,
+              mr,
+              store,
+              defaultBranch,
+            ),
+          };
+          await repo.publish({
+            ...repo.refs,
+            ["refs/heads/" + mr.target]: entry.candidate_sha!,
+          });
+          await projectMerge(this.env, id, mr.id, {
+            sha: entry.candidate_sha!,
+            actor_id: entry.actor_id,
+            issue_ids: reviewedMerge.issue_ids,
+            queue_id: entry.id,
+          });
+          await this.ctx.storage.delete("merge-projection:" + mr.id);
+        },
+      );
+      return Response.json({ ok: true });
+    }
+    if (
+      [
+        "/internal/merge-queue-enqueue",
+        "/internal/merge-queue-cancel",
+      ].includes(path) &&
+      request.method === "POST"
+    ) {
+      if (!metadata) fail(404, "Repository not found");
+      const body = JSON.parse(text(await boundedBody(request, 8192)));
+      const key = z.number().int().positive().parse(body.id);
+      const mrId = path.endsWith("enqueue")
+        ? key
+        : (
+            await this.env.DB.prepare(
+              "SELECT mr_id FROM merge_queue WHERE id=? AND repo_id=?",
+            )
+              .bind(key, id)
+              .first<{ mr_id: number }>()
+          )?.mr_id;
+      const completed = mrId
+        ? await this.ctx.storage.get<MergeResult>("merge-result:" + mrId)
+        : undefined;
+      if (completed) {
+        await projectMerge(this.env, id, mrId!, completed);
+        fail(409, "Merge request already merged");
+      }
+      return Response.json(
+        await queueMutation(
+          this.env,
+          this.ctx.storage,
+          metadata,
+          repo,
+          path.endsWith("cancel") ? "cancel" : "enqueue",
+          body,
+        ),
+      );
+    }
     if (path === "/review-context" && request.method === "GET") {
       const metadata = await this.env.DB.prepare(
         "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
@@ -591,6 +719,14 @@ export class Repository extends DurableObject<Env> {
         return Response.json(result);
       }
       if (mr.state !== "open") fail(409, "Merge request closed");
+      if (
+        await this.env.DB.prepare(
+          "SELECT branch FROM branch_protections WHERE repo_id=? AND branch=? AND require_queue=1",
+        )
+          .bind(id, mr.target)
+          .first()
+      )
+        fail(403, "Protected branch requires the merge queue");
       if (body.revision !== mr.revision)
         fail(409, "Merge request changed; reload before merging");
       if (

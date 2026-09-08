@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.30.0",
+    "version": "0.31.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -9472,6 +9472,10 @@
                   "require_mr": {
                     "type": "boolean"
                   },
+                  "require_queue": {
+                    "type": "boolean",
+                    "description": "Require exact-candidate CI through the merge queue; deny manual merge and direct target writes."
+                  },
                   "approvals": {
                     "type": "integer",
                     "minimum": 0,
@@ -12373,6 +12377,249 @@
           },
           "429": {
             "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merge-queue": {
+      "get": {
+        "operationId": "list_merge_queue",
+        "summary": "list merge queue",
+        "description": "List active FIFO entries (100 maximum) and the latest 20 finished entries. Optional mr_id filters one request. Current repository read access required. See docs/MERGE-QUEUE-v31.md. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mr_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/queue": {
+      "post": {
+        "operationId": "enqueue_merge_request",
+        "summary": "enqueue merge request",
+        "description": "Maintainer queues a fixed request snapshot for candidate CI and exact-SHA publication. Durable intent expires after 24 hours. Target changes require new target-bound approvals and CI; source changes cancel. See docs/MERGE-QUEUE-v31.md. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "strategy": {
+                    "enum": [
+                      "ff_prefer",
+                      "ff_only",
+                      "merge"
+                    ]
+                  },
+                  "squash": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "revision"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merge-queue/{entry}": {
+      "delete": {
+        "operationId": "cancel_queued_merge",
+        "summary": "cancel queued merge",
+        "description": "Maintainer cancels an active queue entry and its candidate CI. Already published merges cannot be canceled. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entry",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
           }
         }
       }

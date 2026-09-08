@@ -1,5 +1,7 @@
 # OneStorage
 
+v0.31 增加 Cloudflare 持久合并队列：按目标分支排队，针对最新基线重新审阅并执行候选 CI，发布同一个通过检查的提交。可在分支保护中要求队列，支持取消、故障恢复和网页状态跟踪。详见 [合并队列](docs/MERGE-QUEUE-v31.md) 与 [验收记录](docs/VERIFICATION-v31.md)。
+
 v0.30 增加 Workers/D1 内的自助密码找回：离线保存一次性密钥，保留双重验证，原子更新密码并撤销旧凭据。使用流程、恢复限制与接口见 [密码恢复](docs/PASSWORD-RECOVERY-v30.md)，测试与云端浏览器证据见 [验收记录](docs/VERIFICATION-v30.md)。
 
 v0.28 增加跨项目协作搜索：项目、Issue、合并请求和当前 Wiki 统一检索，支持空间/状态/归档筛选、稳定分页与实时权限校验，见 [使用说明](docs/SEARCH-v28.md) 和 [验收记录](docs/VERIFICATION-v28.md)。全局代码索引仍待实现，现有项目内代码搜索保留。

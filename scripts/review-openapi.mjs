@@ -11,6 +11,34 @@ export function addReviewPaths(paths) {
   const entries = [
     [
       "get",
+      base + "/merge-queue",
+      "list_merge_queue",
+      null,
+      "List active FIFO entries (100 maximum) and the latest 20 finished entries. Optional mr_id filters one request. Current repository read access required. See docs/MERGE-QUEUE-v31.md.",
+    ],
+    [
+      "post",
+      base + "/merges/{id}/queue",
+      "enqueue_merge_request",
+      object(
+        {
+          revision: { type: "integer", minimum: 0 },
+          strategy: { enum: ["ff_prefer", "ff_only", "merge"] },
+          squash: { type: "boolean" },
+        },
+        ["revision"],
+      ),
+      "Maintainer queues a fixed request snapshot for candidate CI and exact-SHA publication. Durable intent expires after 24 hours. Target changes require new target-bound approvals and CI; source changes cancel. See docs/MERGE-QUEUE-v31.md.",
+    ],
+    [
+      "delete",
+      base + "/merge-queue/{entry}",
+      "cancel_queued_merge",
+      null,
+      "Maintainer cancels an active queue entry and its candidate CI. Already published merges cannot be canceled.",
+    ],
+    [
+      "get",
       base + "/merge-sources",
       "list_merge_sources",
       null,
@@ -103,6 +131,12 @@ export function addReviewPaths(paths) {
       required: true,
       schema: string,
     }));
+    if (id === "list_merge_queue")
+      parameters.push({
+        name: "mr_id",
+        in: "query",
+        schema: { type: "integer", minimum: 1 },
+      });
     if (id === "list_merge_discussions" || id === "read_merge_discussion")
       parameters.push({
         name: "after",
@@ -187,6 +221,11 @@ export function addReviewPaths(paths) {
           {
             branch: string,
             require_mr: { type: "boolean" },
+            require_queue: {
+              type: "boolean",
+              description:
+                "Require exact-candidate CI through the merge queue; deny manual merge and direct target writes.",
+            },
             approvals: { type: "integer", minimum: 0, maximum: 10 },
             require_ci: { type: "boolean" },
             require_codeowners: {

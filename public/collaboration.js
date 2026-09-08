@@ -35,8 +35,14 @@ export async function reviewPage(r, base, ap, h, id) {
   repoLayout(
     r,
     "merges",
-    `<div class="titlebar"><div><h2>!${m.id} ${esc(m.title)}</h2><p>${esc(m.source_namespace || r.namespace)}/${esc(m.source_name || r.name)}:${esc(m.source)} → ${esc(m.target)} · ${esc(m.author)}</p></div><span class="pill">${esc(m.state)}</span></div><div class="panel"><div class="detail-body markdown" data-markdown>${esc(m.body)}</div><div class="panelhead"><strong>审阅与检查</strong><span>${m.gate.approvals} 个有效批准</span></div><div class="detail-body">${m.stale && m.state === "open" ? '<p class="error">分支已有新提交。更新此请求后，需要重新审阅。</p>' : ""}${codeownersPanel(m.gate.codeowners, esc)}${m.closing_issues?.length ? `<p>合并到默认分支后关闭：${m.closing_issues.map((id) => `<a data-link href="${base}/issues/${id}">#${id}</a>`).join("、")}</p>` : ""}${m.gate.reasons.map((x) => `<p>${esc(x)}</p>`).join("")}<p>源提交 CI：${m.gate.ci ? `<a data-link href="${base}/ci/${m.gate.ci.id}">${esc(m.gate.ci.status)}</a>` : "尚未运行"}</p>${(h.user?.id === m.author_id || maintain(r)) && m.state !== "merged" ? button("更新到最新提交", "refresh") + button(m.state === "open" ? "关闭请求" : "重新打开", "toggle") : ""}</div>${maintain(r) && m.state === "open" ? button("运行此版本 CI", "pipeline") : ""}${m.gate.reviews.map((v) => `<div class="comment"><strong>${esc(v.username)} · ${esc(v.verdict)}</strong> <code>${v.source_sha.slice(0, 8)}</code>${v.source_sha !== m.source_sha || v.target_sha !== m.target_sha ? ' <span class="muted">旧版本</span>' : ""}<div class="markdown" data-markdown>${esc(v.body)}</div></div>`).join("")}${h.user && m.state === "open" ? `<form class="form" id="review"><label>审阅意见<select name="verdict"><option value="comment">评论</option>${writable(r) && h.user.id !== m.author_id ? '<option value="approve">批准</option><option value="changes">要求修改</option>' : ""}</select></label>${textarea("说明", "body")}<button class="btn primary" type="submit">提交审阅</button></form>` : ""}</div><div class="panel"><div class="panelhead"><strong>代码变更</strong><code>${m.target_sha.slice(0, 8)} → ${m.source_sha.slice(0, 8)}</code></div>${reviewDiff(m.diff, esc, !!h.user && m.state === "open")}</div><section class="panel" id="discussions"><div class="panelhead"><strong>行级讨论</strong><span>${m.gate.unresolved || 0} 个待解决审阅讨论</span></div><div id="discussion-list">${(m.discussions || []).map((d) => discussionRow(d, m, esc)).join("") || '<p class="detail-body muted">暂无讨论</p>'}</div>${m.discussions_next ? `<a data-link class="btn small" href="${base}/merges/${id}?discussions_after=${m.discussions_next}">更多讨论 →</a>` : ""}${h.user && m.state === "open" ? `<form id="new-discussion" class="form"><p id="discussion-location">普通讨论 · 可点击差异行号定位到代码</p><input type="hidden" name="path"><input type="hidden" name="side"><input type="hidden" name="line">${textarea("讨论内容", "body")}<div class="inline"><button class="btn primary" type="submit">发起讨论</button><button class="btn" type="button" id="clear-discussion-location">清除行定位</button></div></form>` : ""}</section>${maintain(r) && m.state === "open" ? `<form id="merge-reviewed" class="form panel"><label>合并方式<select name="strategy"><option value="ff_prefer">快进或三方合并</option><option value="merge">创建合并提交</option><option value="ff_only">仅快进</option></select></label><label><input type="checkbox" name="squash"> 压缩提交</label><button class="btn primary" type="submit" ${m.gate.allowed ? "" : "disabled"}>合并此版本</button></form>` : ""}`,
+    `<div class="titlebar"><div><h2>!${m.id} ${esc(m.title)}</h2><p>${esc(m.source_namespace || r.namespace)}/${esc(m.source_name || r.name)}:${esc(m.source)} → ${esc(m.target)} · ${esc(m.author)}</p></div><span class="pill">${esc(m.state)}</span></div><div class="panel"><div class="detail-body markdown" data-markdown>${esc(m.body)}</div><div class="panelhead"><strong>审阅与检查</strong><span>${m.gate.approvals} 个有效批准</span></div><div class="detail-body">${m.stale && m.state === "open" ? '<p class="error">分支已有新提交。更新此请求后，需要重新审阅。</p>' : ""}${codeownersPanel(m.gate.codeowners, esc)}${m.closing_issues?.length ? `<p>合并到默认分支后关闭：${m.closing_issues.map((id) => `<a data-link href="${base}/issues/${id}">#${id}</a>`).join("、")}</p>` : ""}${m.gate.reasons.map((x) => `<p>${esc(x)}</p>`).join("")}<p>源提交 CI：${m.gate.ci ? `<a data-link href="${base}/ci/${m.gate.ci.id}">${esc(m.gate.ci.status)}</a>` : "尚未运行"}</p>${(h.user?.id === m.author_id || maintain(r)) && m.state !== "merged" ? button("更新到最新提交", "refresh") + button(m.state === "open" ? "关闭请求" : "重新打开", "toggle") : ""}</div>${maintain(r) && m.state === "open" ? button("运行此版本 CI", "pipeline") : ""}${m.gate.reviews.map((v) => `<div class="comment"><strong>${esc(v.username)} · ${esc(v.verdict)}</strong> <code>${v.source_sha.slice(0, 8)}</code>${v.source_sha !== m.source_sha || v.target_sha !== m.target_sha ? ' <span class="muted">旧版本</span>' : ""}<div class="markdown" data-markdown>${esc(v.body)}</div></div>`).join("")}${h.user && m.state === "open" ? `<form class="form" id="review"><label>审阅意见<select name="verdict"><option value="comment">评论</option>${writable(r) && h.user.id !== m.author_id ? '<option value="approve">批准</option><option value="changes">要求修改</option>' : ""}</select></label>${textarea("说明", "body")}<button class="btn primary" type="submit">提交审阅</button></form>` : ""}</div><div class="panel"><div class="panelhead"><strong>代码变更</strong><code>${m.target_sha.slice(0, 8)} → ${m.source_sha.slice(0, 8)}</code></div>${reviewDiff(m.diff, esc, !!h.user && m.state === "open")}</div><section class="panel" id="discussions"><div class="panelhead"><strong>行级讨论</strong><span>${m.gate.unresolved || 0} 个待解决审阅讨论</span></div><div id="discussion-list">${(m.discussions || []).map((d) => discussionRow(d, m, esc)).join("") || '<p class="detail-body muted">暂无讨论</p>'}</div>${m.discussions_next ? `<a data-link class="btn small" href="${base}/merges/${id}?discussions_after=${m.discussions_next}">更多讨论 →</a>` : ""}${h.user && m.state === "open" ? `<form id="new-discussion" class="form"><p id="discussion-location">普通讨论 · 可点击差异行号定位到代码</p><input type="hidden" name="path"><input type="hidden" name="side"><input type="hidden" name="line">${textarea("讨论内容", "body")}<div class="inline"><button class="btn primary" type="submit">发起讨论</button><button class="btn" type="button" id="clear-discussion-location">清除行定位</button></div></form>` : ""}</section>${maintain(r) && m.state === "open" ? `<form id="merge-reviewed" class="form panel"><label>合并方式<select name="strategy"><option value="ff_prefer">快进或三方合并</option><option value="merge">创建合并提交</option><option value="ff_only">仅快进</option></select></label><label><input type="checkbox" name="squash"> 压缩提交</label><button class="btn primary" type="submit" ${m.gate.allowed && !m.gate.rule?.require_queue ? "" : "disabled"}>合并此版本</button></form>` : ""}`,
   );
+  const queueHost = document.createElement("section");
+  queueHost.className = "panel";
+  document
+    .querySelector("#merge-reviewed, #discussions")
+    ?.insertAdjacentElement("afterend", queueHost);
+  mountQueue(queueHost, r, base, ap, h, m);
   bindForm("#review", async (b) => {
     await api(ap + "/merges/" + id + "/reviews", {
       method: "POST",
@@ -86,7 +92,7 @@ export async function projectPage(r, base, ap, h, tab, sub) {
     repoLayout(
       r,
       "protect",
-      `<div class="panel"><div class="panelhead"><h2>受保护分支</h2></div>${rules.map((x) => `<div class="token-row"><div><strong>${esc(x.branch)}</strong><p>禁止强推和删除 · ${x.require_mr ? "必须通过合并请求 · " : ""}${x.approvals} 人批准${x.require_ci ? " · CI 必须成功" : ""}${x.require_resolved ? " · 审阅讨论必须解决" : ""}${x.require_codeowners ? " · CODEOWNERS 必须批准" : ""}</p></div>${maintain(r) ? button("移除保护", "delete", esc(x.branch)) : ""}</div>`).join("") || '<div class="empty">暂无规则</div>'}${maintain(r) ? `<form id="protection" class="form">${field("分支名称", "branch", "text", r.default_branch)}${field("独立审阅批准人数", "approvals", "number", "1")}<label><input type="checkbox" name="require_mr" checked> 必须通过合并请求</label><label><input type="checkbox" name="require_ci"> 最新源提交 CI 必须成功</label><label><input type="checkbox" name="require_resolved"> 目标仓库审阅者的讨论必须解决</label><label><input type="checkbox" name="require_codeowners"> CODEOWNERS 指定的负责人必须批准</label><p class="muted">从目标分支的 CODEOWNERS、.gitlab/CODEOWNERS、docs/CODEOWNERS 或 .github/CODEOWNERS 依次读取规则；开启后缺少有效文件会阻止合并。</p><button class="btn primary" type="submit">保存规则</button></form>` : ""}</div>`,
+      `<div class="panel"><div class="panelhead"><h2>受保护分支</h2></div>${rules.map((x) => `<div class="token-row"><div><strong>${esc(x.branch)}</strong><p>禁止强推和删除 · ${x.require_queue ? "必须通过合并队列 · " : ""}${x.require_mr ? "必须通过合并请求 · " : ""}${x.approvals} 人批准${x.require_ci ? " · CI 必须成功" : ""}${x.require_resolved ? " · 审阅讨论必须解决" : ""}${x.require_codeowners ? " · CODEOWNERS 必须批准" : ""}</p></div>${maintain(r) ? button("移除保护", "delete", esc(x.branch)) : ""}</div>`).join("") || '<div class="empty">暂无规则</div>'}${maintain(r) ? `<form id="protection" class="form">${field("分支名称", "branch", "text", r.default_branch)}${field("独立审阅批准人数", "approvals", "number", "1")}<label><input type="checkbox" name="require_mr" checked> 必须通过合并请求</label><label><input type="checkbox" name="require_ci"> 最新源提交 CI 必须成功</label><label><input type="checkbox" name="require_queue"> 必须通过合并队列（验证合并候选 CI）</label><label><input type="checkbox" name="require_resolved"> 目标仓库审阅者的讨论必须解决</label><label><input type="checkbox" name="require_codeowners"> CODEOWNERS 指定的负责人必须批准</label><p class="muted">从目标分支的 CODEOWNERS、.gitlab/CODEOWNERS、docs/CODEOWNERS 或 .github/CODEOWNERS 依次读取规则；开启后缺少有效文件会阻止合并。</p><button class="btn primary" type="submit">保存规则</button></form>` : ""}</div>`,
     );
     bindForm("#protection", async (b) => {
       await api(ap + "/protections", {
@@ -96,6 +102,7 @@ export async function projectPage(r, base, ap, h, tab, sub) {
           approvals: Number(b.approvals),
           require_mr: b.require_mr === "on",
           require_ci: b.require_ci === "on",
+          require_queue: b.require_queue === "on",
           require_resolved: b.require_resolved === "on",
           require_codeowners: b.require_codeowners === "on",
         },
@@ -327,6 +334,10 @@ export async function mergesPage(r, base, ap, h) {
     "merges",
     `<div class="stack">${h.user && repositories.length && branches.length ? `<details class="panel"><summary class="panelhead">＋ 新建合并请求</summary><form class="form" id="new-merge">${field("标题", "title")}<div class="field"><label>来源仓库<select name="source_repo" id="merge-source-repo">${repositories.map((s) => `<option value="${s.id}" ${s.id === r.id ? "selected" : ""}>${esc(s.namespace)}/${esc(s.name)}</option>`).join("")}</select></label></div><div class="inline"><div class="field"><label>来源分支<select name="source" id="merge-source-branch"></select></label></div><div class="field"><label>目标分支<select name="target">${branches.map((b) => `<option value="${esc(b.name)}" ${b.name === r.default_branch ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label></div></div><p class="hint">创建请求会把来源分支的提交历史及关联文件发布给目标仓库的读者。Fork 的其他分支和仓库权限保持独立。</p>${textarea("描述", "body")}<button class="btn primary" type="submit">创建合并请求</button></form></details>` : h.user ? '<div class="info">先 Fork 这个仓库并推送变更，再回到这里提交合并请求。</div>' : ""}<div class="panel"><div class="panelhead"><strong>合并请求</strong><span>最近 100 条</span></div>${merges.map((m) => `<div class="issue-row"><span class="status-icon">⑂</span><div><a data-link class="subject" href="${base}/merges/${m.id}">${esc(m.title)}</a><p class="muted">!${m.id} · ${esc(m.source_namespace || r.namespace)}/${esc(m.source_name || r.name)}:${esc(m.source)} → ${esc(m.target)} · ${esc(m.state)}</p></div></div>`).join("") || '<div class="empty">暂无合并请求</div>'}</div></div>`,
   );
+  const queueHost = document.createElement("section");
+  queueHost.className = "panel";
+  document.querySelector(".stack")?.append(queueHost);
+  mountQueue(queueHost, r, base, ap, h);
   const selector = document.querySelector("#merge-source-repo");
   if (selector) {
     let sequence = 0;
@@ -540,4 +551,149 @@ function bindDiscussions(m, r, base, ap, h, id) {
 export function codeownersPanel(codeowners, esc) {
   if (!codeowners) return "";
   return `<details class="codeowners"><summary>CODEOWNERS · ${esc(codeowners.file || "缺少规则文件")} · ${codeowners.allowed ? "已满足" : "等待批准"}</summary><p>规则来自目标提交 <code>${esc(codeowners.target_sha.slice(0, 8))}</code>。每条匹配规则独立计数，作者及已失去开发权限的成员不计入。</p>${codeowners.requirements.map((r) => `<div class="comment"><strong>${esc(r.section)} · ${esc(r.pattern)}</strong><p>${r.approved_count ?? r.approved.length}/${r.required} 个批准${r.required === 0 ? "（可选）" : ""} · ${r.owners.map(esc).join(" ")}</p><p>可审批（共 ${r.eligible_count ?? r.eligible.length} 人，最多显示 50 人）：${r.eligible.map(esc).join("、") || "暂无独立负责人"}</p><p>已批准：${r.approved.map(esc).join("、") || "暂无"}</p><details><summary>${r.path_count ?? r.paths.length} 个文件（最多显示 20 个）</summary>${r.paths.map((p) => `<div><code>${esc(p)}</code></div>`).join("")}</details></div>`).join("")}</details>`;
+}
+
+function mountQueue(host, r, base, ap, h, mr) {
+  const { esc, api } = h;
+  const states = {
+    queued: "排队中",
+    checking: "检查中",
+    blocked: "等待处理",
+    merged: "已合并",
+    canceled: "已取消",
+    failed: "失败",
+  };
+  host.innerHTML =
+    '<div class="panelhead"><strong>合并队列</strong><button type="button" class="btn small" data-queue-refresh>刷新队列</button></div><div class="detail-body"><p>按目标分支依次处理。目标分支变化后重新审阅和验证候选 CI；失败或待审阅的队首需要处理后才能继续。</p><p data-queue-status role="status">读取队列…</p></div><div data-queue-rows></div>';
+  if (mr && maintain(r) && mr.state === "open") {
+    host.insertAdjacentHTML(
+      "beforeend",
+      '<form id="enqueue-merge" class="form"><label>队列合并方式<select name="strategy"><option value="ff_prefer">快进或三方合并</option><option value="merge">创建合并提交</option><option value="ff_only">仅快进</option></select></label><label><input type="checkbox" name="squash"> 压缩提交</label><button class="btn primary" type="submit">加入合并队列</button><p class="muted">需要已保存的目标仓库流水线。队列意向最长保留 24 小时。</p></form>',
+    );
+    h.bindForm("#enqueue-merge", async (b) => {
+      await api(ap + "/merges/" + mr.id + "/queue", {
+        method: "POST",
+        body: {
+          revision: mr.revision,
+          strategy: b.strategy,
+          squash: b.squash === "on",
+        },
+      });
+      await load();
+    });
+  }
+  let loading = false,
+    stopped = false;
+  const load = async () => {
+    if (loading || !h.current() || !host.isConnected) return;
+    loading = true;
+    try {
+      const data = await api(
+        ap + "/merge-queue" + (mr ? "?mr_id=" + mr.id : ""),
+      );
+      if (!h.current() || !host.isConnected) return;
+      host.querySelector("[data-queue-status]").textContent = data.entries
+        .length
+        ? data.entries.length + " 个请求正在排队"
+        : "暂无排队请求";
+      const enqueue = host.querySelector(
+        '#enqueue-merge button[type="submit"]',
+      );
+      if (enqueue)
+        enqueue.disabled =
+          data.entries.length > 0 ||
+          data.history.some((e) => e.state === "merged");
+      host.querySelector("[data-queue-rows]").innerHTML = [
+        ...data.entries,
+        ...data.history,
+      ]
+        .map(
+          (e) =>
+            '<div class="token-row" data-queue-entry="' +
+            e.id +
+            '"><div><a data-link href="' +
+            base +
+            "/merges/" +
+            e.mr_id +
+            '">!' +
+            e.mr_id +
+            "</a> · " +
+            esc(e.target) +
+            " · <strong>" +
+            esc(states[e.state] || e.state) +
+            "</strong><p>" +
+            esc(
+              e.reason ||
+                (e.state === "merged" ? "已发布通过 CI 的候选提交" : ""),
+            ) +
+            '</p><p class="muted">#' +
+            e.id +
+            " · " +
+            esc(e.actor || "") +
+            " · 第 " +
+            (e.generation + 1) +
+            " 次候选" +
+            (e.candidate_sha
+              ? " · <code>" + esc(e.candidate_sha.slice(0, 12)) + "</code>"
+              : "") +
+            (e.run_id
+              ? ' · <a data-link href="' +
+                base +
+                "/ci/" +
+                encodeURIComponent(e.run_id) +
+                '">候选流水线</a>'
+              : "") +
+            "</p>" +
+            (mr &&
+            e.mr_revision !== mr.revision &&
+            data.entries.some((a) => a.id === e.id)
+              ? '<p class="info">合并基线已更新，<a data-link href="' +
+                base +
+                "/merges/" +
+                mr.id +
+                '">重新打开请求进行审阅</a>。</p>'
+              : "") +
+            "</div>" +
+            (maintain(r) && data.entries.some((a) => a.id === e.id)
+              ? '<button class="btn small" type="button" data-queue-cancel="' +
+                e.id +
+                '">取消排队</button>'
+              : "") +
+            "</div>",
+        )
+        .join("");
+      host.querySelectorAll("[data-queue-cancel]").forEach((b) => {
+        b.onclick = async () => {
+          b.disabled = true;
+          try {
+            await api(ap + "/merge-queue/" + b.dataset.queueCancel, {
+              method: "DELETE",
+            });
+            await load();
+          } catch (e) {
+            h.notice(e.message);
+            b.disabled = false;
+          }
+        };
+      });
+    } catch (e) {
+      if (h.current() && host.isConnected) {
+        host.querySelector("[data-queue-rows]").replaceChildren();
+        host.querySelector("[data-queue-status]").textContent = e.message;
+        stopped = true;
+      }
+    } finally {
+      loading = false;
+    }
+  };
+  host.querySelector("[data-queue-refresh]").onclick = () => {
+    stopped = false;
+    load();
+  };
+  const poll = async () => {
+    if (!h.current() || !host.isConnected) return;
+    if (!document.hidden && !stopped) await load();
+    setTimeout(poll, 10000);
+  };
+  poll();
 }
