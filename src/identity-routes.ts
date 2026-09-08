@@ -6,6 +6,13 @@ import { signingKeyInfo } from "./git/signatures";
 import { fail, boundedBody } from "./security";
 import type { App } from "./types";
 export function registerIdentityRoutes(app: Hono<App>) {
+  const live = `EXISTS(SELECT 1 FROM credentials c JOIN users u ON u.id=c.user_id
+    WHERE c.hash=? AND c.user_id=? AND c.kind='session' AND c.expires_at>? AND u.disabled=0)`;
+  const credential = (c: Context<App>) => [
+    c.get("credential"),
+    c.get("user")!.id,
+    Date.now(),
+  ];
   const session = (c: Context<App>) => {
     if (c.get("kind") !== "session" || !c.get("user"))
       fail(403, "Browser session required");
@@ -69,11 +76,12 @@ export function registerIdentityRoutes(app: Hono<App>) {
           (key.algorithm as RsaKeyAlgorithm).modulusLength < 2048
         )
           fail(400, "RSA keys must be at least 2048 bits");
-        await c.env.DB.prepare(
-          "INSERT INTO api_keys(id,user_id,name,algorithm,public_key) VALUES(?,?,?,?,?)",
+        const result = await c.env.DB.prepare(
+          `INSERT INTO api_keys(id,user_id,name,algorithm,public_key) SELECT ?,?,?,?,? WHERE ${live}`,
         )
-          .bind(id, u.id, b.name, alg, b.public_key)
+          .bind(id, u.id, b.name, alg, b.public_key, ...credential(c))
           .run();
+        if (!result.meta.changes) fail(403, "Session changed; sign in again");
         return c.json({ id, issuer: u.username, algorithm: alg }, 201);
       }
       let info;
@@ -82,22 +90,41 @@ export function registerIdentityRoutes(app: Hono<App>) {
       } catch {
         fail(400, "Invalid or unsupported signing public key");
       }
+      let result;
       try {
-        await c.env.DB.prepare(
-          "INSERT INTO signing_keys(id,user_id,name,format,public_key,fingerprint) VALUES(?,?,?,?,?,?)",
+        result = await c.env.DB.prepare(
+          `INSERT INTO signing_keys(id,user_id,name,format,public_key,fingerprint) SELECT ?,?,?,?,?,? WHERE ${live}`,
         )
-          .bind(id, u.id, b.name, info.format, b.public_key, info.fingerprint)
+          .bind(
+            id,
+            u.id,
+            b.name,
+            info.format,
+            b.public_key,
+            info.fingerprint,
+            ...credential(c),
+          )
           .run();
       } catch {
         fail(409, "Signing key already registered");
       }
+      if (!result.meta.changes) fail(403, "Session changed; sign in again");
       return c.json({ id, ...info }, 201);
     });
     app.delete("/api/" + type + "/:id", async (c) => {
       const u = session(c);
-      await c.env.DB.prepare(`DELETE FROM ${table} WHERE id=? AND user_id=?`)
-        .bind(c.req.param("id"), u.id)
+      const result = await c.env.DB.prepare(
+        `DELETE FROM ${table} WHERE id=? AND user_id=? AND ${live}`,
+      )
+        .bind(c.req.param("id"), u.id, ...credential(c))
         .run();
+      if (
+        !result.meta.changes &&
+        !(await c.env.DB.prepare(`SELECT 1 WHERE ${live}`)
+          .bind(...credential(c))
+          .first())
+      )
+        fail(403, "Session changed; sign in again");
       return c.json({ deleted: true });
     });
   }

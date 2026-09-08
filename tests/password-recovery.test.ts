@@ -3,9 +3,85 @@ import assert from "node:assert/strict";
 import { accountFixture } from "./support/account-fixture";
 import { digest, verifyPassword } from "../src/security";
 import { hotp } from "../src/totp";
+import { generateKeyPair, exportSPKI } from "jose";
+import { generateKeyPairSync } from "node:crypto";
 
 const path = "/account/password-recovery";
 const nextPassword = "next-recovery-password-123";
+test("in-flight identity key writes cannot outlive the session revoked by password recovery", async () => {
+  const keys = await generateKeyPair("ES256"),
+    publicKey = await exportSPKI(keys.publicKey);
+  const raw = generateKeyPairSync("ed25519")
+    .publicKey.export({ type: "spki", format: "der" })
+    .subarray(-32);
+  const field = (b: Buffer) => {
+    const n = Buffer.alloc(4);
+    n.writeUInt32BE(b.length);
+    return Buffer.concat([n, b]);
+  };
+  const ssh =
+    "ssh-ed25519 " +
+    Buffer.concat([field(Buffer.from("ssh-ed25519")), field(raw)]).toString(
+      "base64",
+    );
+  for (const [route, table, key] of [
+    ["api-keys", "api_keys", publicKey],
+    ["signing-keys", "signing_keys", ssh],
+  ]) {
+    for (const mutation of [
+      "DELETE FROM credentials WHERE user_id='u'",
+      "UPDATE credentials SET expires_at=0 WHERE user_id='u'",
+      "UPDATE users SET disabled=1 WHERE id='u'",
+    ]) {
+      const f = await accountFixture(),
+        prepare = f.env.DB.prepare.bind(f.env.DB);
+      f.db.exec(
+        "INSERT INTO users(id,username,password,admin) VALUES('other','other','hash',1)",
+      );
+      let once = false;
+      f.env.DB.prepare = ((sql: string) => {
+        const stmt = prepare(sql);
+        if (sql.includes("INSERT INTO " + table) && !once) {
+          once = true;
+          f.db.exec(mutation);
+        }
+        return stmt;
+      }) as any;
+      assert.equal(
+        (
+          await f.req("/" + route, "POST", {
+            name: "concurrent",
+            public_key: key,
+            algorithm: "ES256",
+          })
+        ).status,
+        403,
+        route,
+      );
+      assert.equal(f.db.prepare("SELECT count(*) n FROM " + table).get()!.n, 0);
+    }
+    const f = await accountFixture(),
+      created = await f.req("/" + route, "POST", {
+        name: "valid",
+        public_key: key,
+        algorithm: "ES256",
+      });
+    assert.equal(created.status, 201, route);
+    const prepare = f.env.DB.prepare.bind(f.env.DB);
+    f.env.DB.prepare = ((sql: string) => {
+      const stmt = prepare(sql);
+      if (sql.includes("DELETE FROM " + table))
+        f.db.exec("DELETE FROM credentials");
+      return stmt;
+    }) as any;
+    assert.equal(
+      (await f.req("/" + route + "/" + created.data.id, "DELETE")).status,
+      403,
+      route,
+    );
+    assert.equal(f.db.prepare("SELECT count(*) n FROM " + table).get()!.n, 1);
+  }
+});
 test("browser-only key management, cross-origin refusal, SSO-only refusal and administrator revocation", async () => {
   const f = await accountFixture();
   const token = (await f.req("/tokens", "POST", { name: "test" })).data.token;
