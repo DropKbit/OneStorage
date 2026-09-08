@@ -1,11 +1,20 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, writeFile, readFile, rm, mkdir } from "node:fs/promises";
+import {
+  mkdtemp,
+  writeFile,
+  readFile,
+  rm,
+  mkdir,
+  stat,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787",
   remote = !["localhost", "127.0.0.1"].includes(new URL(origin).hostname);
+const singleImport = process.env.ONESTORAGE_SINGLE_IMPORT === "1",
+  payloadBytes = (singleImport ? 35 : 42) * 1024 * 1024;
 if (remote && process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
   throw Error("Remote acceptance requires opt-in");
 const existing = process.env.ONESTORAGE_TOKEN_FILE
@@ -52,14 +61,18 @@ const timings = [];
 async function git(args) {
   const start = performance.now();
   const result = await new Promise((resolve, reject) => {
+    const env = { ...process.env };
+    for (const key of ["GIT_CURL_VERBOSE", "GIT_TRACE_CURL", "GIT_TRACE"])
+      delete env[key];
     const child = spawn("git", ["-c", "credential.helper=", ...args], {
       cwd: directory,
       env: {
-        ...process.env,
+        ...env,
         GIT_ASKPASS: join(directory, "askpass"),
         GIT_TERMINAL_PROMPT: "0",
       },
     });
+    child.stdin.end();
     let out = "",
       err = "";
     child.stdout.on("data", (b) => {
@@ -121,30 +134,64 @@ try {
   await git(["-C", "source", "config", "user.email", "scale@example.invalid"]);
   await git(["-C", "source", "config", "gc.auto", "0"]);
   await git(["-C", "source", "remote", "add", "origin", url]);
-  for (let batch = 0; batch < 6; batch++) {
+  for (let batch = 0; batch < (singleImport ? 1 : 6); batch++) {
     const folder = join(directory, "source", "batch" + batch);
     await mkdir(folder);
     await Promise.all(
-      Array.from({ length: 900 }, (_, i) =>
+      Array.from({ length: singleImport ? 2100 : 900 }, (_, i) =>
         writeFile(join(folder, "file" + i), `batch ${batch} file ${i}\n`),
       ),
     );
-    await writeFile(join(folder, "large.bin"), randomBytes(7 * 1024 * 1024));
+    for (let i = 0; i < (singleImport ? 5 : 1); i++)
+      await writeFile(
+        join(folder, `large${i}.bin`),
+        randomBytes(7 * 1024 * 1024),
+      );
     await git(["-C", "source", "add", "."]);
     await git(["-C", "source", "commit", "-m", "Batch " + batch]);
+    if (singleImport) {
+      const hash = await git([
+        "-C",
+        "source",
+        "pack-objects",
+        "--all",
+        "--revs",
+        "--window=10",
+        "--depth=50",
+        join(directory, "initial"),
+      ]);
+      const packBytes = (await stat(join(directory, `initial-${hash}.pack`)))
+        .size;
+      assert.ok(
+        packBytes > 16 * 1024 * 1024,
+        "initial pack exceeds old 16 MiB wire limit",
+      );
+      console.log(
+        JSON.stringify({
+          stage: "initial-pack",
+          repoId: repo.id,
+          packBytes,
+          payloadBytes,
+        }),
+      );
+    }
     await git(["-C", "source", "push", "origin", "main"]);
   }
   const count = Number(
     await git(["-C", "source", "rev-list", "--objects", "--all", "--count"]),
   );
-  assert.ok(count > 5000, "fixture must exceed the previous graph ceiling");
+  assert.ok(
+    count > (singleImport ? 2000 : 5000),
+    "fixture must exceed the previous object ceiling",
+  );
   const stats = await git(["-C", "source", "count-objects", "-v"]);
   console.log(
     JSON.stringify({
       stage: "fixture",
       repoId: repo.id,
       objects: count,
-      uncompressedPayload: 42 * 1024 * 1024,
+      uncompressedPayload: payloadBytes,
+      singleInitialPush: singleImport,
       stats,
     }),
   );
@@ -177,7 +224,7 @@ try {
   );
   await writeFile(
     join(directory, "source", "incremental"),
-    "One new file after 42 MiB of history\n",
+    `One new file after ${payloadBytes} bytes of history\n`,
   );
   await git(["-C", "source", "add", "."]);
   await git(["-C", "source", "commit", "-m", "Incremental"]);
@@ -249,7 +296,8 @@ try {
       repoId: repo.id,
       name,
       objects: count,
-      uncompressedPayload: 42 * 1024 * 1024,
+      uncompressedPayload: payloadBytes,
+      singleInitialPush: singleImport,
       nativeGit: "v0/v2 clone, incremental push/fetch and fsck passed",
       timings,
     }),

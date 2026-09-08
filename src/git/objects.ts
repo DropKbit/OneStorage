@@ -1,4 +1,8 @@
-import type { GitObjectIndex } from "./object-index";
+import {
+  objectEdges,
+  type GitObjectIndex,
+  type PersistedObjectHint,
+} from "./object-index";
 import { GitIO, gitStage } from "./diagnostics";
 import type { ObjectCache } from "./object-cache";
 import { fail } from "../security";
@@ -225,6 +229,8 @@ export class ObjectStore {
   private prefetchPeakBytes = 0;
   private prefetchPeakObjects = 0;
   private pending = new Map<string, Promise<GitObject>>();
+  private indexHints = new Map<string, PersistedObjectHint>();
+  private hintEdges = 0;
   constructor(
     readonly repoId: string,
     private bucket: Pick<R2Bucket, "get" | "put">,
@@ -325,12 +331,41 @@ export class ObjectStore {
   async create(type: ObjectType, data: Uint8Array) {
     return this.add(await makeObject(type, data));
   }
-  async flush() {
+  private rememberPersisted(o: GitObject) {
+    if (!this.index || this.indexHints.has(o.oid) || this.index.get(o.oid))
+      return;
+    if (o.type !== "blob" && o.data.length > 2 * 1024 * 1024) return;
+    let edges;
+    try {
+      edges = objectEdges(o);
+    } catch {
+      return;
+    } // Preserve authoritative graph validation for malformed objects.
+    if (edges.length > 16384) return;
+    while (
+      this.indexHints.size >= 4096 ||
+      this.hintEdges + edges.length > 16384
+    ) {
+      const key = this.indexHints.keys().next().value!;
+      this.hintEdges -= this.indexHints.get(key)!.edges.length;
+      this.indexHints.delete(key);
+    }
+    this.indexHints.set(o.oid, { type: o.type, size: o.data.length, edges });
+    this.hintEdges += edges.length;
+  }
+  async flush(concurrency: 2 | 4 = 2) {
     const objects = [...this.staged.values()];
-    // At most two canonical object buffers/collision reads at a time (8 MiB/object).
-    for (let i = 0; i < objects.length; i += 2)
+    // Normal writes retain two lanes. Streamed imports can use four lanes under an 8 MiB batch budget.
+    for (let i = 0; i < objects.length;) {
+      const batch = objects.slice(i, i + concurrency);
+      if (concurrency === 4)
+        while (
+          batch.length > 1 &&
+          batch.reduce((sum, o) => sum + o.data.length, 0) > LIMITS.object
+        )
+          batch.pop();
       await settledPair(
-        objects.slice(i, i + 2).map(async (o) => {
+        batch.map(async (o) => {
           const key = `repos/${this.repoId}/objects/${o.oid}`,
             data = canonical(o);
           if ((await sha1(data)) !== o.oid)
@@ -356,11 +391,15 @@ export class ObjectStore {
                 fail(409, "Conflicting stored Git object; refs unchanged");
             });
           }
+          // Hash/conditional-content verification and successful persistence precede this metadata hint.
+          this.rememberPersisted(o);
           this.shared?.put(this.repoId, o);
           this.staged.delete(o.oid);
           this.stagedSize -= o.data.length;
         }),
       );
+      i += batch.length;
+    }
   }
   async validateClosure(roots: string[]) {
     if (!this.index) {
@@ -370,7 +409,11 @@ export class ObjectStore {
     if (this.staged.size)
       fail(409, "Persist staged Git objects before indexing");
     await gitStage("object-index", () =>
-      this.index!.ensure(roots, (oid) => this.get(oid)),
+      this.index!.ensure(
+        roots,
+        (oid) => this.get(oid),
+        (oid) => this.indexHints.get(oid),
+      ),
     );
   }
   async walk(roots: string[], exclude = new Set<string>()) {

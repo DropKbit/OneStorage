@@ -1,4 +1,5 @@
 import { HTTPException } from "hono/http-exception";
+import { refOperations } from "../delegation";
 import { reportGitFailure } from "./diagnostics";
 import { fail } from "../security";
 import { GitRepository } from "./repository";
@@ -11,6 +12,7 @@ import {
   parseTag,
   LIMITS,
   isOid,
+  validRef,
 } from "./objects";
 import { pkt, FLUSH, DELIM, readPackets } from "./pkt";
 import { parsePack } from "./pack";
@@ -85,7 +87,11 @@ export async function advertise(
     }
   return gitResponse(service, concat(prefix, ...lines, FLUSH), true);
 }
-export async function receive(repo: GitRepository, data: Uint8Array) {
+export async function receive(
+  repo: GitRepository,
+  data: Uint8Array,
+  ingest?: () => Promise<void>,
+) {
   const { packets, offset } = readPackets(data, true);
   const lines = packets
     .filter((p): p is Uint8Array => p instanceof Uint8Array)
@@ -122,7 +128,28 @@ export async function receive(repo: GitRepository, data: Uint8Array) {
   let unpack = "ok",
     reason = "";
   try {
-    if (data.length > offset) {
+    if (ingest) {
+      // Reject known stale or forbidden writes before accepting a large upload; updates checks again before publication.
+      const seen = new Set<string>();
+      for (const command of commands) {
+        if (
+          !validRef(command.ref) ||
+          !/^refs\/(heads|tags|notes)\//.test(command.ref) ||
+          seen.has(command.ref)
+        )
+          fail(400, "Invalid or duplicate ref command");
+        seen.add(command.ref);
+        if ((repo.refs[command.ref] || "0".repeat(40)) !== command.old)
+          fail(409, "Reference changed concurrently");
+        const full =
+          repo.policy.namespace === "ephemeral"
+            ? "refs/namespaces/ephemeral/" + command.ref
+            : command.ref;
+        if (refOperations(full, repo.policy.rules).includes("no-push"))
+          fail(403, "Ref policy forbids update: " + full);
+      }
+      await ingest();
+    } else if (data.length > offset) {
       const objects = await parsePack(data.subarray(offset), (id) =>
         repo.store.get(id),
       );

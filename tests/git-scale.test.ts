@@ -418,3 +418,47 @@ test("stateless v0/v2 common-have negotiation sends only new objects and never A
     assert.ok(raw.length < 1024);
   }
 });
+
+test("verified write metadata avoids rereading an import after payload LRU eviction", async () => {
+  const f = fixture(),
+    store = f.fresh().store,
+    entries = [];
+  for (let i = 0; i < 2100; i++) {
+    const blob = await store.create("blob", bytes("content " + i));
+    entries.push({
+      name: "file" + String(i).padStart(4, "0"),
+      mode: "100644",
+      type: "blob" as const,
+      sha: blob.oid,
+    });
+  }
+  const tree = await store.create("tree", treeBytes(entries)),
+    tip = await commit(store, tree.oid);
+  await store.flush(4);
+  assert.equal(f.stats().writes, 2102);
+  await store.validateClosure([tip.oid]);
+  assert.equal(
+    f.stats().reads,
+    0,
+    "payload cache eviction does not force reading successfully written objects again",
+  );
+  assert.equal(f.index.walk([tip.oid], new Set()).size, 2102);
+});
+
+test("write hints still require a complete correctly typed object graph", async () => {
+  const f = fixture(),
+    store = f.fresh().store,
+    blob = await store.create("blob", bytes("not a tree")),
+    tip = await commit(store, blob.oid);
+  await store.flush(4);
+  await assert.rejects(store.validateClosure([tip.oid]), /type mismatch/);
+  assert.equal(f.index.get(tip.oid), undefined);
+  const missing = await commit(store, "a".repeat(40));
+  await store.flush(4);
+  await assert.rejects(
+    store.validateClosure([missing.oid]),
+    /Missing Git object/,
+  );
+  assert.equal(f.index.get(missing.oid), undefined);
+  assert.equal(f.values.has("refs.v2"), false);
+});

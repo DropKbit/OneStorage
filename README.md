@@ -16,7 +16,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.15.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.16.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 
@@ -94,14 +94,14 @@ E2E 仅运行于 localhost，默认 `owner` / `local-test-password-123`；可通
 | 项目                        | 上限/语义                                                |
 | --------------------------- | -------------------------------------------------------- |
 | 单 Git 对象 / LFS 文件      | 8 MiB / 16 MiB                                           |
-| 入站 / 流式出站 pack        | 16 MiB、2,000 对象 / 512 MiB、100,000 对象               |
-| 请求对象缓存 / 入站解压暂存 | 8 MiB LRU / 32 MiB，另有临时缓冲区                       |
+| 入站 / 流式出站 pack        | 64 MiB、25,000 对象 / 512 MiB、100,000 对象              |
+| 请求对象缓存 / 原生入站展开 | 8 MiB LRU / 256 MiB 总量，R2 暂存，另有临时缓冲区        |
 | Git 索引遍历 / 引用 / 深度  | 100,000 / 256 / 64；其他历史/目录算法仍有独立 5,000 预算 |
 | NDJSON 提交                 | 48 MiB 传输、32 MiB 解码、每块 4 MiB、每行 6 MiB         |
 | Diff / 搜索输出             | 4 MiB；搜索另有计算预算                                  |
 | 活跃仓库不可达对象          | 保留；删除整个仓库才异步清理                             |
 
-v0.12 使用仓库 DO 的持久化对象闭包索引和流式 pack；已验证历史不再反复读取 R2，新公共提交协商避免增量 fetch 重传历史。输出 pack 未做 delta 压缩，冷克隆仍逐对象读取 R2；平台 CPU/内存/子请求限制可能先触发。单次大导入的流式接收、大 Fork 与其他历史算法仍待扩展，见 [大仓库进展](docs/GIT-SCALE-v12.md)。没有 TB 级测试、总存储配额、跨服务一致备份或生产 SLA。
+v0.12 使用仓库 DO 的持久化对象闭包索引和流式 pack；已验证历史不再反复读取 R2，新公共提交协商避免增量 fetch 重传历史。输出 pack 未做 delta 压缩，冷克隆仍逐对象读取 R2；平台 CPU/内存/子请求限制可能先触发。v0.16 已加入原生入站流式接收和 R2 临时块；正式对象写入、冷克隆吞吐、大 Fork 与其他历史算法仍需扩展，见 [入站验证与边界](docs/GIT-RECEIVE-v16.md)。没有 TB 级测试、总存储配额、跨服务一致备份或生产 SLA。
 
 三方合并对多 merge-base 的 criss-cross 历史返回明确冲突；重命名检测保守且有限额。Blame 支持行/正则/函数范围及移动/复制块，但不复现全部 Git 语言驱动。公共 GitHub 是手动单向同步；通用上游不支持 LFS，GitHub App 的 LFS 限 16 MiB。私有 GitHub App 需要操作者提供真实安装信息，验证记录区分模拟提供方测试与实际联网测试。
 
@@ -112,3 +112,5 @@ v0.12 使用仓库 DO 的持久化对象闭包索引和流式 pack；已验证�
 [API](docs/API.md) · [SDK](docs/SDK.md) · [架构](docs/ARCHITECTURE.md) · [部署与恢复](docs/DEPLOYMENT.md) · [安全](SECURITY.md) · [贡献](CONTRIBUTING.md) · [示例](examples/README.md)
 
 Copyright © 2026 OneStorage contributors. [AGPL-3.0-only](LICENSE)。修改部署时请向交互用户提供相应源代码。与 Code Storage、GitLab、Cloudflare 无隶属关系。
+
+原生 Git 首次导入使用 R2 隔离区、流式 pack 校验与 DO 引用发布，见 [v0.16 入站设计与验证](docs/GIT-RECEIVE-v16.md)。旧上游解析器、Fork 和非原生 API 保留各自预算。

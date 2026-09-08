@@ -55,6 +55,11 @@ function fixture() {
     async delete(k: string | string[]) {
       for (const key of typeof k === "string" ? [k] : k) values.delete(key);
     },
+    async list({ prefix, limit = Infinity }: any) {
+      return new Map(
+        [...values].filter(([k]) => k.startsWith(prefix)).slice(0, limit),
+      );
+    },
     async setAlarm(time: number) {
       alarm = time;
     },

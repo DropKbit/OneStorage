@@ -137,3 +137,47 @@ test("large graph reads evict payloads while staging remains bounded", async () 
   );
   assert.equal(b.stats().active, 0);
 });
+
+test("streamed import write batches use four lanes only within their payload budget", async () => {
+  const b = bucket(),
+    store = new ObjectStore("r", b as any);
+  for (let i = 0; i < 8; i++) await store.create("blob", bytes("small " + i));
+  await store.flush(4);
+  assert.equal(b.stats().peak, 4);
+  assert.equal(b.stats().active, 0);
+  const largeBucket = bucket(),
+    large = new ObjectStore("large", largeBucket as any);
+  for (let i = 0; i < 3; i++) {
+    const data = new Uint8Array(5 * 1024 * 1024);
+    data[0] = i;
+    await large.create("blob", data);
+  }
+  await large.flush(4);
+  assert.equal(largeBucket.stats().peak, 1);
+  assert.equal(largeBucket.stats().active, 0);
+});
+
+test("a failed four-lane import write drains every started write before returning", async () => {
+  let active = 0,
+    started = 0,
+    completed = 0;
+  const b = {
+    put: async () => {
+      active++;
+      const position = ++started;
+      try {
+        if (position === 1) throw Error("permanent write failure");
+        await new Promise((r) => setTimeout(r, 10));
+        completed++;
+        return {};
+      } finally {
+        active--;
+      }
+    },
+  };
+  const store = new ObjectStore("r", b as any);
+  for (let i = 0; i < 4; i++) await store.create("blob", bytes(String(i)));
+  await assert.rejects(store.flush(4), /permanent write failure/);
+  assert.equal(active, 0);
+  assert.equal(completed, 3);
+});

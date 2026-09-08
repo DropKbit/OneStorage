@@ -1,4 +1,6 @@
 import { responseCompletion } from "./git/pack-stream";
+import { receiveStream } from "./git/receive-stream";
+import { collectIncoming } from "./git/incoming-area";
 import { gitStage, reportGitFailure } from "./git/diagnostics";
 import { GitObjectIndex } from "./git/object-index";
 import { checkProjectVersion, withProjectTransition } from "./project-version";
@@ -34,7 +36,7 @@ import { normalizePolicies } from "./delegation";
 import { parseCommitStream } from "./git/commit-stream";
 import { applyGitPatch } from "./git/patch";
 import { paginate } from "./git/forge-utils";
-import { advertise, receive, upload } from "./git/protocol";
+import { advertise, upload } from "./git/protocol";
 import { importSnapshot } from "./git/legacy";
 /** The per-repository DO serializes requests; immutable R2 objects precede atomic ref publication. */
 export class Repository extends DurableObject<Env> {
@@ -80,11 +82,20 @@ export class Repository extends DurableObject<Env> {
     }
   }
   async alarm() {
+    // An alarm has a 15-minute wall-clock budget. Never spend it waiting for an HTTP stream.
+    if (this.waiting) {
+      await this.ctx.storage.setAlarm(Date.now() + 30000);
+      return;
+    }
     const result = this.tail.then(async () => {
       if (await this.ctx.storage.get("deleted")) {
         this.objectCache.clear();
         return collectDeleted(this.env, this.ctx.storage);
       }
+      const incomingPending = await collectIncoming(
+        this.env.OBJECTS,
+        this.ctx.storage,
+      );
       for (const [key, pending] of await this.ctx.storage.list<{
         repo_id: string;
         mr_id: number;
@@ -133,6 +144,7 @@ export class Repository extends DurableObject<Env> {
         }
       }
       if (
+        incomingPending ||
         (await this.ctx.storage.list({ prefix: "event:", limit: 1 })).size ||
         (await this.ctx.storage.list({ prefix: "merge-projection:", limit: 1 }))
           .size
@@ -726,7 +738,7 @@ export class Repository extends DurableObject<Env> {
       );
     }
     if (path === "/git/git-receive-pack" && request.method === "POST")
-      return receive(repo, await boundedBody(request, LIMITS.pack));
+      return receiveStream(repo, request, this.env.OBJECTS, this.ctx.storage);
     if (path === "/git/git-upload-pack" && request.method === "POST") {
       const response = await upload(
         repo,

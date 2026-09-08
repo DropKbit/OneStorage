@@ -26,6 +26,7 @@ export interface IndexedObject {
   type: ObjectType;
   size: number;
 }
+export type PersistedObjectHint = IndexedObject & { edges: ObjectEdge[] };
 /** A per-DO integrity index. Presence is never an authorization or reachability grant. */
 export class GitObjectIndex {
   private sql: SqlStorage;
@@ -78,7 +79,11 @@ export class GitObjectIndex {
       );
     });
   }
-  async ensure(roots: string[], load: (oid: string) => Promise<GitObject>) {
+  async ensure(
+    roots: string[],
+    load: (oid: string) => Promise<GitObject>,
+    persistedHint?: (oid: string) => PersistedObjectHint | undefined,
+  ) {
     type Frame = {
       oid: string;
       type?: ObjectType;
@@ -102,11 +107,17 @@ export class GitObjectIndex {
         if (active.has(frame.oid)) fail(400, "Cyclic Git object graph");
         if (++visited > LIMITS.transferGraph)
           fail(413, "Git index validation budget exceeded");
-        const object = await load(frame.oid);
-        if (frame.type && object.type !== frame.type)
+        const hint = persistedHint?.(frame.oid);
+        if (hint) {
+          frame.value = { type: hint.type, size: hint.size };
+          frame.edges = hint.edges;
+        } else {
+          const object = await load(frame.oid);
+          frame.value = { type: object.type, size: object.data.length };
+          frame.edges = objectEdges(object);
+        }
+        if (frame.type && frame.value.type !== frame.type)
           fail(400, "Git object graph type mismatch");
-        frame.value = { type: object.type, size: object.data.length };
-        frame.edges = objectEdges(object);
         frame.offset = 0;
         active.add(frame.oid);
       }
