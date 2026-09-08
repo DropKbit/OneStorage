@@ -19,11 +19,6 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
-  "vars": {
-    "APP_ORIGIN": "",
-    "APPS_ORIGIN": "",
-    "WEBHOOK_ALLOWED_HOSTS": ""
-  },
   "d1_databases": [
     {
       "binding": "DB",
