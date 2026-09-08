@@ -1,3 +1,4 @@
+import { addAccountPaths } from "./account-openapi.mjs";
 import { addPlatformPaths } from "./platform-openapi.mjs";
 import { readFile, writeFile } from "node:fs/promises";
 const parity = JSON.parse(
@@ -274,6 +275,7 @@ for (const feature of parity.features) {
   (paths[path] ||= {})[method] = op;
 }
 addPlatformPaths(paths);
+addAccountPaths(paths);
 await writeFile(
   new URL("../public/openapi.json", import.meta.url),
   JSON.stringify(
@@ -281,7 +283,7 @@ await writeFile(
       openapi: "3.1.0",
       info: {
         title: "OneStorage",
-        version: "0.5.0",
+        version: "0.6.0",
         description:
           "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs.",
       },
@@ -289,6 +291,13 @@ await writeFile(
       paths,
       components: {
         securitySchemes: {
+          sessionCookie: {
+            type: "apiKey",
+            in: "cookie",
+            name: "onestorage_session",
+            description:
+              "Browser session; same-origin Origin header required for mutations.",
+          },
           bearerAuth: {
             type: "http",
             scheme: "bearer",

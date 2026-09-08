@@ -101,8 +101,8 @@ npm run deploy
 | MR 批准/要求修改、源/目标版本、CI 门禁、受保护分支 | v0.5 已实现，本地与生产验收通过 |
 | Issue 标签/里程碑/指派、发布、Wiki 历史、收藏/关注/通知 | v0.5 已实现，本地与生产验收通过 |
 | 跨 Fork MR、行级讨论/解决、代码所有者、合并队列、自动关闭 Issue | 仍待开发 |
-| 富文本 Markdown、图片/PDF/Notebook 预览、个人资料与活动页 | 仍待完善 |
-| 2FA、OAuth/OIDC、Cloudflare Access 登录、注册/找回、细粒度 deploy token | 仍待开发 |
+| 富文本 Markdown、图片/PDF/Notebook 预览、个人资料与活动页 | v0.6 实现 Markdown、栅格图片、资料与活动；PDF/Notebook 待开发 |
+| 2FA、OAuth/OIDC、Cloudflare Access 登录、注册/找回、细粒度 deploy token | v0.6 实现 TOTP/恢复码/会话管理；其余待开发 |
 | 项目转移/归档、跨项目搜索、Issue 看板/筛选/批量操作、Wiki 迁移 | 仍待开发 |
 | 仓库流水线配置、DAG/并行任务/调度、缓存、变量/密钥、npm/TS 构建 | 仍待开发 |
 | 包仓库、镜像仓库、扫描/质量报告、完整 GitLab YAML/API 兼容 | 仍待开发，不能宣称兼容 |

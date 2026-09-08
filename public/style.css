@@ -1162,3 +1162,89 @@ button.text {
   overflow-wrap: anywhere;
   font: inherit;
 }
+
+.markdown {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 1.2em 0 0.6em;
+}
+.markdown h1 {
+  font-size: 1.7rem;
+}
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0.8em 0;
+}
+.markdown ul,
+.markdown ol {
+  padding-left: 1.8em;
+}
+.markdown pre {
+  overflow: auto;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  white-space: pre;
+}
+.markdown code {
+  font-size: 0.9em;
+}
+.markdown blockquote {
+  margin: 1em 0;
+  padding-left: 16px;
+  border-left: 3px solid var(--border);
+}
+.markdown table {
+  border-collapse: collapse;
+  display: block;
+  overflow: auto;
+}
+.markdown td,
+.markdown th {
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+}
+.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+.markdown input[type="checkbox"] {
+  width: auto;
+  margin-right: 6px;
+}
+.authenticator-qr {
+  display: block;
+  width: 240px;
+  height: 240px;
+  max-width: 100%;
+  object-fit: contain;
+  background: white;
+  margin: 16px 0;
+}
+#enrollment pre,
+#recovery-result pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#recovery-result:not(:empty) {
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.image-preview {
+  padding: 24px;
+  text-align: center;
+}
+.image-preview img {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+}

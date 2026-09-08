@@ -1,4 +1,5 @@
-const collaboration = () => import("./collaboration.js?v=e62da110230df4c0");
+const account = () => import("./account.js?v=1efd29f8c34c0b77");
+const collaboration = () => import("./collaboration.js?v=a7655626e4eb214d");
 const platform = () => import("./manage.js?v=7bf783bc42bd4ec0");
 import {
   keyPage,
@@ -154,6 +155,51 @@ async function applyHighlight() {
   if (target.isConnected && html !== null) target.innerHTML = html;
 }
 
+async function applyMarkdown(context = {}) {
+  const targets = [...document.querySelectorAll("[data-markdown]")].filter(
+    (el) => !el.dataset.rendered,
+  );
+  if (!targets.length) return;
+  const { renderMarkdown } = await import("./markdown.js?v=8019fb73893e5723");
+  for (const el of targets) {
+    if (!el.isConnected) continue;
+    const raw = el.textContent;
+    el.innerHTML = renderMarkdown(raw, {
+      ...context,
+      base: el.dataset.base || context.base,
+      ref: el.dataset.ref || context.ref,
+      path: el.dataset.file || "README.md",
+    });
+    el.dataset.rendered = "1";
+  }
+  const code = targets.flatMap((el) => [
+    ...el.querySelectorAll('pre code[class*="language-"]'),
+  ]);
+  if (code.length) {
+    const { highlightCode } = await import("./highlight.js?v=42546bacb8cbde94");
+    for (const el of code) {
+      const lang = [...el.classList]
+          .find((c) => c.startsWith("language-"))
+          .slice(9),
+        aliases = {
+          javascript: "js",
+          typescript: "ts",
+          python: "py",
+          bash: "sh",
+          shell: "sh",
+          rust: "rs",
+          markdown: "md",
+          cpp: "cpp",
+          yaml: "yaml",
+        };
+      const html = highlightCode(
+        el.textContent,
+        "file." + (aliases[lang] || lang),
+      );
+      if (el.isConnected && html !== null) el.innerHTML = html;
+    }
+  }
+}
 function loadingContent(title = "项目") {
   return `<div class="titlebar"><h1>${esc(title)}</h1></div><section class="panel page-loading" aria-busy="true" aria-label="正在加载${esc(title)}"><div class="skeleton skeleton-heading"></div>${'<div class="skeleton skeleton-row"></div>'.repeat(5)}<span class="sr-only" role="status">正在加载${esc(title)}</span></section>`;
 }
@@ -221,7 +267,7 @@ window.addEventListener("popstate", render);
 const link = (path, label, cls = "") =>
   `<a data-link href="${esc(path === "/" && user && selectedSpace ? "/?namespace=" + encodeURIComponent(selectedSpace) : path)}" class="${cls}">${label}</a>`;
 function layout(content, crumb = "项目", active = "repos") {
-  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || (booting ? "工作空间" : "公开空间"))}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div>${user ? '<div class="space-switch"><label for="workspace-select">当前空间</label><select id="workspace-select" aria-label="切换工作空间"></select></div>' : ""}<div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user ? link("/spaces", icon("users") + "工作空间", `navlink ${active === "spaces" ? "active" : ""}`) : ""}${user ? link("/notifications", icon("repo") + "通知", "navlink") : ""}${user?.admin ? link("/admin/users", icon("users") + "管理员后台", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.5.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
+  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || (booting ? "工作空间" : "公开空间"))}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div>${user ? '<div class="space-switch"><label for="workspace-select">当前空间</label><select id="workspace-select" aria-label="切换工作空间"></select></div>' : ""}<div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user ? link("/spaces", icon("users") + "工作空间", `navlink ${active === "spaces" ? "active" : ""}`) : ""}${user ? link("/settings/account", icon("key") + "账户安全", "navlink") + link("/settings/profile", icon("users") + "个人资料", "navlink") : ""}${user ? link("/notifications", icon("repo") + "通知", "navlink") : ""}${user?.admin ? link("/admin/users", icon("users") + "管理员后台", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.5.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
   updateWorkspaceControl();
   document.querySelector("#logout")?.addEventListener("click", async () => {
     await api("/logout", { method: "POST" });
@@ -263,7 +309,7 @@ const textarea = (label, name, value = "", cls = "") =>
   `<div class="field"><label for="${name}">${label}</label><textarea name="${name}" id="${name}" class="${cls}">${esc(value)}</textarea></div>`;
 function authPage() {
   const initializing = setup;
-  root.innerHTML = `<main class="auth"><section class="auth-story"><a href="/" class="brand" data-link><img src="/favicon.svg" alt="">OneStorage</a><div><h1>代码的归属，<br><span>由你定义。</span></h1><p>从第一个 commit 到下一次合并。把仓库、讨论与协作，留在自己的空间。</p><div class="lines">$ git add .<br>$ git commit -m "a new beginning"<br>$ git push origin main<br><span>↳ git.1s.hk</span></div></div><div class="auth-footer"><a href="/source.tar.gz" download>OPEN SOURCE · AGPL-3.0 ↓</a></div></section><section class="auth-form"><form id="login-form"><h2>${initializing ? "创建你的工作空间" : "欢迎回来"}</h2><p class="muted">${initializing ? "使用部署时配置的初始化密钥创建管理员。" : "登录 OneStorage，继续你的下一个想法。"}</p>${initializing ? field("初始化密钥", "secret", "password") : ""}${field("用户名", "username")}${field("密码", "password", "password", "", "至少 12 个字符")}<button type="submit" class="btn primary">${initializing ? "初始化 OneStorage" : "登录工作空间"} →</button>${!initializing ? link("/", "浏览公开项目 →") : ""}</form></section></main>`;
+  root.innerHTML = `<main class="auth"><section class="auth-story"><a href="/" class="brand" data-link><img src="/favicon.svg" alt="">OneStorage</a><div><h1>代码的归属，<br><span>由你定义。</span></h1><p>从第一个 commit 到下一次合并。把仓库、讨论与协作，留在自己的空间。</p><div class="lines">$ git add .<br>$ git commit -m "a new beginning"<br>$ git push origin main<br><span>↳ git.1s.hk</span></div></div><div class="auth-footer"><a href="/source.tar.gz" download>OPEN SOURCE · AGPL-3.0 ↓</a></div></section><section class="auth-form"><form id="login-form"><h2>${initializing ? "创建你的工作空间" : "欢迎回来"}</h2><p class="muted">${initializing ? "使用部署时配置的初始化密钥创建管理员。" : "登录 OneStorage，继续你的下一个想法。"}</p>${initializing ? field("初始化密钥", "secret", "password") : ""}${field("用户名", "username")}${field("密码", "password", "password", "", "至少 12 个字符")}${!initializing ? '<div class="field"><label>双重验证（已启用时填写）<input name="otp" maxlength="64" autocomplete="one-time-code" placeholder="验证码或恢复码"></label></div>' : ""}<button type="submit" class="btn primary">${initializing ? "初始化 OneStorage" : "登录工作空间"} →</button>${!initializing ? link("/", "浏览公开项目 →") : ""}</form></section></main>`;
   bindForm("#login-form", async (data) => {
     if (initializing) {
       await api("/setup", { method: "POST", body: data });
@@ -271,7 +317,11 @@ function authPage() {
     }
     user = await api("/login", {
       method: "POST",
-      body: { username: data.username, password: data.password },
+      body: {
+        username: data.username,
+        password: data.password,
+        otp: data.otp || "",
+      },
     });
     await reloadSpaces();
     go("/");
@@ -392,13 +442,13 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
     return;
   }
   const readme = readmeFile?.content
-    ? `<section class="panel readme"><div class="panelhead"><strong>README.md</strong></div><pre>${esc(readmeFile.content)}</pre></section>`
+    ? `<section class="panel readme"><div class="panelhead"><strong>README.md</strong></div><div class="markdown detail-body" data-markdown data-base="${esc(base)}" data-ref="${esc(data.ref)}" data-file="README.md">${esc(readmeFile.content)}</div></section>`
     : "";
   if (version !== routeVersion) return;
   const nav = `<div class="toolbar"><div class="actionbar"><select class="select-branch" id="branch" aria-label="选择分支">${branches.map((b) => `<option ${b.name === ref ? "selected" : ""} value="${esc(b.name)}">⑂ ${esc(b.name)}</option>`).join("")}</select><span class="muted">${esc(p || "/")}</span></div>${writeable(r) ? link(`${base}/edit?ref=${encodeURIComponent(ref)}${blob ? "&path=" + encodeURIComponent(p) : ""}`, blob ? "编辑文件" : "新建文件", "btn small") : ""}</div>`;
   const up = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
   const list = blob
-    ? `<div class="panelhead">${esc(p)}<span class="muted">${data.size} bytes</span></div>${data.binary ? '<div class="empty"><p>二进制文件，请通过 Git 下载。</p></div>' : codeViewer(data.content, p)}`
+    ? `<div class="panelhead">${esc(p)}<span class="muted">${data.size} bytes</span></div>${/\.(png|jpe?g|gif|webp)$/i.test(p) ? `<div class="image-preview"><img id="blob-preview" alt="${esc(p)}" src="${esc("/api" + ap + "/preview?" + new URLSearchParams({ ref: data.ref, path: p }))}"><p class="muted" id="preview-caption">图片预览 · ${esc(p)}</p></div>` : data.binary ? '<div class="empty"><p>二进制文件，请通过 Git 下载。</p></div>' : /\.md$/i.test(p) ? `<div class="markdown detail-body" data-markdown data-base="${esc(base)}" data-ref="${esc(data.ref)}" data-file="${esc(p)}">${esc(data.content)}</div><details><summary>查看源码</summary>${codeViewer(data.content, p)}</details>` : codeViewer(data.content, p)}`
     : `<div class="panelhead"><span>${link(base + "?ref=" + encodeURIComponent(ref), esc(r.name))}${p ? " / " + esc(p) : ""}</span><code>${esc(data.ref.slice(0, 8))}</code></div>${p ? `<div class="file-row">${link(`${base}?ref=${encodeURIComponent(ref)}&path=${encodeURIComponent(up)}`, "← 上一级")}<span></span></div>` : ""}${data.entries
         .sort(
           (a, b) =>
@@ -417,6 +467,16 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
       `<div class="grid"><div><div class="panel">${list}</div>${readme}</div>${aside}</div>`,
     clone,
   );
+  const preview = document.querySelector("#blob-preview");
+  if (preview) {
+    const failed = () => {
+      preview.hidden = true;
+      document.querySelector("#preview-caption").textContent =
+        "无法预览：仅支持有效的 PNG、JPEG、GIF、WebP 图片，且不超过 5 MiB。";
+    };
+    preview.addEventListener("error", failed);
+    if (preview.complete && !preview.naturalWidth) failed();
+  }
   copyButton(r.clone_url);
   applyHighlight().catch(() => {});
   document.querySelector("#branch").onchange = (e) =>
@@ -492,7 +552,7 @@ async function issuesPage(r, base, ap, sub, version) {
     repoLayout(
       r,
       "issues",
-      `<div class="titlebar"><div><h2>#${i.id} ${esc(i.title)}</h2><span class="pill ${i.state === "open" ? "green" : "purple"}">${i.state === "open" ? "开放中" : "已关闭"}</span> <span class="muted">${esc(i.author)} · ${date(i.created_at)}</span></div>${user && (user.id === i.author_id || ["owner", "maintainer"].includes(r.role)) ? '<button class="btn" id="toggle">' + (i.state === "open" ? "关闭 Issue" : "重新打开") + "</button>" : ""}</div><div class="panel"><div class="detail-body">${esc(i.body || "暂无描述。")}</div>${i.comments.map((c) => `<div class="comment"><strong>${esc(c.author)}</strong> <span class="muted">${date(c.created_at)}</span><p>${esc(c.body)}</p></div>`).join("")}${user ? `<form class="form" id="comment">${textarea("参与讨论", "body")}<button class="btn primary" type="submit">发表评论</button></form>` : ""}</div>`,
+      `<div class="titlebar"><div><h2>#${i.id} ${esc(i.title)}</h2><span class="pill ${i.state === "open" ? "green" : "purple"}">${i.state === "open" ? "开放中" : "已关闭"}</span> <span class="muted">${esc(i.author)} · ${date(i.created_at)}</span></div>${user && (user.id === i.author_id || ["owner", "maintainer"].includes(r.role)) ? '<button class="btn" id="toggle">' + (i.state === "open" ? "关闭 Issue" : "重新打开") + "</button>" : ""}</div><div class="panel"><div class="detail-body markdown" data-markdown>${esc(i.body || "暂无描述。")}</div>${i.comments.map((c) => `<div class="comment"><strong>${esc(c.author)}</strong> <span class="muted">${date(c.created_at)}</span><div class="markdown" data-markdown>${esc(c.body)}</div></div>`).join("")}${user ? `<form class="form" id="comment">${textarea("参与讨论", "body")}<button class="btn primary" type="submit">发表评论</button></form>` : ""}</div>`,
     );
     document.querySelector("#toggle")?.addEventListener("click", async () => {
       try {
@@ -627,7 +687,7 @@ async function tokensPage(version) {
   const { tokens } = await api("/tokens");
   if (version !== routeVersion) return;
   layout(
-    `<div class="titlebar"><div><h1>访问令牌</h1><p class="muted">为 Git 客户端和自动化工具创建凭证。</p></div></div><div class="info">Git 通过 HTTPS 使用你的用户名和令牌认证。令牌只显示一次；可随时撤销。</div><div id="token-result"></div><div class="stack"><details class="panel"><summary class="panelhead">修改账号密码</summary><form class="form" id="change-password">${field("当前密码", "current_password", "password")}${field("新密码", "new_password", "password", "", "修改后将撤销所有会话与访问令牌，需要重新登录。")}<button type="submit" class="btn primary">修改密码</button></form></details><div class="panel"><form class="form" id="new-token"><h2>创建令牌</h2>${field("名称", "name", "text", "", "例如：MacBook、CI read-only")}<div class="inline"><div class="field"><label for="scope">权限</label><select id="scope" name="scope"><option value="write">读写 · 使用账号已有权限</option><option value="read">只读</option></select></div><div class="field"><label for="days">有效期</label><select id="days" name="days"><option value="30">30 天</option><option value="90" selected>90 天</option><option value="365">365 天</option></select></div></div><button class="btn primary" type="submit">生成令牌</button></form></div><div class="panel"><div class="panelhead"><strong>已有令牌</strong></div>${tokens.length ? tokens.map((t) => `<div class="token-row"><div><strong>${esc(t.name)}</strong><p class="muted">${t.scope === "read" ? "只读" : "读写"} · 到期 ${new Date(t.expires_at).toLocaleDateString("zh-CN")}</p></div><button class="btn small danger" data-revoke="${t.id}">撤销</button></div>`).join("") : '<div class="empty"><p>暂无访问令牌。</p></div>'}</div></div>`,
+    `<div class="titlebar"><div><h1>访问令牌</h1><p class="muted">为 Git 客户端和自动化工具创建凭证。</p></div></div><div class="info">Git 通过 HTTPS 使用你的用户名和令牌认证。令牌只显示一次；可随时撤销。</div><div id="token-result"></div><div class="stack"><details class="panel"><summary class="panelhead">修改账号密码</summary><form class="form" id="change-password">${field("当前密码", "current_password", "password")}${field("新密码", "new_password", "password", "", "修改后将撤销所有会话与访问令牌，需要重新登录。")}<label>双重验证码（已启用时填写）<input name="otp" maxlength="64" autocomplete="one-time-code"></label><button type="submit" class="btn primary">修改密码</button></form></details><div class="panel"><form class="form" id="new-token"><h2>创建令牌</h2>${field("名称", "name", "text", "", "例如：MacBook、CI read-only")}<div class="inline"><div class="field"><label for="scope">权限</label><select id="scope" name="scope"><option value="write">读写 · 使用账号已有权限</option><option value="read">只读</option></select></div><div class="field"><label for="days">有效期</label><select id="days" name="days"><option value="30">30 天</option><option value="90" selected>90 天</option><option value="365">365 天</option></select></div></div><label>双重验证码（已启用时填写）<input name="otp" maxlength="64" autocomplete="one-time-code"></label><button class="btn primary" type="submit">生成令牌</button></form></div><div class="panel"><div class="panelhead"><strong>已有令牌</strong></div>${tokens.length ? tokens.map((t) => `<div class="token-row"><div><strong>${esc(t.name)}</strong><p class="muted">${t.scope === "read" ? "只读" : "读写"} · 到期 ${new Date(t.expires_at).toLocaleDateString("zh-CN")}</p></div><button class="btn small danger" data-revoke="${t.id}">撤销</button></div>`).join("") : '<div class="empty"><p>暂无访问令牌。</p></div>'}</div></div>`,
     "访问令牌",
     "tokens",
   );
@@ -718,7 +778,30 @@ async function render() {
       current: () => version === routeVersion,
       reloadSpaces,
       user,
+      qr: () => import("./qr.js?v=9bb5494c3ba088b6"),
+      markdown: applyMarkdown,
     };
+    if (path === "/settings/account") {
+      if (!user) return go("/login");
+      await (await account()).securityPage(helpers);
+      return;
+    }
+    if (path === "/settings/profile") {
+      if (!user) return go("/login");
+      await (await account()).profileSettings(helpers);
+      return;
+    }
+    if (path === "/profile") {
+      await (
+        await account()
+      ).profilePage(
+        helpers,
+        new URLSearchParams(location.search).get("user") ||
+          user?.username ||
+          "",
+      );
+      return;
+    }
     if (path === "/notifications") {
       await (await collaboration()).notificationsPage(helpers);
       return;
@@ -779,6 +862,8 @@ async function render() {
     else if (tab === "members") await membersPage(r, base, ap, version);
     else if (tab === "settings") await settingsPage(r, base, ap, version);
     else throw Error("页面不存在");
+    if (version === routeVersion)
+      applyMarkdown({ base, ref: r.default_branch }).catch(() => {});
     if (version === routeVersion)
       (await collaboration()).social(r, ap, helpers).catch(() => {});
   } catch (e) {

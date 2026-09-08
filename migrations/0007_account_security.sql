@@ -1,0 +1,5 @@
+ALTER TABLE users ADD COLUMN auth_epoch INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE user_mfa (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, version TEXT NOT NULL, secret TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)), expires_at INTEGER NOT NULL, last_counter INTEGER NOT NULL DEFAULT -1, operation TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE mfa_recovery (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, version TEXT NOT NULL, hash TEXT NOT NULL, PRIMARY KEY(user_id,hash));
+CREATE TABLE user_profiles (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, display_name TEXT NOT NULL DEFAULT '', bio TEXT NOT NULL DEFAULT '', location TEXT NOT NULL DEFAULT '', website TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TRIGGER user_auth_epoch AFTER UPDATE OF password,disabled ON users WHEN OLD.password!=NEW.password OR OLD.disabled!=NEW.disabled BEGIN UPDATE users SET auth_epoch=auth_epoch+1 WHERE id=NEW.id; END;

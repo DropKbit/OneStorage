@@ -81,7 +81,7 @@ test("workspace inheritance replaces creator ownership and revocation takes effe
   assert.throws(
     () =>
       db.exec(
-        "INSERT INTO users VALUES('x','team','hash',0,datetime('now'),0)",
+        "INSERT INTO users(id,username,password,admin,created_at,disabled) VALUES('x','team','hash',0,datetime('now'),0)",
       ),
     /Namespace/,
   );

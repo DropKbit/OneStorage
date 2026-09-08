@@ -40,3 +40,8 @@ v0.2 只有 PAT/会话鉴权、heads/tags、基本读写、快进合并、文本
 ## Cloudflare 原生 GitLab/Gogs 持续目标
 
 以 [v0.5 能力与差距矩阵](CLOUD-NATIVE-v05.md) 为当前状态，逐步补齐跨 Fork 审阅、身份安全、Markdown/预览、完整项目协作及原生构建。v0.5 发布不表示总目标完成。
+
+
+## v0.6 账户与展示
+
+本轮实现见 [ACCOUNT-v06.md](ACCOUNT-v06.md)：TOTP/恢复码、会话撤销、个人资料/权限过滤活动、Markdown 与栅格图片预览。其余差距继续追踪，不以阶段发布结束总目标。

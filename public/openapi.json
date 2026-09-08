@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -6543,10 +6543,632 @@
           }
         }
       }
+    },
+    "/api/account/security": {
+      "get": {
+        "operationId": "account_security",
+        "summary": "account security",
+        "description": "Read authenticator status and remaining recovery-code count. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/mfa/setup": {
+      "post": {
+        "operationId": "setup_authenticator",
+        "summary": "setup authenticator",
+        "description": "Verify current password and return a ten-minute enrollment secret and otpauth URI. Never log the response. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/mfa/enable": {
+      "post": {
+        "operationId": "enable_authenticator",
+        "summary": "enable authenticator",
+        "description": "Confirm possession. Returns ten recovery codes once and revokes other browser sessions. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "pattern": "^[0-9]{6}$"
+                  }
+                },
+                "required": [
+                  "version",
+                  "otp"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/mfa/recovery": {
+      "post": {
+        "operationId": "rotate_recovery_codes",
+        "summary": "rotate recovery codes",
+        "description": "Verify password and fresh factor, invalidate old recovery codes, return ten new codes once. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "password",
+                  "otp"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/mfa/disable": {
+      "post": {
+        "operationId": "disable_authenticator",
+        "summary": "disable authenticator",
+        "description": "Verify password and fresh factor, disable MFA and revoke other browser sessions. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "password",
+                  "otp"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/sessions": {
+      "get": {
+        "operationId": "list_sessions",
+        "summary": "list sessions",
+        "description": "List up to 100 active browser sessions, without credential hashes. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/sessions/{id}": {
+      "delete": {
+        "operationId": "revoke_session",
+        "summary": "revoke session",
+        "description": "Revoke one session owned by the current user. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/profile": {
+      "get": {
+        "operationId": "read_own_profile",
+        "summary": "read own profile",
+        "description": "Read editable public profile fields. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      },
+      "put": {
+        "operationId": "update_profile",
+        "summary": "update profile",
+        "description": "Replace public profile fields. Website must use HTTP(S), without embedded credentials. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "display_name": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "bio": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "location": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "website": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/profiles/{username}": {
+      "get": {
+        "operationId": "public_profile",
+        "summary": "public profile",
+        "description": "Read public profile and up to 50 repositories/activity entries visible to the viewer. Disabled users return 404. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Account"
+        ],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/preview": {
+      "get": {
+        "operationId": "preview_image",
+        "summary": "preview image",
+        "description": "Read a Git blob as PNG, JPEG, GIF or WebP using byte signatures. Requires repository read access; private no-store, 5 MiB maximum. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "tags": [
+          "Repository"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Session, role or verification required"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
     }
   },
   "components": {
     "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "onestorage_session",
+        "description": "Browser session; same-origin Origin header required for mutations."
+      },
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",

@@ -1,3 +1,10 @@
+import {
+  registerAccount,
+  mfaState,
+  consumeFactor,
+  stepUp,
+  passwordProof,
+} from "./account";
 import { registerCollaboration } from "./collaboration";
 import { registerCIRoutes } from "./ci";
 import { repositoryRole, roleRank } from "./access";
@@ -242,6 +249,9 @@ const staticPaths = new Set([
   "/forge.js",
   "/manage.js",
   "/collaboration.js",
+  "/account.js",
+  "/markdown.js",
+  "/qr.js",
   "/highlight.js",
   "/THIRD_PARTY_LICENSES.txt",
   "/style.css",
@@ -351,10 +361,11 @@ app.use("*", async (c, next) => {
   await next();
 });
 registerIdentityRoutes(app);
+registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.5.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.6.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -411,6 +422,7 @@ app.post("/api/login", async (c) => {
     z.object({
       username: z.string().min(1).max(48),
       password: z.string().max(128),
+      otp: z.string().max(64).default(""),
     }),
   );
   const now = Date.now(),
@@ -427,7 +439,7 @@ app.post("/api/login", async (c) => {
     fail(429, "Too many sign-in attempts; retry in ten minutes");
   const user = await c.env.DB.prepare("SELECT * FROM users WHERE username=?")
     .bind(b.username.toLowerCase())
-    .first<User & { password: string; disabled: number }>();
+    .first<User & { password: string; disabled: number; auth_epoch: number }>();
   const valid = await verifyPassword(
     b.password,
     user?.password ||
@@ -435,13 +447,36 @@ app.post("/api/login", async (c) => {
   );
   if (!user || user.disabled || !valid)
     fail(401, "Invalid username or password");
+  const mfa = await mfaState(c.env, user.id);
+  if (mfa?.enabled) {
+    if (!b.otp)
+      return c.json(
+        {
+          error: "Authenticator or recovery code required",
+          mfa_required: true,
+        },
+        401,
+      );
+    if (!(await consumeFactor(c.env, user.id, b.otp, mfa.version)))
+      fail(401, "Invalid or already used verification code");
+  }
   const token = randomToken(),
     hash = await digest(token);
-  await c.env.DB.prepare(
-    "INSERT INTO credentials(hash,id,user_id,name,kind,expires_at) VALUES(?,?,?,'Browser session','session',?)",
+  const issued = await c.env.DB.prepare(
+    "INSERT INTO credentials(hash,id,user_id,name,kind,expires_at) SELECT ?,?,?,'Browser session','session',? WHERE EXISTS(SELECT 1 FROM users WHERE id=? AND password=? AND auth_epoch=? AND disabled=0)",
   )
-    .bind(hash, crypto.randomUUID(), user.id, now + 7 * 86400000)
+    .bind(
+      hash,
+      crypto.randomUUID(),
+      user.id,
+      now + 7 * 86400000,
+      user.id,
+      user.password,
+      user.auth_epoch,
+    )
     .run();
+  if (!issued.meta.changes)
+    fail(409, "Account security changed; sign in again");
   setCookie(c, "onestorage_session", token, {
     httpOnly: true,
     secure: c.env.APP_ORIGIN.startsWith("https:"),
@@ -474,20 +509,28 @@ app.post("/api/password", async (c) => {
     z.object({
       current_password: z.string().max(128),
       new_password: z.string().min(12).max(128),
+      otp: z.string().max(64).default(""),
     }),
   );
-  const stored = await c.env.DB.prepare("SELECT password FROM users WHERE id=?")
-    .bind(u.id)
-    .first<{ password: string }>();
-  if (!stored || !(await verifyPassword(b.current_password, stored.password)))
-    fail(403, "Current password is incorrect");
-  await c.env.DB.batch([
-    c.env.DB.prepare("UPDATE users SET password=? WHERE id=?").bind(
-      await passwordHash(b.new_password),
+  const stored = await passwordProof(c, b.current_password);
+  await stepUp(c, b.otp);
+  const newHash = await passwordHash(b.new_password);
+  const changed = await c.env.DB.batch([
+    c.env.DB.prepare(
+      "UPDATE users SET password=? WHERE id=? AND password=? AND auth_epoch=? AND disabled=0 AND EXISTS(SELECT 1 FROM credentials WHERE hash=? AND user_id=users.id AND kind='session' AND expires_at>?)",
+    ).bind(
+      newHash,
       u.id,
+      stored.password,
+      stored.auth_epoch,
+      c.get("credential"),
+      Date.now(),
     ),
-    c.env.DB.prepare("DELETE FROM credentials WHERE user_id=?").bind(u.id),
+    c.env.DB.prepare(
+      "DELETE FROM credentials WHERE user_id=? AND EXISTS(SELECT 1 FROM users WHERE id=? AND password=?)",
+    ).bind(u.id, u.id, newHash),
   ]);
+  if (!changed[0].meta.changes) fail(409, "Password changed; sign in again");
   deleteCookie(c, "onestorage_session", { path: "/" });
   return c.json({ ok: true });
 });
@@ -531,12 +574,20 @@ app.post("/api/tokens", async (c) => {
       name: z.string().trim().min(1).max(80),
       scope: z.enum(["read", "write"]).default("write"),
       days: z.number().int().min(1).max(365).default(90),
+      otp: z.string().max(64).default(""),
     }),
   );
+  const snapshot = await c.env.DB.prepare(
+    "SELECT auth_epoch FROM users WHERE id=? AND disabled=0",
+  )
+    .bind(u.id)
+    .first<{ auth_epoch: number }>();
+  if (!snapshot) fail(401, "Sign in required");
+  await stepUp(c, b.otp);
   const token = randomToken(),
     id = crypto.randomUUID();
-  await c.env.DB.prepare(
-    "INSERT INTO credentials(hash,id,user_id,name,kind,scope,expires_at) VALUES(?,?,?,?,'pat',?,?)",
+  const minted = await c.env.DB.prepare(
+    "INSERT INTO credentials(hash,id,user_id,name,kind,scope,expires_at) SELECT ?,?,?,?,'pat',?,? WHERE EXISTS(SELECT 1 FROM users u JOIN credentials c ON c.user_id=u.id WHERE u.id=? AND u.auth_epoch=? AND u.disabled=0 AND c.hash=? AND c.kind='session' AND c.expires_at>?)",
   )
     .bind(
       await digest(token),
@@ -545,8 +596,13 @@ app.post("/api/tokens", async (c) => {
       b.name,
       b.scope,
       Date.now() + b.days * 86400000,
+      u.id,
+      snapshot.auth_epoch,
+      c.get("credential"),
+      Date.now(),
     )
     .run();
+  if (!minted.meta.changes) fail(409, "Account changed; sign in again");
   await audit(c, "token.create", null, b.name);
   return c.json({ id, token }, 201);
 });
@@ -809,6 +865,33 @@ app.get("/api/repo-url/:id", async (c) => {
 });
 registerCIRoutes(app, { access: repoAccess, audit });
 registerCollaboration(app, { access: repoAccess, engine: engineJSON, audit });
+app.get("/api/repos/:namespace/:repo/preview", async (c) => {
+  const r = await repoAccess(c),
+    response = await engine(c, r, "/file" + new URL(c.req.url).search);
+  if (!response.ok) return response;
+  const bytes = await boundedBody(response, 5 * 1024 * 1024),
+    is = (start: number, values: number[]) =>
+      values.every((x, i) => bytes[start + i] === x);
+  const mime = is(0, [137, 80, 78, 71, 13, 10, 26, 10])
+    ? "image/png"
+    : is(0, [255, 216, 255])
+      ? "image/jpeg"
+      : is(0, [71, 73, 70, 56]) &&
+          (bytes[4] === 55 || bytes[4] === 57) &&
+          bytes[5] === 97
+        ? "image/gif"
+        : is(0, [82, 73, 70, 70]) && is(8, [87, 69, 66, 80])
+          ? "image/webp"
+          : null;
+  if (!mime) fail(400, "Preview supports PNG, JPEG, GIF and WebP images");
+  return new Response(bytes as BodyInit, {
+    headers: {
+      "content-type": mime,
+      "cache-control": "private, no-store",
+      "x-content-type-options": "nosniff",
+    },
+  });
+});
 registerForgeRoutes(app, { access: repoAccess, engine, audit });
 registerSyncRoutes(app, { access: repoAccess, engine, audit });
 for (const operation of [
