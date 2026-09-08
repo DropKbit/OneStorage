@@ -17,7 +17,14 @@ const migration = run("npx", [
 ]);
 migration.on("exit", (code) => {
   if (code) return process.exit(code);
-  run("npx", ["wrangler", "dev", "--config", "wrangler.local.jsonc"]);
+  run("npx", [
+    "wrangler",
+    "dev",
+    "--config",
+    "wrangler.local.jsonc",
+    "--config",
+    "wrangler.build.jsonc",
+  ]);
 });
 for (const signal of ["SIGINT", "SIGTERM"])
   process.on(signal, () => {

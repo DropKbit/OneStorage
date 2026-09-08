@@ -11,6 +11,7 @@ const files = [
   "wrangler.jsonc",
   "wrangler.local.jsonc",
   "wrangler.apps.jsonc",
+  "wrangler.build.jsonc",
   "README.md",
   "LICENSE",
   "SECURITY.md",

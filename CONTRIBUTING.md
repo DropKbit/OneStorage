@@ -4,7 +4,7 @@ OneStorage accepts contributions under AGPL-3.0-only.
 
 1. Read `docs/ARCHITECTURE.md`, particularly R2-before-refs ordering and authorization.
 2. Install Node.js 22.13+ and npm. Native Git and tar are required for tests, not the service runtime.
-3. Run `npm ci` and `npm run dev`. There is only one local server, Wrangler on port 8787.
+3. Run `npm ci` and `npm run dev`. Wrangler starts the Git service on 8787 and the private WASM compiler service together. `npm run dev:build` can run the compiler separately on 8788.
 4. For protocol/storage/auth changes, run `npm run check`, `npm run test:e2e` and `npm run build:production`. Use native Git as an independent compatibility oracle and add focused failure regressions.
 5. Format with `npm run format`. Describe behavior, verification and migration impact. Add numbered SQL migrations instead of editing applied ones.
 
@@ -25,3 +25,5 @@ For scheduled CI changes, run `npm run test:schedules` and `npm run test:schedul
 For CI variables, run `npm run test:variables` (real Worker and shipped external Runner, lease/rotation/log masking) and `npm run test:variable-ui` (write-only values, edits, permissions, mobile). The same fixture cleanup and remote opt-in rules apply. Never use real deployment credentials as test variable values.
 
 For shared CI caches, run `npm run test:caches` and `npm run test:cache-ui`. Verify real Worker and shipped external Runner reuse, failed workflow isolation, generation invalidation, lease rejection, bounded archive extraction, quota and eventual R2 reclamation. Wait for all fixtures to finish cleanup before editing runtime files or deploying.
+
+For native TypeScript/npm builds, run `npm run test:builds` with a local application gateway connected to the same local D1/R2 (`TEST_APPS_ORIGIN`, default localhost:8789). See `docs/CI-BUILDS-v22.md` for service deployment order, dependency restrictions and acceptance. Never connect a local fixture gateway to production storage.

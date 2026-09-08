@@ -201,6 +201,10 @@ export function addPlatformPaths(paths) {
         operation.description +=
           " A miss returns JSON {hit:false}; a hit is application/gzip with Content-Length and X-Cache-SHA256. All responses are no-store.";
     }
+    if (id === "ci_save_config" || id === "ci_config") {
+      operation.description =
+        "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 public registry tarballs. Does not run shell/npm lifecycle scripts. See docs/CI-BUILDS-v22.md for limits and deploy artifact configuration.";
+    }
     if (id.includes("variable")) {
       operation.description =
         "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.";

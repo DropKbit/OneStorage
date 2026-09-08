@@ -1,4 +1,5 @@
 import { cacheSchema } from "./ci-cache-schema";
+import { buildStep } from "./ci-build-schema";
 import { variableKey, jobEnvironment } from "./ci-variable-schema";
 import { z } from "zod";
 import { branch } from "./security";
@@ -39,6 +40,7 @@ export const executionSchema = z
       .array(
         z.discriminatedUnion("type", [
           cloudStep,
+          buildStep,
           z.object({
             type: z.literal("run"),
             name: z.string().min(1).max(80),
@@ -70,7 +72,8 @@ export const executionSchema = z
       });
     if (
       p.runner === "external" &&
-      (p.deploy || p.steps.some((s) => s.type === "javascript"))
+      (p.deploy ||
+        p.steps.some((s) => s.type === "javascript" || s.type === "build"))
     )
       c.addIssue({
         code: "custom",

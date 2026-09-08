@@ -1,6 +1,7 @@
 export interface Env {
   DB: D1Database;
   LOADER?: WorkerLoader;
+  BUILDER?: Fetcher;
   APPS_ORIGIN?: string;
   OBJECTS: R2Bucket;
   REPOSITORIES: DurableObjectNamespace;

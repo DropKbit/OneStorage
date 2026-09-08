@@ -1,4 +1,5 @@
 import { registerCacheRoutes } from "./ci-cache-routes";
+import { executeBuild } from "./ci-build";
 import { cloudCacheInputs, saveCloudCaches } from "./ci-cache";
 import { registerVariableRoutes } from "./ci-variable-routes";
 import { loadRunVariables, maskRunLog, maskLogRows } from "./ci-variables";
@@ -351,6 +352,13 @@ export async function consumeCI(env: Env, id: string) {
           run,
           seq++,
           "PASS isolated JavaScript " + step.entry + "\n",
+        );
+      } else if (step.type === "build") {
+        await log(
+          env,
+          run,
+          seq++,
+          await executeBuild(env, pending, run, step, artifacts),
         );
       } else if (step.type === "file") {
         const response = await repoEngine(

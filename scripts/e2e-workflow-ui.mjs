@@ -120,6 +120,16 @@ try {
     false,
   );
   checks++;
+  await page
+    .getByRole("button", { name: "TypeScript / npm 云端构建", exact: true })
+    .click();
+  const buildTemplate = JSON.parse(
+    await page.locator("#pipeline-config textarea[name=config]").inputValue(),
+  );
+  assert.equal(buildTemplate.runner, "worker");
+  assert.equal(buildTemplate.steps[0].type, "build");
+  assert.equal(buildTemplate.deploy.entry, "dist/index.js");
+  checks++;
   await page.getByRole("button", { name: "工作流模板", exact: true }).click();
   assert.equal(
     JSON.parse(
