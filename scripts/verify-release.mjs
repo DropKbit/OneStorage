@@ -38,6 +38,20 @@ const health = await (
   await fetch(origin + "/api/health", { signal: AbortSignal.timeout(30000) })
 ).json();
 assert.equal(health.version, version);
+// Invalid credentials must yield JSON to browsers, but still challenge native Git clients.
+for (const [path, challenge] of [
+  ["/api/repos", false],
+  ["/release/probe.git/info/refs?service=git-upload-pack", true],
+]) {
+  const response = await fetch(origin + path, {
+    headers: { Authorization: "Bearer invalid-release-probe" },
+    signal: AbortSignal.timeout(30000),
+  });
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.has("www-authenticate"), challenge);
+  if (challenge)
+    assert.match(response.headers.get("www-authenticate"), /^Basic /);
+}
 if (origin === "https://git.1s.hk") {
   const response = await fetch("https://1s.hk", {
     signal: AbortSignal.timeout(30000),

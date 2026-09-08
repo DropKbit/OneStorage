@@ -118,15 +118,22 @@ test("parallel write failure drains the other lane and never publishes refs", as
   assert.equal(b.stats().active, 0);
   assert.equal(b.stats().writes, 2);
 });
-test("parallel graph loads retain the shared decoded object budget", async () => {
+test("large graph reads evict payloads while staging remains bounded", async () => {
   const b = bucket(),
     s = new ObjectStore("r", b as any),
-    ids = [];
+    ids: string[] = [];
   for (let i = 0; i < 5; i++) {
     const o = await makeObject("blob", new Uint8Array(LIMITS.object).fill(i));
     b.objects.set("repos/r/objects/" + o.oid, canonical(o));
     ids.push(o.oid);
   }
-  await assert.rejects(s.walk(ids), /32 MiB/);
+  assert.equal((await s.walk(ids)).size, 5);
+  assert.ok(s.memoryUsage.peakCachedBytes <= LIMITS.cacheBytes);
+  assert.equal(s.memoryUsage.stagedBytes, 0);
+  for (let i = 0; i < 4; i++) s.add(await s.get(ids[i]));
+  await assert.rejects(
+    async () => s.add(await s.get(ids[4])),
+    /Staged Git objects/,
+  );
   assert.equal(b.stats().active, 0);
 });

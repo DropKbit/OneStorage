@@ -1,3 +1,4 @@
+import type { GitObjectIndex } from "./object-index";
 import type { ObjectCache } from "./object-cache";
 import { fail } from "../security";
 export const LIMITS = {
@@ -6,6 +7,9 @@ export const LIMITS = {
   pack: 16 * 1024 * 1024,
   objects: 2000,
   graph: 5000,
+  transferGraph: 100000,
+  fetchBytes: 512 * 1024 * 1024,
+  cacheBytes: 8 * 1024 * 1024,
   refs: 256,
   depth: 64,
 };
@@ -211,36 +215,73 @@ export class ObjectStore {
   readonly staged = new Map<string, GitObject>();
   private cache = new Map<string, GitObject>();
   private size = 0;
+  private stagedSize = 0;
+  private peakSize = 0;
+  private r2Reads = 0;
+  private r2Writes = 0;
+  private readBytes = 0;
+  private peakStaged = 0;
   private pending = new Map<string, Promise<GitObject>>();
   constructor(
     readonly repoId: string,
     private bucket: Pick<R2Bucket, "get" | "put">,
     private shared?: ObjectCache,
-  ) {}
+    readonly index?: GitObjectIndex,
+  ) {
+    if (index && index.repoId !== repoId)
+      fail(409, "Git object index scope mismatch");
+  }
+  get ioUsage() {
+    return {
+      r2Reads: this.r2Reads,
+      r2Writes: this.r2Writes,
+      readBytes: this.readBytes,
+      peakStagedBytes: this.peakStaged,
+      ...this.memoryUsage,
+    };
+  }
+  get memoryUsage() {
+    return {
+      cachedBytes: this.size,
+      peakCachedBytes: this.peakSize,
+      stagedBytes: this.stagedSize,
+    };
+  }
   private remember(o: GitObject) {
     const old = this.cache.get(o.oid);
     if (old && (old.type !== o.type || !sameBytes(old.data, o.data)))
       fail(409, "Conflicting content for Git object ID");
-    if (!old) {
-      if (this.size + o.data.length > LIMITS.expanded)
-        fail(413, "Operation exceeds 32 MiB decoded object budget");
-      this.size += o.data.length;
-      this.cache.set(o.oid, o);
+    if (old) {
+      this.cache.delete(o.oid);
+      this.size -= old.data.length;
     }
+    while (
+      this.cache.size &&
+      (this.size + o.data.length > LIMITS.cacheBytes || this.cache.size >= 1024)
+    ) {
+      const key = this.cache.keys().next().value!;
+      this.size -= this.cache.get(key)!.data.length;
+      this.cache.delete(key);
+    }
+    this.cache.set(o.oid, o);
+    this.size += o.data.length;
+    this.peakSize = Math.max(this.peakSize, this.size);
     return o;
   }
   async get(oid: string): Promise<GitObject> {
     if (!isOid(oid)) fail(400, "Invalid object ID");
     const existing = this.staged.get(oid) || this.cache.get(oid);
-    if (existing) return existing;
+    if (existing) return this.remember(existing);
     const cached = this.shared?.get(this.repoId, oid);
     if (cached) return this.remember(cached);
     const inFlight = this.pending.get(oid);
     if (inFlight) return inFlight;
     const load = (async () => {
+      this.r2Reads++;
       const r = await this.bucket.get(`repos/${this.repoId}/objects/${oid}`);
       if (!r) fail(409, "Missing Git object " + oid);
       if (r.size > LIMITS.object + 64) fail(413, "Stored object exceeds limit");
+      this.readBytes += r.size;
       const object = this.remember(
         await readCanonical(new Uint8Array(await r.arrayBuffer()), oid),
       );
@@ -251,6 +292,15 @@ export class ObjectStore {
     return load;
   }
   add(o: GitObject) {
+    const old = this.staged.get(o.oid);
+    if (old && (old.type !== o.type || !sameBytes(old.data, o.data)))
+      fail(409, "Conflicting staged Git object");
+    if (!old) {
+      if (this.stagedSize + o.data.length > LIMITS.expanded)
+        fail(413, "Staged Git objects exceed 32 MiB");
+      this.stagedSize += o.data.length;
+      this.peakStaged = Math.max(this.peakStaged, this.stagedSize);
+    }
     this.remember(o);
     this.staged.set(o.oid, o);
     return o;
@@ -266,11 +316,15 @@ export class ObjectStore {
         objects.slice(i, i + 2).map(async (o) => {
           const key = `repos/${this.repoId}/objects/${o.oid}`,
             data = canonical(o);
+          if ((await sha1(data)) !== o.oid)
+            fail(400, "Staged Git object hash mismatch");
+          this.r2Writes++;
           const result = await this.bucket.put(key, data, {
             onlyIf: { etagDoesNotMatch: "*" },
             httpMetadata: { contentType: "application/octet-stream" },
           });
           if (result === null) {
+            this.r2Reads++;
             const existing = await this.bucket.get(key);
             if (
               !existing ||
@@ -280,10 +334,25 @@ export class ObjectStore {
               fail(409, "Conflicting stored Git object; refs unchanged");
           }
           this.shared?.put(this.repoId, o);
+          this.staged.delete(o.oid);
+          this.stagedSize -= o.data.length;
         }),
       );
   }
+  async validateClosure(roots: string[]) {
+    if (!this.index) {
+      await this.walk(roots);
+      return;
+    }
+    if (this.staged.size)
+      fail(409, "Persist staged Git objects before indexing");
+    await this.index.ensure(roots, (oid) => this.get(oid));
+  }
   async walk(roots: string[], exclude = new Set<string>()) {
+    if (this.index && !this.staged.size) {
+      await this.validateClosure(roots);
+      return this.index.walk(roots, exclude);
+    }
     const seen = new Set<string>(),
       todo = roots.map((oid) => ({
         oid,

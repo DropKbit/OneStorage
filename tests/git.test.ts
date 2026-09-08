@@ -489,10 +489,11 @@ test("immutable R2 objects cannot be silently replaced under the same object ID"
     `repos/test/objects/${o.oid}`,
     canonical({ ...o, data: bytes("conflict") }),
   );
+  store.add(o);
   await assert.rejects(() => store.flush(), /Conflicting stored/);
   assert.throws(
     () => store.add({ ...o, data: bytes("conflict") }),
-    /Conflicting content/,
+    /Conflicting (content|staged)/,
   );
 });
 test("unsorted trees and duplicate commit headers are rejected before publication", async () => {

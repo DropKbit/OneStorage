@@ -60,6 +60,7 @@ a:hover {
   position: fixed;
   inset: 0 auto 0 0;
   width: 236px;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
@@ -796,7 +797,7 @@ button.text {
     padding: 0 25px;
   }
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .aside {
     display: none;
@@ -813,7 +814,8 @@ button.text {
     position: static;
     width: 100%;
     padding: 17px 20px;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     justify-content: space-between;
     gap: 16px;
@@ -826,10 +828,20 @@ button.text {
   .sidebar nav {
     display: flex;
     gap: 3px;
+    grid-column: 1 / -1;
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .sidebar .space-switch {
+    min-width: 0;
+    margin: 0;
+    gap: 4px;
   }
   .navlink {
     padding: 7px;
     font-size: 12px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .navlink svg {
     display: none;
@@ -852,6 +864,24 @@ button.text {
   }
   .titlebar {
     align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .titlebar > :first-child {
+    flex: 1 1 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .titlebar > .toolbar {
+    margin: 0;
+  }
+  .topbar .right {
+    flex-shrink: 0;
+  }
+  .breadcrumb > span:last-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .titlebar h1 {
     font-size: 25px;

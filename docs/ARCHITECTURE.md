@@ -1,4 +1,6 @@
-# Architecture — v0.3
+# Architecture — v0.3 baseline
+
+The Git storage/HTTP path is extended by [v0.12 indexing and streaming](GIT-SCALE-v12.md); cloud execution and collaboration are documented in [v0.5+](CLOUD-NATIVE-v05.md).
 
 Independent implementation inspired by public Code Storage documentation. All Git processing is JavaScript in Cloudflare Workers; no container, native Git process, SSH daemon or repository-code execution. Native Git is only the test client/oracle. Web Crypto performs hashing/signature checks, pako handles zlib, RE2JS bounds regex matching, jsdiff/node-diff3 implement text comparison/merge, OpenPGP handles armored signatures.
 

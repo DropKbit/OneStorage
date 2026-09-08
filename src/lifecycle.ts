@@ -244,5 +244,8 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
   )
     .bind(id)
     .run();
+  storage.sql?.exec(
+    "DROP TABLE IF EXISTS git_edges_v1; DROP TABLE IF EXISTS git_objects_v1; DROP TABLE IF EXISTS git_index_owner_v1; DROP TABLE IF EXISTS git_walk_excluded_v1;",
+  );
   await storage.delete(["refs.v2", "snapshot", "default-branch"]);
 }

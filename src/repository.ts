@@ -1,3 +1,5 @@
+import { responseCompletion } from "./git/pack-stream";
+import { GitObjectIndex } from "./git/object-index";
 import { checkProjectVersion, withProjectTransition } from "./project-version";
 import { transferProject } from "./project-transfer";
 import {
@@ -38,6 +40,7 @@ export class Repository extends DurableObject<Env> {
   private tail: Promise<unknown> = Promise.resolve();
   private waiting = 0;
   private objectCache = new ObjectCache();
+  private objectIndex?: GitObjectIndex;
   async fetch(request: Request): Promise<Response> {
     if (this.waiting >= 16)
       return Response.json(
@@ -46,7 +49,12 @@ export class Repository extends DurableObject<Env> {
       );
     this.waiting++;
     const result = this.tail.then(() => this.handle(request));
-    this.tail = result.catch(() => undefined);
+    this.tail = result
+      .then((response) => responseCompletion(response))
+      .catch(() => undefined)
+      .finally(() => {
+        this.waiting--;
+      });
     try {
       return await result;
     } catch (e) {
@@ -66,8 +74,6 @@ export class Repository extends DurableObject<Env> {
         { error: "Git transaction failed; inspect refs before retrying" },
         { status: 503 },
       );
-    } finally {
-      this.waiting--;
     }
   }
   async alarm() {
@@ -144,7 +150,12 @@ export class Repository extends DurableObject<Env> {
         "main",
     );
     const url = new URL(request.url),
-      store = new ObjectStore(id, this.env.OBJECTS, this.objectCache);
+      store = new ObjectStore(
+        id,
+        this.env.OBJECTS,
+        this.objectCache,
+        (this.objectIndex ||= new GitObjectIndex(id, this.ctx.storage)),
+      );
     // Public API access was checked against fresh D1 metadata by the outer Worker.
     // Reads use durable refs/tombstone and the recoverable version cache; mutations also load authoritative metadata.
     const metadata =
@@ -706,8 +717,23 @@ export class Repository extends DurableObject<Env> {
     }
     if (path === "/git/git-receive-pack" && request.method === "POST")
       return receive(repo, await boundedBody(request, LIMITS.pack));
-    if (path === "/git/git-upload-pack" && request.method === "POST")
-      return upload(repo, await boundedBody(request, 1024 * 1024));
+    if (path === "/git/git-upload-pack" && request.method === "POST") {
+      const response = await upload(
+        repo,
+        await boundedBody(request, 1024 * 1024),
+      );
+      const completion = responseCompletion(response);
+      if (completion)
+        this.ctx.waitUntil(
+          completion.then(() => {
+            console.info("Git transfer drained", {
+              repoId: id,
+              ...store.ioUsage,
+            });
+          }),
+        );
+      return response;
+    }
     if (request.method === "GET") {
       const ref = url.searchParams.get("ref") || "HEAD",
         file = url.searchParams.get("path") || "";

@@ -28,6 +28,7 @@ export async function publishRefs(
 ) {
   checkRefs(refs);
   await store.flush();
+  await store.validateClosure(Object.values(refs));
   await storage.put("refs.v2", refs);
 }
 export class GitRepository {
@@ -40,8 +41,9 @@ export class GitRepository {
   ) {}
   async publish(refs: Refs) {
     await enforceWritePolicy(this.store, this.refs, refs, this.policy);
+    await this.store.flush();
+    await this.store.validateClosure(Object.values(refs));
     if (this.policy.beforePublish) {
-      await this.store.flush();
       refs = await this.policy.beforePublish(
         this.refs,
         refs,
@@ -386,9 +388,6 @@ export class GitRepository {
       next[command.ref] = command.next;
     }
     checkRefs(next);
-    await this.store.walk(
-      commands.filter((c) => c.next !== "0".repeat(40)).map((c) => c.next),
-    );
     await this.publish(next);
   }
   async validateFetch(wants: string[]) {

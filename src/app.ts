@@ -269,7 +269,13 @@ app.onError((err, c) => {
     );
   if (err instanceof HTTPException) {
     if (err.res) return err.getResponse();
-    if (err.status === 401)
+    // Basic challenges are for native Git/LFS clients. On JSON API requests
+    // browsers otherwise pause fetch while waiting for an HTTP auth dialog.
+    if (
+      err.status === 401 &&
+      !/^\/(api|mcp|webhooks)(\/|$)/.test(c.req.path) &&
+      /^\/[^/]+\/[^/]+\.git\//.test(c.req.path)
+    )
       c.header("WWW-Authenticate", 'Basic realm="OneStorage", charset="UTF-8"');
     return c.json({ error: err.message }, err.status);
   }
@@ -414,7 +420,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.11.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.12.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({

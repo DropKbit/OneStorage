@@ -11,10 +11,11 @@ import {
   LIMITS,
   isOid,
 } from "./objects";
-import { pkt, FLUSH, DELIM, readPackets, band } from "./pkt";
-import { parsePack, writePack } from "./pack";
+import { pkt, FLUSH, DELIM, readPackets } from "./pkt";
+import { parsePack } from "./pack";
+import { packChunks, streamResponse } from "./pack-stream";
 const agent = "agent=onestorage/0.5";
-const uploadCaps = `side-band-64k ofs-delta no-progress ${agent} object-format=sha1`;
+const uploadCaps = `side-band-64k ofs-delta no-progress multi_ack_detailed no-done ${agent} object-format=sha1`;
 const receiveCaps = `report-status delete-refs ofs-delta atomic ${agent} object-format=sha1`;
 export function gitResponse(
   service: string,
@@ -198,9 +199,7 @@ async function packFor(
     }
     for (const id of await repo.store.walk(tags, exclude)) selected.add(id);
   }
-  const objects = [];
-  for (const oid of selected) objects.push(await repo.store.get(oid));
-  return writePack(objects);
+  return packChunks([...selected], (oid) => repo.store.get(oid));
 }
 export async function upload(repo: GitRepository, data: Uint8Array) {
   const packets = readPackets(data).packets,
@@ -283,8 +282,29 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
       )
         fail(400, "Unsupported fetch argument");
     }
+    checkNegotiation(wants, haves);
     if (!args.includes("done")) {
-      await repo.validateFetch(wants);
+      const reachable = await repo.validateFetch(wants),
+        known = haves.filter((id) => reachable.has(id));
+      if (known.length) {
+        const pack = await packFor(
+          repo,
+          wants,
+          known,
+          args.includes("include-tag"),
+        );
+        return streamedPack(
+          pack,
+          concat(
+            pkt("acknowledgments\n"),
+            ...known.map((id) => pkt(`ACK ${id}\n`)),
+            pkt("ready\n"),
+            DELIM,
+            pkt("packfile\n"),
+          ),
+          true,
+        );
+      }
       return gitResponse(
         "git-upload-pack",
         concat(pkt("acknowledgments\n"), pkt("NAK\n"), FLUSH),
@@ -296,10 +316,7 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
       haves,
       args.includes("include-tag"),
     );
-    return gitResponse(
-      "git-upload-pack",
-      concat(pkt("packfile\n"), band(pack)),
-    );
+    return streamedPack(pack, pkt("packfile\n"), true);
   }
   const wants: string[] = [],
     haves: string[] = [];
@@ -313,13 +330,77 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
     } else if (/^have [0-9a-f]{40}$/.test(line)) haves.push(line.slice(5));
     else if (line !== "done") fail(400, "Unsupported fetch negotiation");
   }
+  checkNegotiation(wants, haves);
+  const reachable = await repo.validateFetch(wants),
+    known = haves.filter((id) => reachable.has(id));
+  const common = known.at(-1);
   if (!lines.includes("done")) {
-    await repo.validateFetch(wants);
-    return gitResponse("git-upload-pack", pkt("NAK\n"));
+    if (
+      common &&
+      caps.includes("multi_ack_detailed") &&
+      caps.includes("no-done")
+    ) {
+      const pack = await packFor(repo, wants, known);
+      return streamedPack(
+        pack,
+        concat(
+          ...known.map((id) => pkt(`ACK ${id} common\n`)),
+          pkt(`ACK ${common} ready\n`),
+          pkt(`ACK ${common}\n`),
+        ),
+        caps.includes("side-band-64k"),
+      );
+    }
+    return gitResponse(
+      "git-upload-pack",
+      common
+        ? caps.includes("multi_ack_detailed")
+          ? concat(
+              ...known.map((id) => pkt(`ACK ${id} common\n`)),
+              pkt("NAK\n"),
+            )
+          : pkt(`ACK ${common}\n`)
+        : pkt("NAK\n"),
+    );
   }
-  const pack = await packFor(repo, wants, haves);
-  return gitResponse(
-    "git-upload-pack",
-    concat(pkt("NAK\n"), caps.includes("side-band-64k") ? band(pack) : pack),
+  const pack = await packFor(repo, wants, known);
+  return streamedPack(
+    pack,
+    pkt(common ? `ACK ${common}\n` : "NAK\n"),
+    caps.includes("side-band-64k"),
   );
+}
+
+function streamedPack(
+  pack: AsyncIterable<Uint8Array>,
+  prefix: Uint8Array,
+  sideband: boolean,
+) {
+  async function* frames() {
+    yield prefix;
+    for await (const chunk of pack) {
+      if (!sideband) {
+        yield chunk;
+        continue;
+      }
+      for (let offset = 0; offset < chunk.length; offset += 65515)
+        yield pkt(
+          concat(Uint8Array.of(1), chunk.subarray(offset, offset + 65515)),
+        );
+    }
+    if (sideband) yield FLUSH;
+  }
+  return streamResponse(frames(), {
+    "content-type": "application/x-git-upload-pack-result",
+    "cache-control": "no-store",
+  });
+}
+
+function checkNegotiation(wants: string[], haves: string[]) {
+  if (
+    !wants.length ||
+    wants.length > LIMITS.refs ||
+    haves.length > LIMITS.graph
+  )
+    fail(400, "Invalid fetch request");
 }

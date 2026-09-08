@@ -67,6 +67,7 @@ test("public shell and versioned assets bypass identity storage; API authorizati
     env,
   );
   assert.equal(response.status, 401);
+  assert.equal(response.headers.get("www-authenticate"), null);
   assert.equal(queries, 1);
   assert.equal(response.headers.get("cache-control"), "no-store");
   const git = await app.fetch(
@@ -77,7 +78,20 @@ test("public shell and versioned assets bypass identity storage; API authorizati
     env,
   );
   assert.equal(git.status, 401);
+  assert.match(git.headers.get("www-authenticate")!, /^Basic /);
   assert.equal(queries, 2);
+  const lfs = await app.fetch(
+    new Request(
+      "https://git.example.com/owner/private.git/info/lfs/objects/batch",
+      {
+        method: "POST",
+        headers: { Authorization: "Bearer invalid" },
+      },
+    ),
+    env,
+  );
+  assert.equal(lfs.status, 401);
+  assert.match(lfs.headers.get("www-authenticate")!, /^Basic /);
 });
 test("immutable object cache eliminates repeated R2 reads without sharing repositories or staged writes", async () => {
   let reads = 0,
