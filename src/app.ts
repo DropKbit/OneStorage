@@ -357,6 +357,7 @@ const staticPaths = new Set([
   "/account.js",
   "/oidc.js",
   "/markdown.js",
+  "/notebook.js",
   "/qr.js",
   "/highlight.js",
   "/THIRD_PARTY_LICENSES.txt",

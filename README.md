@@ -1,5 +1,7 @@
 # OneStorage
 
+v0.37 增加 Jupyter Notebook 只读预览：代码高亮、Markdown、静态表格/图表、源码切换及分页，沿用仓库权限和固定提交。见 [Notebook 预览](docs/NOTEBOOK-v37.md)。
+
 v0.36 增加云端 tsconfig/JSONC、本地配置继承、baseUrl/paths 别名和 TypeScript 源文件扩展名解析。见 [构建配置](docs/CI-TSCONFIG-v36.md)。
 
 v0.35 增加 Cloudflare 原生构建的公共 npm R2 下载缓存：命中仍验证锁文件完整性，私有包保持独立授权路径，日志显示命中和下载量。见 [npm 缓存](docs/CI-NPM-CACHE-v35.md) 与 [验收记录](docs/VERIFICATION-v35.md)。
@@ -42,7 +44,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.36.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.37.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 

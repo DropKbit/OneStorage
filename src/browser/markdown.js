@@ -10,7 +10,8 @@ md.validateLink = (url) => {
   const clean = url.replace(/[\x00-\x20\x7f]/g, "");
   return (
     defaultValidate(url) &&
-    (!/^[a-z][a-z0-9+.-]*:/i.test(clean) || /^(https?:|mailto:)/i.test(clean))
+    (!/^[a-z][a-z0-9+.-]*:/i.test(clean) ||
+      /^(https?:|mailto:|attachment:)/i.test(clean))
   );
 };
 const escape = md.utils.escapeHtml;
@@ -41,7 +42,12 @@ function relativePath(href, env) {
 md.renderer.rules.link_open = (tokens, i, options, env, self) => {
   const token = tokens[i],
     href = token.attrGet("href") || "";
-  if (href.startsWith("#")) token.attrSet("href", "#md-" + href.slice(1));
+  if (/^attachment:/i.test(href)) {
+    token.attrSet("href", "#");
+    return self.renderToken(tokens, i, options);
+  }
+  if (href.startsWith("#"))
+    token.attrSet("href", "#" + (env.idPrefix || "md-") + href.slice(1));
   else {
     const local = relativePath(href, env);
     if (local) {
@@ -69,9 +75,18 @@ md.renderer.rules.image = (tokens, i, options, env, self) => {
     src = token.attrGet("src") || "",
     alt = self.renderInlineAsText(token.children || [], options, env),
     local = relativePath(src, env);
+  if (
+    src.startsWith("attachment:") &&
+    typeof env.resolveAttachment === "function"
+  ) {
+    const image = env.resolveAttachment(src.slice(11));
+    return image
+      ? `<img loading="lazy" alt="${escape(alt)}" src="${escape(image)}">`
+      : `<span class="markdown-image-link">${escape(alt || "图片")}（附件无法预览）</span>`;
+  }
   if (local && /\.(png|jpe?g|gif|webp)$/i.test(local.path))
     return `<img loading="lazy" alt="${escape(alt)}" src="${escape("/api/repos" + env.base + "/preview?" + new URLSearchParams({ path: local.path, ref: env.ref || "HEAD" }))}">`;
-  return `<span class="markdown-image-link">${escape(alt || "图片")}（<a target="_blank" rel="noopener noreferrer" href="${escape(md.validateLink(src) ? src : "#")}">查看图片</a>）</span>`;
+  return `<span class="markdown-image-link">${escape(alt || "图片")}（<a target="_blank" rel="noopener noreferrer" href="${escape(md.validateLink(src) && !/^attachment:/i.test(src) ? src : "#")}">查看图片</a>）</span>`;
 };
 md.renderer.rules.heading_open = (tokens, i, options, env, self) => {
   const content = tokens[i + 1]?.content || "",
@@ -79,7 +94,7 @@ md.renderer.rules.heading_open = (tokens, i, options, env, self) => {
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^\p{L}\p{N}_-]/gu, "");
-  tokens[i].attrSet("id", "md-" + id);
+  tokens[i].attrSet("id", (env.idPrefix || "md-") + id);
   return self.renderToken(tokens, i, options);
 };
 const textRule = md.renderer.rules.text;

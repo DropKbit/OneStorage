@@ -159,3 +159,7 @@ Workers/DO 分批读取 R2 Git 快照，使用主 D1 普通倒排表、持久游
 ## v0.36 TypeScript 构建配置
 
 Worker WASM 编译支持所选 tsconfig/JSONC、相对配置继承、baseUrl/paths、JSX 设置及项目源码扩展名替换；重复配置只解析一次。边界和配置见 [构建配置](CI-TSCONFIG-v36.md)。完整前端工具链、项目引用构建、类型检查和其他平台能力仍继续推进。
+
+## v0.37：Notebook 预览
+
+补齐数据分析仓库的 `.ipynb` 浏览入口，提供只读单元/输出/附件、源码切换和安全降级。实现与限制见 [Notebook 预览](NOTEBOOK-v37.md)。完整 GitLab/Gogs 目标仍在推进，Notebook 预览不包含交互内核或任意 Python 运行时。

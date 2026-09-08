@@ -174,7 +174,7 @@ async function applyMarkdown(context = {}) {
     (el) => !el.dataset.rendered,
   );
   if (!targets.length) return;
-  const { renderMarkdown } = await import("./markdown.js?v=8019fb73893e5723");
+  const { renderMarkdown } = await import("./markdown.js?v=ff7b039d4ff57505");
   for (const el of targets) {
     if (!el.isConnected) continue;
     const raw = el.textContent;
@@ -532,7 +532,7 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
   const nav = `<div class="toolbar"><div class="actionbar"><select class="select-branch" id="branch" aria-label="选择分支">${!branches.some((b) => b.name === ref) ? `<option selected value="${esc(ref)}">提交 ${esc(ref.slice(0, 12))}</option>` : ""}${branches.map((b) => `<option ${b.name === ref ? "selected" : ""} value="${esc(b.name)}">⑂ ${esc(b.name)}</option>`).join("")}</select><span class="muted">${esc(p || "/")}</span></div>${writeable(r) ? link(`${base}/edit?ref=${encodeURIComponent(ref)}${blob ? "&path=" + encodeURIComponent(p) : ""}`, blob ? "编辑文件" : "新建文件", "btn small") : ""}</div>`;
   const up = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
   const list = blob
-    ? `<div class="panelhead">${esc(p)}<span class="muted">${data.size} bytes</span></div>${/\.(png|jpe?g|gif|webp)$/i.test(p) ? `<div class="image-preview"><img id="blob-preview" alt="${esc(p)}" src="${esc("/api" + ap + "/preview?" + new URLSearchParams({ ref: data.ref, path: p }))}"><p class="muted" id="preview-caption">图片预览 · ${esc(p)}</p></div>` : data.binary ? '<div class="empty"><p>二进制文件，请通过 Git 下载。</p></div>' : /\.md$/i.test(p) ? `<div class="markdown detail-body" data-markdown data-base="${esc(base)}" data-ref="${esc(data.ref)}" data-file="${esc(p)}">${esc(data.content)}</div><details><summary>查看源码</summary>${codeViewer(data.content, p)}</details>` : codeViewer(data.content, p)}`
+    ? `<div class="panelhead">${esc(p)}<span class="muted">${data.size} bytes</span></div>${/\.(png|jpe?g|gif|webp)$/i.test(p) ? `<div class="image-preview"><img id="blob-preview" alt="${esc(p)}" src="${esc("/api" + ap + "/preview?" + new URLSearchParams({ ref: data.ref, path: p }))}"><p class="muted" id="preview-caption">图片预览 · ${esc(p)}</p></div>` : data.binary ? '<div class="empty"><p>二进制文件，请通过 Git 下载。</p></div>' : /\.ipynb$/i.test(p) ? '<div id="notebook-preview"><p class="muted detail-body">正在加载笔记本预览…</p></div>' : /\.md$/i.test(p) ? `<div class="markdown detail-body" data-markdown data-base="${esc(base)}" data-ref="${esc(data.ref)}" data-file="${esc(p)}">${esc(data.content)}</div><details><summary>查看源码</summary>${codeViewer(data.content, p)}</details>` : codeViewer(data.content, p)}`
     : `<div class="panelhead"><span>${link(base + "?ref=" + encodeURIComponent(ref), esc(r.name))}${p ? " / " + esc(p) : ""}</span><code>${esc(data.ref.slice(0, 8))}</code></div>${p ? `<div class="file-row">${link(`${base}?ref=${encodeURIComponent(ref)}&path=${encodeURIComponent(up)}`, "← 上一级")}<span></span></div>` : ""}${data.entries
         .sort(
           (a, b) =>
@@ -551,6 +551,19 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
       `<div class="grid"><div><div class="panel">${list}</div>${readme}</div>${aside}</div>`,
     clone,
   );
+  const notebook = document.querySelector("#notebook-preview");
+  if (notebook) {
+    try {
+      const { mountNotebook } =
+        await import("./notebook.js?v=afc65cf0abd95c67");
+      if (version !== routeVersion || !notebook.isConnected) return;
+      mountNotebook(notebook, data.content, { base, ref: data.ref, path: p });
+    } catch {
+      if (notebook.isConnected)
+        notebook.textContent =
+          "无法加载笔记本预览，请刷新或通过 Git 查看源码。";
+    }
+  }
   const preview = document.querySelector("#blob-preview");
   if (preview) {
     const failed = () => {

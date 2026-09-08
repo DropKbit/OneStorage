@@ -32,6 +32,15 @@ await update(
     `from "./ci-variables.js?v=${variableVersion}"`,
   ),
 );
+let notebook = await readFile("public/notebook.js", "utf8");
+for (const name of ["markdown", "highlight"]) {
+  const version = hash(await readFile(`public/${name}.js`));
+  notebook = notebook.replace(
+    new RegExp(`(["'])(\\.\\/${name}\\.js)(?:\\?v=[a-f0-9]+)?\\1`, "g"),
+    (_, quote, path) => `${quote}${path}?v=${version}${quote}`,
+  );
+}
+await update("public/notebook.js", notebook);
 const forge = hash(await readFile("public/forge.js"));
 let app = await readFile("public/app.js", "utf8");
 for (const name of [
@@ -45,6 +54,7 @@ for (const name of [
   "account",
   "oidc",
   "markdown",
+  "notebook",
   "qr",
 ]) {
   const version = hash(await readFile(`public/${name}.js`));

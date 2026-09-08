@@ -1440,4 +1440,104 @@ button.text {
   margin: 0 0 16px;
 }
 
-.recovery-key { white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
+.recovery-key {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+/* Notebook previews share repository permissions and the selected immutable ref. */
+.notebook-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.notebook-toolbar [aria-pressed="true"] {
+  background: var(--ink, #20252e);
+  color: white;
+}
+.notebook-summary {
+  margin: 0;
+  padding: 16px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.notebook-cell {
+  border-top: 1px solid var(--border);
+  padding: 16px 20px;
+  scroll-margin-top: 20px;
+  min-width: 0;
+}
+.notebook-cell-heading {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.notebook-cell-link {
+  color: var(--muted);
+  text-decoration: none;
+}
+.notebook-code,
+.notebook-output-text {
+  margin: 0;
+  overflow: auto;
+  max-height: 480px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+.notebook-output {
+  margin-top: 12px;
+  min-width: 0;
+  overflow: auto;
+}
+.notebook-output-text {
+  background: transparent;
+  padding: 10px 0;
+}
+.notebook-error {
+  color: #a32b27;
+}
+.notebook-html {
+  overflow: auto;
+  max-height: 520px;
+}
+.notebook-output-note {
+  font-size: 11px;
+  margin: 8px 0 0;
+}
+.notebook-image,
+.notebook-markdown img {
+  max-width: 100%;
+  max-height: 700px;
+  object-fit: contain;
+}
+.notebook-more {
+  margin: 16px 20px;
+}
+.notebook-raw {
+  overflow: auto;
+}
+.notebook-preview [hidden],
+.notebook-raw[hidden] {
+  display: none;
+}
+@media (max-width: 600px) {
+  .notebook-cell {
+    padding: 14px 12px;
+  }
+  .notebook-toolbar,
+  .notebook-summary {
+    padding: 12px;
+  }
+  .notebook-code,
+  .notebook-output-text {
+    font-size: 12px;
+  }
+  .notebook-cell-heading {
+    flex-wrap: wrap;
+  }
+}
