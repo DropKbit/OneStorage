@@ -1,6 +1,6 @@
 # OneStorage
 
-v0.27 支持当前实例内的私有 npm 依赖原生云构建：显式部署令牌授权、锁文件与 SHA-512 校验、独立 WASM 编译、工作流依赖撤权门禁，见 [私有包构建](docs/CI-PRIVATE-PACKAGES-v27.md)。
+v0.27 支持当前实例内的私有 npm 依赖原生云构建：显式部署令牌授权、锁文件与 SHA-512 校验、独立 WASM 编译、工作流依赖撤权门禁，见 [私有包构建](docs/CI-PRIVATE-PACKAGES-v27.md) 和 [本地/生产验收](docs/VERIFICATION-v27.md)。
 
 v0.26 增加项目/空间部署令牌：独立 Git 只读、包读取/发布/撤回权限，支持轮换、到期与撤销，跨空间转移自动收回范围，见 [部署令牌](docs/DEPLOY-TOKENS-v26.md) 和 [本地/生产验收](docs/VERIFICATION-v26.md)。
 
