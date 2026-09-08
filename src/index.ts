@@ -1,3 +1,4 @@
+import { collectPackages } from "./packages";
 import { collectCICaches } from "./ci-cache";
 import { cleanupOIDC } from "./oidc-routes";
 import { publishSchedules, consumeSchedule } from "./ci-schedules";
@@ -12,6 +13,7 @@ export default {
   async queue(batch: MessageBatch<{ id: string }>, env: Env) {
     const jobs = batch.messages.filter(
       (message) =>
+        message.body.id.startsWith("package-gc:") ||
         message.body.id.startsWith("ci-cache-gc:") ||
         message.body.id.startsWith("ci:") ||
         message.body.id.startsWith("ci-event:") ||
@@ -23,7 +25,9 @@ export default {
         while (next < jobs.length) {
           const message = jobs[next++];
           try {
-            if (message.body.id.startsWith("ci-cache-gc:"))
+            if (message.body.id.startsWith("package-gc:"))
+              await collectPackages(env, message.body.id.slice(11));
+            else if (message.body.id.startsWith("ci-cache-gc:"))
               await collectCICaches(env, message.body.id.slice(12));
             else if (message.body.id.startsWith("ci-schedule:"))
               await consumeSchedule(env, message.body.id.slice(12));
@@ -56,6 +60,7 @@ export default {
         ...batch,
         messages: batch.messages.filter(
           (m) =>
+            !m.body.id.startsWith("package-gc:") &&
             !m.body.id.startsWith("sync:") &&
             !m.body.id.startsWith("ci:") &&
             !m.body.id.startsWith("ci-event:") &&
@@ -73,5 +78,6 @@ export default {
     await collectCICaches(env);
     await publishPending(env);
     await publishSyncJobs(env);
+    await collectPackages(env);
   },
 };

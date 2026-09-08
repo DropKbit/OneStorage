@@ -1,3 +1,4 @@
+import { registerPackageRoutes } from "./package-routes";
 import { repositoryAt } from "./project-transfer";
 import { projectDatabase } from "./project-db";
 import { archivedApiWrite, archiveError } from "./project-state";
@@ -300,6 +301,7 @@ app.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
 });
 const staticPaths = new Set([
+  "/packages.js",
   "/app.js",
   "/forge.js",
   "/manage.js",
@@ -425,7 +427,7 @@ registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.24.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.25.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -966,6 +968,7 @@ app.get("/api/repo-url/:id", async (c) => {
     import_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}+import.git`,
   });
 });
+registerPackageRoutes(app, { access: repoAccess });
 registerCIRoutes(app, { access: repoAccess, audit });
 registerIssueWorkflows(app, { access: repoAccess });
 registerCollaboration(app, { access: repoAccess, engine: engineJSON, audit });

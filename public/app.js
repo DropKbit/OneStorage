@@ -1,3 +1,4 @@
+const packages = () => import("./packages.js?v=940a14d638488fa5");
 const account = () => import("./account.js?v=d9bd32b82f5426d8");
 const oidc = () => import("./oidc.js?v=d111df485dceede5");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
@@ -444,6 +445,7 @@ function repoLayout(r, tab, content, actions = "") {
       ["code", "代码", ""],
       ["commits", "提交", "/commits"],
       ["ci", "CI/CD", "/ci"],
+      ["packages", "包仓库", "/packages"],
       ["forge", "Git 工具", "/forge"],
       ["search", "搜索", "/search"],
       ["issues", "Issues", "/issues"],
@@ -951,6 +953,8 @@ async function render() {
     document.title = `${r.namespace} / ${r.name} · OneStorage`;
     repoLayout(r, tab || "code", loadingContent(titles[tab] || "文件"));
     if (!tab) await codePage(r, base, ap, version);
+    else if (tab === "packages")
+      await (await packages()).packagePage(r, base, ap, helpers, sub);
     else if (tab === "ci")
       await (await platform()).ciPage(r, base, ap, helpers, sub);
     else if (

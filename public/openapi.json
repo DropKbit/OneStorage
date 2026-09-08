@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.24.0",
+    "version": "0.25.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3882,6 +3882,1485 @@
             }
           }
         ]
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "List active package versions (50 per page), next_offset, usage and limits. Query offset defaults to zero.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/versions/{id}": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Read immutable package version metadata, file digests and npm tags.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Maintainer: retire a version and all files. Names/versions cannot be reused; asynchronous R2 cleanup.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/generic/{name}/{version}/{file}": {
+      "put": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Developer: stream an immutable 1 B..64 MiB file. Content-Length and X-Package-SHA256 required.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Content-Length",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 67108864
+            }
+          },
+          {
+            "name": "X-Package-SHA256",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Published immutable package"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Download generic file. Single Range, ETag, SHA-256; visibility follows current repository.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "206": {
+            "description": "Partial bytes"
+          },
+          "304": {
+            "description": "Matching ETag"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          },
+          "416": {
+            "description": "Unsatisfiable range"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Generic file length and digest without body.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "206": {
+            "description": "Partial bytes"
+          },
+          "304": {
+            "description": "Matching ETag"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          },
+          "416": {
+            "description": "Unsatisfiable range"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/{name}": {
+      "put": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Developer: native npm publish JSON; one version and one gzip tarball. Encoded scoped name; 16 MiB tarball / 24 MiB JSON.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Published immutable package"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "npm packument with versions, rewritten tarball URLs, SRI, dist-tags and revision.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/{name}/-/{file}": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Download npm tarball; supports Range and ETag.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "206": {
+            "description": "Partial bytes"
+          },
+          "304": {
+            "description": "Matching ETag"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          },
+          "416": {
+            "description": "Unsatisfiable range"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "npm tarball length and digest without body.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "206": {
+            "description": "Partial bytes"
+          },
+          "304": {
+            "description": "Matching ETag"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          },
+          "416": {
+            "description": "Unsatisfiable range"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/-/ping": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "npm registry connectivity check with project access.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/-/whoami": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Current authenticated package registry username.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/-/package/{name}/dist-tags": {
+      "get": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "npm tag-to-version mapping.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/-/package/{name}/dist-tags/{tag}": {
+      "put": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Developer: assign tag to a live version; request body is a JSON version string.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Developer: remove npm distribution tag.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/{name}/-rev/{revision}": {
+      "put": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Maintainer: native npm unpublish partial document. Removes versions only, exact current _rev required.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Maintainer: unpublish whole npm package, exact current _rev required.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/packages/npm/{name}/-/{file}/-rev/{revision}": {
+      "delete": {
+        "tags": [
+          "Packages"
+        ],
+        "summary": "Maintainer: libnpmpublish cleanup acknowledgment for a tarball already retired by metadata update.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid package, checksum or protocol input"
+          },
+          "401": {
+            "description": "Authentication required or invalid credential"
+          },
+          "403": {
+            "description": "Insufficient current role or token scope"
+          },
+          "404": {
+            "description": "Not found or private resource unavailable"
+          },
+          "409": {
+            "description": "Version exists, revision/authorization changed, or quota exceeded"
+          },
+          "413": {
+            "description": "Package limit exceeded"
+          }
+        }
       }
     },
     "/api/workspaces": {

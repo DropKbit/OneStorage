@@ -231,7 +231,12 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
   )
     .bind("deleted_" + id, id)
     .run();
-  for (const prefix of [`repos/${id}/`, `lfs/${id}/`, `ci/${id}/`]) {
+  for (const prefix of [
+    `packages/${id}/`,
+    `repos/${id}/`,
+    `lfs/${id}/`,
+    `ci/${id}/`,
+  ]) {
     const page = await env.OBJECTS.list({ prefix, limit: 100 });
     if (page.objects.length) {
       await env.OBJECTS.delete(page.objects.map((o) => o.key));
@@ -244,6 +249,11 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
   )
     .bind(id)
     .run();
+  try {
+    await env.EVENTS?.send({ id: "package-gc:" + id });
+  } catch {
+    // Independent upload journals are also collected by Cron.
+  }
   storage.sql?.exec(
     "DROP TABLE IF EXISTS git_edges_v1; DROP TABLE IF EXISTS git_objects_v1; DROP TABLE IF EXISTS git_index_owner_v1; DROP TABLE IF EXISTS git_walk_excluded_v1;",
   );

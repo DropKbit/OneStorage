@@ -1,3 +1,4 @@
+import { addPackagePaths } from "./package-openapi.mjs";
 import { addOIDCPaths } from "./oidc-openapi.mjs";
 import { addLifecyclePaths } from "./lifecycle-openapi.mjs";
 import { addIssuePaths } from "./issue-openapi.mjs";
@@ -279,6 +280,7 @@ for (const feature of parity.features) {
   (paths[path] ||= {})[method] = op;
 }
 addOIDCPaths(paths);
+addPackagePaths(paths);
 addPlatformPaths(paths);
 addAccountPaths(paths);
 addReviewPaths(paths);
