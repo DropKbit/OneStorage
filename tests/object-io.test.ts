@@ -1,0 +1,132 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  ObjectStore,
+  bytes,
+  canonical,
+  makeObject,
+  treeBytes,
+  LIMITS,
+} from "../src/git/objects";
+import { publishRefs } from "../src/git/repository";
+function bucket() {
+  const objects = new Map<string, Uint8Array>();
+  let active = 0,
+    peak = 0,
+    reads = 0,
+    writes = 0;
+  async function delay() {
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise((r) => setTimeout(r, 2));
+    active--;
+  }
+  return {
+    objects,
+    stats: () => ({ active, peak, reads, writes }),
+    async get(k: string) {
+      reads++;
+      await delay();
+      const data = objects.get(k);
+      return data
+        ? { size: data.length, arrayBuffer: async () => data.slice().buffer }
+        : null;
+    },
+    async put(k: string, data: Uint8Array) {
+      writes++;
+      await delay();
+      if (objects.has(k)) return null;
+      objects.set(k, data);
+      return {};
+    },
+  };
+}
+test("concurrent reads for one OID share one R2 request, failures drain and permit retry", async () => {
+  const b = bucket(),
+    o = await makeObject("blob", bytes("data")),
+    s = new ObjectStore("r", b as any),
+    key = "repos/r/objects/" + o.oid;
+  await assert.rejects(
+    Promise.all([s.get(o.oid), s.get(o.oid)]),
+    /Missing Git/,
+  );
+  assert.equal(b.stats().reads, 1);
+  assert.equal(b.stats().active, 0);
+  b.objects.set(key, canonical(o));
+  const [a, c] = await Promise.all([s.get(o.oid), s.get(o.oid)]);
+  assert.equal(a, c);
+  assert.equal(b.stats().reads, 2);
+});
+test("graph traversal and immutable writes use two I/O lanes, preserving deduplication and object/type checks", async () => {
+  const b = bucket(),
+    s = new ObjectStore("r", b as any),
+    blobs = await Promise.all(
+      Array.from({ length: 12 }, (_, i) => s.create("blob", bytes("blob" + i))),
+    );
+  const tree = await s.create(
+    "tree",
+    treeBytes(
+      blobs.map((o, i) => ({
+        mode: "100644",
+        name: "file" + i,
+        sha: o.oid,
+        type: "blob" as const,
+      })),
+    ),
+  );
+  await s.flush();
+  assert.equal(b.stats().peak, 2);
+  assert.equal(b.stats().active, 0);
+  const fresh = new ObjectStore("r", b as any),
+    graph = await fresh.walk([tree.oid, tree.oid]);
+  assert.equal(graph.size, 13);
+  assert.equal(b.stats().reads, 13);
+  assert.equal(b.stats().peak, 2);
+  const invalid = await s.create(
+    "tree",
+    treeBytes([
+      { mode: "40000", name: "invalid", sha: blobs[0].oid, type: "tree" },
+    ]),
+  );
+  await s.flush();
+  await assert.rejects(
+    new ObjectStore("r", b as any).walk([invalid.oid, blobs[0].oid]),
+    /type mismatch/,
+  );
+});
+test("parallel write failure drains the other lane and never publishes refs", async () => {
+  const b = bucket(),
+    s = new ObjectStore("r", b as any),
+    first = await s.create("blob", bytes("first"));
+  await s.create("blob", bytes("second"));
+  b.objects.set("repos/r/objects/" + first.oid, bytes("corrupt"));
+  let published = false;
+  await assert.rejects(
+    publishRefs(
+      s,
+      {
+        get: async () => undefined,
+        put: async () => {
+          published = true;
+        },
+      },
+      { "refs/heads/main": first.oid },
+    ),
+    /Conflicting stored/,
+  );
+  assert.equal(published, false);
+  assert.equal(b.stats().active, 0);
+  assert.equal(b.stats().writes, 2);
+});
+test("parallel graph loads retain the shared decoded object budget", async () => {
+  const b = bucket(),
+    s = new ObjectStore("r", b as any),
+    ids = [];
+  for (let i = 0; i < 5; i++) {
+    const o = await makeObject("blob", new Uint8Array(LIMITS.object).fill(i));
+    b.objects.set("repos/r/objects/" + o.oid, canonical(o));
+    ids.push(o.oid);
+  }
+  await assert.rejects(s.walk(ids), /32 MiB/);
+  assert.equal(b.stats().active, 0);
+});

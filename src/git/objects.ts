@@ -211,6 +211,7 @@ export class ObjectStore {
   readonly staged = new Map<string, GitObject>();
   private cache = new Map<string, GitObject>();
   private size = 0;
+  private pending = new Map<string, Promise<GitObject>>();
   constructor(
     readonly repoId: string,
     private bucket: Pick<R2Bucket, "get" | "put">,
@@ -221,9 +222,9 @@ export class ObjectStore {
     if (old && (old.type !== o.type || !sameBytes(old.data, o.data)))
       fail(409, "Conflicting content for Git object ID");
     if (!old) {
-      this.size += o.data.length;
-      if (this.size > LIMITS.expanded)
+      if (this.size + o.data.length > LIMITS.expanded)
         fail(413, "Operation exceeds 32 MiB decoded object budget");
+      this.size += o.data.length;
       this.cache.set(o.oid, o);
     }
     return o;
@@ -234,14 +235,20 @@ export class ObjectStore {
     if (existing) return existing;
     const cached = this.shared?.get(this.repoId, oid);
     if (cached) return this.remember(cached);
-    const r = await this.bucket.get(`repos/${this.repoId}/objects/${oid}`);
-    if (!r) fail(409, "Missing Git object " + oid);
-    if (r.size > LIMITS.object + 64) fail(413, "Stored object exceeds limit");
-    const object = this.remember(
-      await readCanonical(new Uint8Array(await r.arrayBuffer()), oid),
-    );
-    this.shared?.put(this.repoId, object);
-    return object;
+    const inFlight = this.pending.get(oid);
+    if (inFlight) return inFlight;
+    const load = (async () => {
+      const r = await this.bucket.get(`repos/${this.repoId}/objects/${oid}`);
+      if (!r) fail(409, "Missing Git object " + oid);
+      if (r.size > LIMITS.object + 64) fail(413, "Stored object exceeds limit");
+      const object = this.remember(
+        await readCanonical(new Uint8Array(await r.arrayBuffer()), oid),
+      );
+      this.shared?.put(this.repoId, object);
+      return object;
+    })().finally(() => this.pending.delete(oid));
+    this.pending.set(oid, load);
+    return load;
   }
   add(o: GitObject) {
     this.remember(o);
@@ -252,24 +259,29 @@ export class ObjectStore {
     return this.add(await makeObject(type, data));
   }
   async flush() {
-    for (const o of this.staged.values()) {
-      const key = `repos/${this.repoId}/objects/${o.oid}`,
-        data = canonical(o);
-      const result = await this.bucket.put(key, data, {
-        onlyIf: { etagDoesNotMatch: "*" },
-        httpMetadata: { contentType: "application/octet-stream" },
-      });
-      if (result === null) {
-        const existing = await this.bucket.get(key);
-        if (
-          !existing ||
-          existing.size !== data.length ||
-          !sameBytes(new Uint8Array(await existing.arrayBuffer()), data)
-        )
-          fail(409, "Conflicting stored Git object; refs unchanged");
-      }
-      this.shared?.put(this.repoId, o);
-    }
+    const objects = [...this.staged.values()];
+    // At most two canonical object buffers/collision reads at a time (8 MiB/object).
+    for (let i = 0; i < objects.length; i += 2)
+      await settledPair(
+        objects.slice(i, i + 2).map(async (o) => {
+          const key = `repos/${this.repoId}/objects/${o.oid}`,
+            data = canonical(o);
+          const result = await this.bucket.put(key, data, {
+            onlyIf: { etagDoesNotMatch: "*" },
+            httpMetadata: { contentType: "application/octet-stream" },
+          });
+          if (result === null) {
+            const existing = await this.bucket.get(key);
+            if (
+              !existing ||
+              existing.size !== data.length ||
+              !sameBytes(new Uint8Array(await existing.arrayBuffer()), data)
+            )
+              fail(409, "Conflicting stored Git object; refs unchanged");
+          }
+          this.shared?.put(this.repoId, o);
+        }),
+      );
   }
   async walk(roots: string[], exclude = new Set<string>()) {
     const seen = new Set<string>(),
@@ -278,25 +290,30 @@ export class ObjectStore {
         type: undefined as ObjectType | undefined,
       }));
     while (todo.length) {
-      const { oid, type } = todo.pop()!;
-      if (exclude.has(oid)) continue;
-      const o = await this.get(oid);
-      if (type && o.type !== type) fail(400, "Git object graph type mismatch");
-      if (seen.has(oid)) continue;
-      seen.add(oid);
-      if (seen.size > LIMITS.graph)
-        fail(413, "Object graph exceeds 5000 objects");
-      if (o.type === "commit") {
-        const c = parseCommit(o);
-        todo.push(
-          { oid: c.tree, type: "tree" },
-          ...c.parents.map((oid) => ({ oid, type: "commit" as const })),
-        );
-      } else if (o.type === "tree") {
-        for (const e of parseTree(o.data))
-          if (e.mode !== "160000")
-            todo.push({ oid: e.sha, type: e.type as ObjectType });
-      } else if (o.type === "tag") todo.push(parseTag(o));
+      const batch = todo.splice(-2).filter(({ oid }) => !exclude.has(oid));
+      const objects = await settledPair(batch.map(({ oid }) => this.get(oid)));
+      for (let i = 0; i < batch.length; i++) {
+        const { oid, type } = batch[i],
+          o = objects[i];
+        // Every edge is checked, even when another path already visited this object.
+        if (type && o.type !== type)
+          fail(400, "Git object graph type mismatch");
+        if (seen.has(oid)) continue;
+        seen.add(oid);
+        if (seen.size > LIMITS.graph)
+          fail(413, "Object graph exceeds 5000 objects");
+        if (o.type === "commit") {
+          const c = parseCommit(o);
+          todo.push(
+            { oid: c.tree, type: "tree" },
+            ...c.parents.map((oid) => ({ oid, type: "commit" as const })),
+          );
+        } else if (o.type === "tree") {
+          for (const e of parseTree(o.data))
+            if (e.mode !== "160000")
+              todo.push({ oid: e.sha, type: e.type as ObjectType });
+        } else if (o.type === "tag") todo.push(parseTag(o));
+      }
     }
     return seen;
   }
@@ -331,4 +348,12 @@ export class ObjectStore {
     }
     fail(400, "Tag chain too deep");
   }
+}
+
+/** Drain in-flight I/O before rejecting, so callers cannot publish or retry while it mutates caches. */
+async function settledPair<T>(promises: Promise<T>[]): Promise<T[]> {
+  const results = await Promise.allSettled(promises);
+  for (const result of results)
+    if (result.status === "rejected") throw result.reason;
+  return results.map((result) => (result as PromiseFulfilledResult<T>).value);
 }

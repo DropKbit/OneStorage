@@ -6,7 +6,6 @@ import { z } from "zod";
 import { branch, sha, fail, slug } from "./security";
 import { jsonInput, identity } from "./workspaces";
 import { repositoryRole, roleRank } from "./access";
-import { reviewGate } from "./review";
 interface Helpers {
   access(c: Context<App>, level?: "read" | "write" | "maintain"): Promise<Repo>;
   engine(
@@ -194,10 +193,11 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
           approvals: z.number().int().min(0).max(10).default(1),
           require_ci: z.boolean().default(false),
           require_resolved: z.boolean().default(false),
+          require_codeowners: z.boolean().default(false),
         })
         .parse(await jsonInput(c));
     await c.env.DB.prepare(
-      "INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci,require_resolved) VALUES(?,?,?,?,?,?) ON CONFLICT(repo_id,branch) DO UPDATE SET require_mr=excluded.require_mr,approvals=excluded.approvals,require_ci=excluded.require_ci,require_resolved=excluded.require_resolved",
+      "INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci,require_resolved,require_codeowners) VALUES(?,?,?,?,?,?,?) ON CONFLICT(repo_id,branch) DO UPDATE SET require_mr=excluded.require_mr,approvals=excluded.approvals,require_ci=excluded.require_ci,require_resolved=excluded.require_resolved,require_codeowners=excluded.require_codeowners",
     )
       .bind(
         r.id,
@@ -206,6 +206,7 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
         b.approvals,
         +b.require_ci,
         +b.require_resolved,
+        +b.require_codeowners,
       )
       .run();
     await h.audit(c, "protection.update", r.id, b.branch);
@@ -224,13 +225,13 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
   });
   app.get(base + "/merges/:id", async (c) => {
     const { repo, mr } = await mrFor(c);
-    const [comparison, gate, discussions] = await Promise.all([
+    const [comparison, context, discussions] = await Promise.all([
       h.engine(
         c,
         repo,
         `/compare?source=${mr.source_sha}&target=${mr.target_sha}`,
       ),
-      reviewGate(c.env, repo, mr),
+      h.engine(c, repo, `/review-context?id=${mr.id}&revision=${mr.revision}`),
       discussionPage(c, mr.id, c.req.query("discussions_after")),
     ]);
     let stale = false;
@@ -260,7 +261,8 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
       diff: comparison.diff,
       discussions: discussions.discussions,
       discussions_next: discussions.next,
-      gate: { ...gate, allowed: gate.allowed && !stale },
+      closing_issues: context.closing_issues,
+      gate: { ...context.gate, allowed: context.gate.allowed && !stale },
       stale,
     });
   });
@@ -335,11 +337,13 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
           .enum(["ff_prefer", "ff_only", "merge"])
           .default("ff_prefer"),
         squash: z.boolean().default(false),
+        revision: z.number().int().min(0).optional(),
       })
       .parse(b);
     const result = await h.engine(c, repo, "/review-merge", {
       id: mr.id,
       ...options,
+      revision: options.revision ?? mr.revision,
       actor_id: identity(c).id,
       source_sha:
         mr.source_repo_id && mr.state === "open"

@@ -100,7 +100,7 @@ npm run deploy
 | 固定提交 JS/WASM 云端 CI、队列触发、日志、产物、应用发布和回滚 | v0.5 已实现，本地与生产验收通过 |
 | MR 批准/要求修改、源/目标版本、CI 门禁、受保护分支 | v0.5 已实现，本地与生产验收通过 |
 | Issue 标签/里程碑/指派、发布、Wiki 历史、收藏/关注/通知 | v0.5 已实现，本地与生产验收通过 |
-| 跨 Fork MR、行级讨论/解决、代码所有者、合并队列、自动关闭 Issue | v0.7 实现跨 Fork 和行级讨论；CODEOWNERS、合并队列、自动关闭待开发 |
+| 跨 Fork MR、行级讨论/解决、代码所有者、合并队列、自动关闭 Issue | v0.7 实现跨 Fork 和行级讨论；v0.8 增加 CODEOWNERS 与默认分支合并自动关闭 Issue；合并队列待开发 |
 | 富文本 Markdown、图片/PDF/Notebook 预览、个人资料与活动页 | v0.6 实现 Markdown、栅格图片、资料与活动；PDF/Notebook 待开发 |
 | 2FA、OAuth/OIDC、Cloudflare Access 登录、注册/找回、细粒度 deploy token | v0.6 实现 TOTP/恢复码/会话管理；其余待开发 |
 | 项目转移/归档、跨项目搜索、Issue 看板/筛选/批量操作、Wiki 迁移 | 仍待开发 |

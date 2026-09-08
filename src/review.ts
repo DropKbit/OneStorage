@@ -1,15 +1,22 @@
 import type { Env, Repo, User } from "./types";
 import { repositoryRole, roleRank } from "./access";
 import { fail } from "./security";
-import type { ObjectStore, Refs } from "./git/objects";
+import { ObjectStore, type Refs } from "./git/objects";
+import { codeownerGate } from "./codeowners";
 export interface Protection {
   branch: string;
   require_mr: number;
   approvals: number;
   require_ci: number;
   require_resolved?: number;
+  require_codeowners?: number;
 }
-export async function reviewGate(env: Env, repo: Repo, mr: any) {
+export async function reviewGate(
+  env: Env,
+  repo: Repo,
+  mr: any,
+  store?: ObjectStore,
+) {
   const rule = await env.DB.prepare(
     "SELECT * FROM branch_protections WHERE repo_id=? AND branch=?",
   )
@@ -22,7 +29,8 @@ export async function reviewGate(env: Env, repo: Repo, mr: any) {
       .bind(mr.id)
       .all<any>()
   ).results;
-  const seen = new Set<string>();
+  const seen = new Set<string>(),
+    approved = new Set<string>();
   let approvals = 0,
     changes = 0;
   const decisions = (
@@ -53,8 +61,10 @@ export async function reviewGate(env: Env, repo: Repo, mr: any) {
       ] < 2
     )
       continue;
-    if (r.verdict === "approve") approvals++;
-    else changes++;
+    if (r.verdict === "approve") {
+      approvals++;
+      approved.add(r.user_id);
+    } else changes++;
   }
   const ci = await env.DB.prepare(
     "SELECT id,status FROM ci_runs WHERE repo_id=? AND sha=? ORDER BY rowid DESC LIMIT 1",
@@ -83,7 +93,25 @@ export async function reviewGate(env: Env, repo: Repo, mr: any) {
     reasons.push("Required approvals: " + rule!.approvals);
   if (rule?.require_ci && ci?.status !== "succeeded")
     reasons.push("Latest pipeline for this source commit must succeed");
+  const codeowners = rule?.require_codeowners
+    ? await codeownerGate(
+        env,
+        repo,
+        mr,
+        approved,
+        store || new ObjectStore(repo.id, env.OBJECTS),
+      )
+    : null;
+  if (codeowners && !codeowners.allowed) {
+    reasons.push(...codeowners.errors.map((e) => "CODEOWNERS: " + e));
+    for (const r of codeowners.requirements)
+      if (!r.allowed)
+        reasons.push(
+          `CODEOWNERS ${r.section} (${r.pattern}): ${r.approved.length}/${r.required} approvals${r.eligible.length ? "" : "; no eligible independent owners"}`,
+        );
+  }
   return {
+    codeowners,
     rule,
     unresolved,
     approvals,
@@ -119,14 +147,15 @@ export async function protectRefs(
       rule.require_mr ||
       rule.approvals ||
       rule.require_ci ||
-      rule.require_resolved
+      rule.require_resolved ||
+      rule.require_codeowners
     ) {
       if (!merge || merge.target !== rule.branch)
         fail(
           403,
           "Protected branch requires a reviewed merge request: " + rule.branch,
         );
-      const gate = await reviewGate(env, repo, merge);
+      const gate = await reviewGate(env, repo, merge, store);
       if (!gate.allowed) fail(409, gate.reasons.join("; "));
     }
   }

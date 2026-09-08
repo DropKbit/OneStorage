@@ -1,5 +1,5 @@
 const account = () => import("./account.js?v=1efd29f8c34c0b77");
-const collaboration = () => import("./collaboration.js?v=5884659dbf419525");
+const collaboration = () => import("./collaboration.js?v=8d44ee78d3358bd6");
 const platform = () => import("./manage.js?v=7bf783bc42bd4ec0");
 import {
   keyPage,

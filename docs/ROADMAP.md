@@ -50,3 +50,8 @@ v0.2 只有 PAT/会话鉴权、heads/tags、基本读写、快进合并、文本
 ## v0.7 Fork 审阅与讨论
 
 见 [REVIEWS-v07.md](REVIEWS-v07.md)：同一 Fork 网络贡献、固定对象快照、目标 CI、行级讨论与解决门禁、DO 串行审阅变更。完整平台目标继续保留，浏览器交互验证在电脑解锁后补验。
+
+
+## v0.8 代码负责人及 Issue 联动
+
+见 [REVIEWS-v08.md](REVIEWS-v08.md)：目标快照 CODEOWNERS、分节和独立负责人门禁、默认分支自动关闭 Issue、持久化重试恢复与 R2 双路 I/O。完整 GitLab/Gogs 目标仍进行中。

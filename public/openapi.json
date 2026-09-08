@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -5065,6 +5065,10 @@
                   "require_ci": {
                     "type": "boolean"
                   },
+                  "require_codeowners": {
+                    "type": "boolean",
+                    "description": "Enforce target-snapshot CODEOWNERS rules. Missing or invalid rules fail closed."
+                  },
                   "require_resolved": {
                     "type": "boolean",
                     "description": "Require all unresolved discussions by current target developers to be resolved, including older versions."
@@ -5424,6 +5428,33 @@
           },
           "409": {
             "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "strategy": {
+                    "enum": [
+                      "ff_prefer",
+                      "ff_only",
+                      "merge"
+                    ]
+                  },
+                  "squash": {
+                    "type": "boolean"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Reject if the MR description or snapshots changed since this revision was displayed."
+                  }
+                },
+                "required": []
+              }
+            }
           }
         }
       }

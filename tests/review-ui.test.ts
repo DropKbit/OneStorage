@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 // @ts-expect-error The browser ES module is JavaScript; this test exercises its pure diff renderer.
-import { reviewDiff } from "../public/collaboration.js";
+import { reviewDiff, codeownersPanel } from "../public/collaboration.js";
 const escape = (s: unknown) =>
   String(s)
     .replaceAll("&", "&amp;")
@@ -17,4 +17,32 @@ test("review diff anchors distinguish header-like source lines and escape hostil
   assert.match(html, /data-review-line="2" data-review-side="new"/);
   assert.doesNotMatch(html, /<script>|<file>/);
   assert.doesNotMatch(reviewDiff(diff, escape, false), /data-review-line=/);
+});
+
+test("codeowners summary escapes rule/identity/path text and displays complete counts with bounded lists", () => {
+  const html = codeownersPanel(
+    {
+      file: "<script>",
+      target_sha: "a".repeat(40),
+      allowed: false,
+      requirements: [
+        {
+          section: "<img onerror=x>",
+          pattern: "<b>",
+          owners: ["<owner>"],
+          eligible: ["<dev>"],
+          approved: [],
+          required: 2,
+          path_count: 999,
+          eligible_count: 123,
+          approved_count: 0,
+          paths: ["<file>"],
+        },
+      ],
+    },
+    escape,
+  );
+  assert.doesNotMatch(html, /<script>|<img|<owner>|<file>/);
+  assert.match(html, /999 个文件/);
+  assert.match(html, /123 人/);
 });

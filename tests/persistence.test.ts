@@ -18,6 +18,7 @@ function fixture() {
     "0006_collaboration.sql",
     "0007_account_security.sql",
     "0008_fork_reviews.sql",
+    "0009_codeowners.sql",
   ])
     db.exec(
       readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8"),

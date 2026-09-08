@@ -161,6 +161,23 @@ export function addReviewPaths(paths) {
     in: "query",
     schema: { type: "integer", minimum: 0 },
   });
+  const merge = paths[base + "/merges/{id}/merge"].post;
+  merge.requestBody = {
+    content: {
+      "application/json": {
+        schema: object({
+          strategy: { enum: ["ff_prefer", "ff_only", "merge"] },
+          squash: { type: "boolean" },
+          revision: {
+            type: "integer",
+            minimum: 0,
+            description:
+              "Reject if the MR description or snapshots changed since this revision was displayed.",
+          },
+        }),
+      },
+    },
+  };
   const protection = paths[base + "/protections"].put;
   protection.requestBody = {
     required: true,
@@ -172,6 +189,11 @@ export function addReviewPaths(paths) {
             require_mr: { type: "boolean" },
             approvals: { type: "integer", minimum: 0, maximum: 10 },
             require_ci: { type: "boolean" },
+            require_codeowners: {
+              type: "boolean",
+              description:
+                "Enforce target-snapshot CODEOWNERS rules. Missing or invalid rules fail closed.",
+            },
             require_resolved: {
               type: "boolean",
               description:

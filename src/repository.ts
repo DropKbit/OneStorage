@@ -1,3 +1,8 @@
+import {
+  plannedIssueClosures,
+  projectMerge,
+  type MergeResult,
+} from "./merge-issues";
 import { importContribution } from "./fork-reviews";
 import { reviewMutation, reviewActor } from "./review-mutations";
 import { z } from "zod";
@@ -61,6 +66,19 @@ export class Repository extends DurableObject<Env> {
         this.objectCache.clear();
         return collectDeleted(this.env, this.ctx.storage);
       }
+      for (const [key, pending] of await this.ctx.storage.list<{
+        repo_id: string;
+        mr_id: number;
+        result: MergeResult;
+      }>({ prefix: "merge-projection:", limit: 10 })) {
+        await projectMerge(
+          this.env,
+          pending.repo_id,
+          pending.mr_id,
+          pending.result,
+        );
+        await this.ctx.storage.delete(key);
+      }
       for (const [key, event] of await this.ctx.storage.list<ForgeEvent>({
         prefix: "event:",
         limit: 20,
@@ -95,7 +113,11 @@ export class Repository extends DurableObject<Env> {
           }
         }
       }
-      if ((await this.ctx.storage.list({ prefix: "event:", limit: 1 })).size)
+      if (
+        (await this.ctx.storage.list({ prefix: "event:", limit: 1 })).size ||
+        (await this.ctx.storage.list({ prefix: "merge-projection:", limit: 1 }))
+          .size
+      )
         await this.ctx.storage.setAlarm(Date.now() + 1000);
     });
     this.tail = result.catch(() => undefined);
@@ -163,10 +185,18 @@ export class Repository extends DurableObject<Env> {
         const next = value as Refs;
         const before = (await this.ctx.storage.get<Refs>("refs.v2")) || {};
         const values: Record<string, unknown> = { "refs.v2": next };
-        if (reviewedMerge)
+        if (reviewedMerge) {
           values["merge-result:" + reviewedMerge.id] = {
             sha: next["refs/heads/" + reviewedMerge.target],
+            issue_ids: reviewedMerge.issue_ids,
+            actor_id: reviewedMerge.actor_id,
           };
+          values["merge-projection:" + reviewedMerge.id] = {
+            repo_id: id,
+            mr_id: reviewedMerge.id,
+            result: values["merge-result:" + reviewedMerge.id],
+          };
+        }
         for (const ref of new Set([
           ...Object.keys(before),
           ...Object.keys(next),
@@ -230,6 +260,31 @@ export class Repository extends DurableObject<Env> {
     const ephemeral = request.headers.get("x-namespace") === "ephemeral",
       repo = select(ephemeral),
       path = url.pathname;
+    if (path === "/review-context" && request.method === "GET") {
+      const metadata = await this.env.DB.prepare(
+        "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+      )
+        .bind(id)
+        .first<Repo>();
+      const mr = await this.env.DB.prepare(
+        "SELECT * FROM merge_requests WHERE id=? AND repo_id=?",
+      )
+        .bind(url.searchParams.get("id"), id)
+        .first<any>();
+      if (!metadata || !mr) fail(404, "Merge request not found");
+      if (String(mr.revision) !== url.searchParams.get("revision"))
+        fail(409, "Merge request changed; reload the review");
+      return Response.json({
+        gate: await reviewGate(this.env, metadata, mr, store),
+        closing_issues: await plannedIssueClosures(
+          this.env,
+          metadata,
+          mr,
+          store,
+          defaultBranch,
+        ),
+      });
+    }
     if (path === "/internal/merge-import" && request.method === "POST") {
       if (!metadata) fail(404, "Repository unavailable");
       const b = z
@@ -257,15 +312,11 @@ export class Repository extends DurableObject<Env> {
       if (!metadata) fail(404, "Repository unavailable");
       const raw = JSON.parse(text(await boundedBody(request, 128 * 1024)));
       const reviewId = z.coerce.number().int().positive().parse(raw.id);
-      const completed = await this.ctx.storage.get<{ sha: string }>(
+      const completed = await this.ctx.storage.get<MergeResult>(
         "merge-result:" + reviewId,
       );
       if (completed) {
-        await this.env.DB.prepare(
-          "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
-        )
-          .bind(completed.sha, reviewId, id)
-          .run();
+        await projectMerge(this.env, id, reviewId, completed);
         fail(409, "Merge request already merged");
       }
       return Response.json(
@@ -282,19 +333,17 @@ export class Repository extends DurableObject<Env> {
       if (!mr || !metadata) fail(404, "Merge request not found");
       if ((await reviewActor(this.env, metadata, body.actor_id)).rank < 3)
         fail(403, "Maintainer required");
-      const previous = await this.ctx.storage.get<{ sha: string }>(
+      const previous = await this.ctx.storage.get<MergeResult>(
         "merge-result:" + mr.id,
       );
       if (previous || mr.state === "merged") {
         const result = previous || { sha: mr.merged_sha };
-        await this.env.DB.prepare(
-          "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
-        )
-          .bind(result.sha, mr.id, id)
-          .run();
+        await projectMerge(this.env, id, mr.id, result);
         return Response.json(result);
       }
       if (mr.state !== "open") fail(409, "Merge request closed");
+      if (body.revision !== mr.revision)
+        fail(409, "Merge request changed; reload before merging");
       if (
         (mr.source_repo_id
           ? body.source_sha !== mr.source_sha
@@ -302,9 +351,19 @@ export class Repository extends DurableObject<Env> {
         refs["refs/heads/" + mr.target] !== mr.target_sha
       )
         fail(409, "Branches moved; refresh the merge request and review again");
-      const gate = await reviewGate(this.env, metadata, mr);
+      const gate = await reviewGate(this.env, metadata, mr, store);
       if (!gate.allowed) fail(409, gate.reasons.join("; "));
-      reviewedMerge = mr;
+      reviewedMerge = {
+        ...mr,
+        actor_id: body.actor_id,
+        issue_ids: await plannedIssueClosures(
+          this.env,
+          metadata,
+          mr,
+          store,
+          defaultBranch,
+        ),
+      };
       const result = await repo.mergeBranches({
         source_ref: mr.source_sha,
         target_branch: mr.target,
@@ -317,11 +376,17 @@ export class Repository extends DurableObject<Env> {
           email: "merge@onestorage.invalid",
         },
       });
-      await this.env.DB.prepare(
-        "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
-      )
-        .bind(result.sha, mr.id, id)
-        .run();
+      if (result.result === "no_op") {
+        const gate = await reviewGate(this.env, metadata, mr, store);
+        if (!gate.allowed) fail(409, gate.reasons.join("; "));
+        await publication.put("refs.v2", refs);
+      }
+      await projectMerge(this.env, id, mr.id, {
+        sha: result.sha,
+        issue_ids: reviewedMerge.issue_ids,
+        actor_id: body.actor_id,
+      });
+      await this.ctx.storage.delete("merge-projection:" + mr.id);
       return Response.json(result);
     }
     const life = await lifecycle(request, repo, this.env, this.ctx.storage);
