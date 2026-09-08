@@ -356,7 +356,7 @@ try {
   console.log(
     JSON.stringify({
       cleanup:
-        "projects/workspace deleted; fixture users disabled and credentials revoked; local owner session logged out",
+        "projects/workspace deleted; fixture users disabled and credentials revoked",
       space,
     }),
   );
