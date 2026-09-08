@@ -37,7 +37,7 @@
 点击上方 **Deploy to Cloudflare**，从 `deploy` 模板分支创建自己的实例：
 
 1. 连接 GitHub 与 Cloudflare，选择项目名及新建的 D1、R2、Queue 资源。
-2. 填写初始化密钥 `BOOTSTRAP_SECRET` 和凭据加密密钥 `CREDENTIAL_ENCRYPTION_KEY`，其余地址保持默认。
+2. 填写初始化密钥 `BOOTSTRAP_SECRET` 和凭据加密密钥 `CREDENTIAL_ENCRYPTION_KEY`，服务地址会自动生成。
 3. 部署完成后打开主 Worker 的地址，使用初始化密钥创建管理员。
 
 模板自动迁移数据库，依次部署编译服务、应用网关和主服务，并连接共享存储与服务地址。需要相应 Cloudflare 服务额度及部署权限；详见 [部署说明](docs/DEPLOYMENT.md#关于一键部署)。已有实例升级请保留原有资源和加密密钥。

@@ -1,5 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
 import {
   deploymentConfigs,
   childEnvironment,
@@ -19,6 +23,41 @@ const fixture = () => ({
     producers: [{ binding: "EVENTS", queue: "my-events" }],
     consumers: [{ queue: "my-events" }],
   },
+});
+test("portable template removes production values and does not create empty required form fields", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "onestorage-template-"));
+  try {
+    for (const file of [
+      "wrangler.jsonc",
+      "wrangler.build.jsonc",
+      "wrangler.apps.jsonc",
+      "package.json",
+    ])
+      await fs.copyFile(
+        new URL("../" + file, import.meta.url),
+        path.join(dir, file),
+      );
+    execFileSync(process.execPath, [
+      new URL("../scripts/prepare-deploy.mjs", import.meta.url).pathname,
+      dir,
+    ]);
+    const main = JSON.parse(
+      await fs.readFile(path.join(dir, "wrangler.jsonc"), "utf8"),
+    );
+    assert.equal(main.vars, undefined);
+    assert.equal(main.routes, undefined);
+    assert.equal(main.account_id, undefined);
+    assert.equal(main.services, undefined);
+    assert.equal(
+      main.d1_databases[0].database_id,
+      "00000000-0000-0000-0000-000000000000",
+    );
+    const example = await fs.readFile(path.join(dir, ".env.example"), "utf8");
+    assert.match(example, /^BOOTSTRAP_SECRET=$/m);
+    assert.match(example, /^CREDENTIAL_ENCRYPTION_KEY=$/m);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
 });
 test("provisioned bindings are shared only with the workers that need them", () => {
   const f = fixture(),

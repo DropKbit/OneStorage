@@ -14,7 +14,9 @@ main.name = "onestorage";
 delete main.routes;
 delete main.account_id;
 delete main.services;
-main.vars = { APP_ORIGIN: "", APPS_ORIGIN: "", WEBHOOK_ALLOWED_HOSTS: "" };
+// The Deploy form treats every declared var as required, even an empty default.
+// Origins are derived after deploying the gateway; optional webhook hosts stay unset.
+delete main.vars;
 main.d1_databases = [
   {
     binding: "DB",
@@ -56,11 +58,6 @@ pkg.cloudflare = {
       description:
         "凭据加密密钥。请使用 openssl rand -base64 32 生成（32 随机字节），升级时必须保留。",
     },
-    APP_ORIGIN: {
-      description:
-        "首次部署请留空，自动使用本账户 workers.dev；绑定自定义域名后再调整。",
-    },
-    APPS_ORIGIN: { description: "留空，由部署脚本自动填写独立应用网关地址。" },
     NPM_CACHE: {
       description: "独立的公共 npm 下载缓存 R2 桶；不能与 Git 对象桶共用。",
     },
