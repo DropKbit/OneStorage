@@ -389,6 +389,8 @@ try {
     await exec(
       "git",
       [
+        "-c",
+        "credential.helper=",
         "clone",
         "--bare",
         origin + "/" + username + "/queue-proof.git",
