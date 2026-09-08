@@ -1,6 +1,6 @@
 # OneStorage
 
-v0.35 增加 Cloudflare 原生构建的公共 npm R2 下载缓存：命中仍验证锁文件完整性，私有包保持独立授权路径，日志显示命中和下载量。见 [npm 缓存](docs/CI-NPM-CACHE-v35.md)。
+v0.35 增加 Cloudflare 原生构建的公共 npm R2 下载缓存：命中仍验证锁文件完整性，私有包保持独立授权路径，日志显示命中和下载量。见 [npm 缓存](docs/CI-NPM-CACHE-v35.md) 与 [验收记录](docs/VERIFICATION-v35.md)。
 
 v0.34 让默认分支代码索引按仓库复用未变化、重命名和复制文件的内容，减少推送后的 D1 倒排写入；提供完整重建和复用统计。见 [内容复用](docs/CODE-CONTENT-v34.md) 与 [验收记录](docs/VERIFICATION-v34.md)。
 
