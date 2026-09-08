@@ -10,6 +10,7 @@ export interface Env {
   WEBHOOK_ALLOWED_HOSTS?: string;
   APP_ORIGIN: string;
   BOOTSTRAP_SECRET: string;
+  LEGACY_APP_ORIGIN?: string;
   CREDENTIAL_ENCRYPTION_KEY?: string;
   SYNC_ALLOWED_HOSTS?: string;
   CI_ALLOWED_HOSTS?: string;

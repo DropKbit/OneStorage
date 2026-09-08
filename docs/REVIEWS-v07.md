@@ -1,5 +1,7 @@
 # v0.7 跨 Fork 审阅与代码讨论
 
+**简体中文** · [English](en/REVIEWS-v07.md)
+
 此增量继续构建 Cloudflare 原生 GitLab/Gogs 协作平台。运行时仍为 Workers JavaScript、R2 Git 对象与 Durable Objects 引用协调，不引入容器或 Git 服务进程。
 
 ## 跨 Fork 合并请求

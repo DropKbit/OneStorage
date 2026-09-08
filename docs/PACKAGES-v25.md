@@ -1,5 +1,7 @@
 # v0.25 项目包仓库
 
+**简体中文** · [English](en/PACKAGES-v25.md)
+
 OneStorage 使用 Workers 处理包协议，R2 保存不可变文件，D1 保存版本、标签和上传清理记录。Git 引用仍由 Durable Objects 协调，不引入容器或服务端 npm 进程。
 
 每个项目有独立的通用文件仓库和 npm registry。网页入口为项目的“包仓库”标签：浏览版本、文件与 SHA-256，上传通用文件，管理 npm 标签、撤回版本。包始终继承项目当前可见性及成员权限。
@@ -9,14 +11,14 @@ OneStorage 使用 Workers 处理包协议，R2 保存不可变文件，D1 保存
 项目 registry：
 
 ```text
-https://git.1s.hk/api/repos/SPACE/PROJECT/packages/npm/
+https://1s.hk/api/repos/SPACE/PROJECT/packages/npm/
 ```
 
 在使用该仓库的项目中创建 `.npmrc`，其中令牌使用环境变量引用：
 
 ```ini
-registry=https://git.1s.hk/api/repos/SPACE/PROJECT/packages/npm/
-//git.1s.hk/api/repos/SPACE/PROJECT/packages/npm/:_authToken=${ONESTORAGE_TOKEN}
+registry=https://1s.hk/api/repos/SPACE/PROJECT/packages/npm/
+//1s.hk/api/repos/SPACE/PROJECT/packages/npm/:_authToken=${ONESTORAGE_TOKEN}
 ```
 
 设置 `ONESTORAGE_TOKEN` 后，可以直接使用原生客户端：
@@ -35,8 +37,8 @@ npm unpublish your-package@1.0.0 --force
 如果同时依赖 npm 官方仓库，建议只把自己的 scope 指向 OneStorage：
 
 ```ini
-@your-scope:registry=https://git.1s.hk/api/repos/SPACE/PROJECT/packages/npm/
-//git.1s.hk/api/repos/SPACE/PROJECT/packages/npm/:_authToken=${ONESTORAGE_TOKEN}
+@your-scope:registry=https://1s.hk/api/repos/SPACE/PROJECT/packages/npm/
+//1s.hk/api/repos/SPACE/PROJECT/packages/npm/:_authToken=${ONESTORAGE_TOKEN}
 ```
 
 发布请求携带一个版本和一个 gzip/tar 附件。服务器计算 SHA-256、SHA-1 和 SHA-512，检查客户端的完整性摘要，并从 tar 中的 `package/package.json` 读取真实元数据。不会抓取客户端提供的 tarball URL；下载地址由当前项目地址生成。支持二进制文件、捆绑依赖、PAX/GNU 长文件名；路径越界、重复路径、链接、稀疏文件、损坏或截断的压缩数据会被拒绝。
@@ -46,7 +48,7 @@ npm unpublish your-package@1.0.0 --force
 ## 通用文件
 
 ```sh
-export PACKAGE_URL=https://git.1s.hk/api/repos/SPACE/PROJECT/packages/generic/tool/1.0.0/tool.zip
+export PACKAGE_URL=https://1s.hk/api/repos/SPACE/PROJECT/packages/generic/tool/1.0.0/tool.zip
 curl --fail --request PUT "$PACKAGE_URL" \
   --header "Authorization: Bearer $ONESTORAGE_TOKEN" \
   --header "X-Package-SHA256: $(shasum -a 256 tool.zip | cut -d ' ' -f 1)" \

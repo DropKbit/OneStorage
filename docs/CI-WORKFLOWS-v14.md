@@ -1,5 +1,7 @@
 # 仓库配置与依赖工作流（v0.14）
 
+**简体中文** · [English](en/CI-WORKFLOWS-v14.md)
+
 本轮把流水线配置纳入 Git 版本，并增加有独立运行记录、租约、日志和产物的依赖任务。现有单流水线 JSON 与外部 Runner 协议继续可用；这是 OneStorage 的配置格式，不是 GitLab YAML 兼容层。定时流水线、共享构建缓存、平台变量/密钥和云端 npm/TypeScript 工具链仍待开发。
 
 ## 配置来源

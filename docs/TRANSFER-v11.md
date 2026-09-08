@@ -1,5 +1,7 @@
 # 项目转移与重命名（v0.11）
 
+**简体中文** · [English](en/TRANSFER-v11.md)
+
 在项目设置中展开「转移或重命名项目」，填写目标空间和项目名。要求源项目 owner；目标必须是操作者本人的个人空间，或其拥有 owner 权限的团队空间。管理员身份不绕过项目所有权。读取/写入 PAT 仍服从项目角色，只读 PAT 和委托 JWT 不能转移项目。
 
 API：`POST /api/repos/{namespace}/{repo}/transfer`，正文 `{ "namespace": "team", "name": "project", "revision": 0 }`。名称可省略，沿用当前项目名；revision 来自项目详情的 lifecycle_revision。响应是最新项目元数据，包括不变的 UUID 和递增后的版本。

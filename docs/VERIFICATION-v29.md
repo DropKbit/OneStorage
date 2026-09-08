@@ -1,5 +1,7 @@
 # v0.29 Git 持久审计验收
 
+**简体中文** · [English](en/VERIFICATION-v29.md)
+
 本阶段完成原生 Git 引用与审计意图的原子持久化、D1 去重投递、多引用存储事务及网关确认诊断。它不代表完整 GitLab/Gogs 目标完成；行为与限制见 [Git 提交与审计](GIT-RECEIPTS-v29.md)。
 
 ## 故障证据

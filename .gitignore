@@ -13,3 +13,5 @@ public/source.tar.gz
 __pycache__/
 *.pyc
 *.egg-info/
+
+/public/docs/

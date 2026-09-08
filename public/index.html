@@ -10,9 +10,9 @@
     <meta name="theme-color" content="#171a20" />
     <title>OneStorage · Code, together.</title>
     <link rel="icon" href="/favicon.svg" />
-    <link rel="stylesheet" href="/style.css?v=717c81faf66a45a8" />
-    <link rel="modulepreload" href="/forge.js?v=5830e6e9cedfecd4" />
-    <script type="module" src="/app.js?v=064375f9b8390f42"></script>
+    <link rel="stylesheet" href="/style.css?v=bc80a739ff0ed49a" />
+    <link rel="modulepreload" href="/forge.js?v=b69f0a0cd6fd6d60" />
+    <script type="module" src="/app.js?v=053d65ba5b462019"></script>
   </head>
   <body>
     <div id="app">
@@ -21,12 +21,16 @@
           <a class="brand" href="/"
             ><img src="/favicon.svg" alt="" />OneStorage</a
           >
-          <nav><a class="navlink active" href="/">项目</a></nav>
+          <nav>
+            <a class="navlink active" href="/" data-i18n-shell="projects"
+              >项目</a
+            >
+          </nav>
         </aside>
         <main class="main">
-          <header class="topbar">工作空间</header>
+          <header class="topbar" data-i18n-shell="workspace">工作空间</header>
           <div class="content">
-            <div class="titlebar"><h1>项目</h1></div>
+            <div class="titlebar"><h1 data-i18n-shell="projects">项目</h1></div>
             <section
               class="panel page-loading"
               aria-busy="true"

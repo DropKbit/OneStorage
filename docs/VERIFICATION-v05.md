@@ -1,5 +1,7 @@
 # v0.5 Cloudflare 原生协作验收
 
+**简体中文** · [English](en/VERIFICATION-v05.md)
+
 日期：2026-09-08。总目标继续保持 active；本版不是 GitLab 全量兼容完成声明，持续差距见 CLOUD-NATIVE-v05.md。
 
 ## 已执行

@@ -1,17 +1,19 @@
 # v0.26 部署令牌验收
 
+**简体中文** · [English](en/VERIFICATION-v26.md)
+
 日期：2026-09-09（Asia/Singapore）。契约见 [部署令牌](DEPLOY-TOKENS-v26.md)。功能候选提交 `c978e5ac8194de9cecf97a79b2b7e389ef509be5`，主 Worker `be5e545d-efdd-4dfb-a58e-9173379001d6`。本记录发布后只补充验证文档、说明和对应源码归档，运行时代码保持一致。
 
-| 环境 | 检查 | 结果 |
-| --- | --- | --- |
-| 类型与单元 | `npm run check` | 289 项测试通过，包含 9 项部署令牌专项测试 |
-| 生产打包 | `npm run build:production` | Wrangler dry-run 通过，原有资源绑定保留 |
-| 本地部署令牌 | `npm run test:deploy-tokens`，配置 Playwright | 46 项检查、49 次直接 API 请求通过 |
-| 本地包仓库回归 | `npm run test:packages` | 54 项检查、46 次直接 API 请求通过 |
-| 本地核心 Git | `npm run test:e2e` | 43 次 API 断言及原生 Git、并发、LFS、持久化检查通过 |
-| 生产部署令牌 | 临时空间/项目、独立私密凭据文件 | 41 项检查、47 次直接 API 请求通过 |
-| 生产包仓库回归 | 真实 npm 与通用文件协议 | 54 项检查、44 次直接 API 请求通过 |
-| 生产 Git/CI | push → 固定提交 DAG → clone/fsck | 34 次检查通过，包含流水线状态轮询 |
+| 环境           | 检查                                          | 结果                                                |
+| -------------- | --------------------------------------------- | --------------------------------------------------- |
+| 类型与单元     | `npm run check`                               | 289 项测试通过，包含 9 项部署令牌专项测试           |
+| 生产打包       | `npm run build:production`                    | Wrangler dry-run 通过，原有资源绑定保留             |
+| 本地部署令牌   | `npm run test:deploy-tokens`，配置 Playwright | 46 项检查、49 次直接 API 请求通过                   |
+| 本地包仓库回归 | `npm run test:packages`                       | 54 项检查、46 次直接 API 请求通过                   |
+| 本地核心 Git   | `npm run test:e2e`                            | 43 次 API 断言及原生 Git、并发、LFS、持久化检查通过 |
+| 生产部署令牌   | 临时空间/项目、独立私密凭据文件               | 41 项检查、47 次直接 API 请求通过                   |
+| 生产包仓库回归 | 真实 npm 与通用文件协议                       | 54 项检查、44 次直接 API 请求通过                   |
+| 生产 Git/CI    | push → 固定提交 DAG → clone/fsck              | 34 次检查通过，包含流水线状态轮询                   |
 
 真实 Git 验收涵盖 clone/严格 fsck、push 拒绝、LFS 下载与上传拒绝、令牌轮换和撤销、归档仍可读取、重命名保留令牌、跨空间转移收回旧范围。空间令牌还验证了创建令牌后新增项目的覆盖。真实 npm CLI 验证作用域包 publish/install/dist-tag/unpublish；通用包验证独立读/写/撤回授权。本轮未重复 v0.25 的 15 MiB npm/64 MiB 通用包边界场景，相关生产证据见 [v0.25](VERIFICATION-v25.md)。
 

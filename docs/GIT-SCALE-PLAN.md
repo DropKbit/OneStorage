@@ -1,5 +1,7 @@
 # 大仓库能力：尚未完成的核心目标
 
+**简体中文** · [English](en/GIT-SCALE-PLAN.md)
+
 v0.8 提交 d80a1b7 的源项目可达图实测为 408 个对象、4794833 字节展开内容。它通过验证不代表大型 GitLab 项目已经可用。
 
 v0.8 时的 `ObjectStore` 是单次操作缓存，最多 32 MiB。`GitRepository.updates` 会遍历新 refs 的完整对象图，`validateFetch` 会遍历全部 refs；上传协议随后还会遍历 haves、wants 与标签。5000 对象图限额因此会限制长历史/大仓库，不能只通过提高常量来解决。

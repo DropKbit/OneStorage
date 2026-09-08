@@ -1,5 +1,7 @@
 # 公共 npm 下载缓存 v0.35
 
+**简体中文** · [English](en/CI-NPM-CACHE-v35.md)
+
 Cloudflare 原生 `build` 步骤现在可以跨构建复用公共 npm 压缩包。独立编译 Worker 通过专用 R2 桶 `onestorage-npm-cache` 保存下载缓存，Git 对象、项目源码、私有包和 CI 密钥不进入该桶。缓存是可删除的派生数据，不是构建产物或包仓库。
 
 ## 正确性与权限

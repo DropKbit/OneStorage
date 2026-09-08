@@ -1,22 +1,24 @@
 # v0.9 Issue 列表、批量操作与标签看板
 
+**简体中文** · [English](en/ISSUES-v09.md)
+
 本轮实现项目内的完整筛选/分页和版本化修改，以及可保存的标签看板。数据保存在 D1；没有新增容器或外部服务。项目归档、转移及跨项目协作仍属于持续目标，见 [生命周期实现门槛](PROJECT-LIFECYCLE-PLAN.md)。
 
 ## 列表与详情
 
 `GET /api/repos/{namespace}/{repo}/issues` 支持：
 
-| 参数 | 行为 |
-| --- | --- |
-| state | `all`（默认）、`open`、`closed` |
-| q | 标题或描述包含的文本，最多 200 字符；`%`、`_` 按字面搜索 |
-| author | 作者用户名，`me` 表示当前登录用户 |
-| assignee | 负责人用户名，`me` 或 `none`（未分配） |
-| milestone | 里程碑 UUID，`none` 表示未分配 |
-| labels | 逗号分隔的标签 UUID，最多 20 个，同时匹配 |
-| sort | `newest`、`oldest`、`updated`；最近更新按字段和标签修改时间 |
-| limit | 1–100，API 默认 100，网页固定每页 50 |
-| cursor | 上一页返回的 `next_cursor`，绑定仓库、用户和本次筛选 |
+| 参数      | 行为                                                        |
+| --------- | ----------------------------------------------------------- |
+| state     | `all`（默认）、`open`、`closed`                             |
+| q         | 标题或描述包含的文本，最多 200 字符；`%`、`_` 按字面搜索    |
+| author    | 作者用户名，`me` 表示当前登录用户                           |
+| assignee  | 负责人用户名，`me` 或 `none`（未分配）                      |
+| milestone | 里程碑 UUID，`none` 表示未分配                              |
+| labels    | 逗号分隔的标签 UUID，最多 20 个，同时匹配                   |
+| sort      | `newest`、`oldest`、`updated`；最近更新按字段和标签修改时间 |
+| limit     | 1–100，API 默认 100，网页固定每页 50                        |
+| cursor    | 上一页返回的 `next_cursor`，绑定仓库、用户和本次筛选        |
 
 返回 `issues`、`total`、`open`、`has_more`、`next_cursor`。总数涵盖全部匹配项，不是当前页数量。每项包含负责人、里程碑、标签、`revision` 与 `updated_at`。使用创建 ID 或更新时间/ID 的游标；持续修改中的数据不构成跨请求的固定快照。
 
@@ -28,7 +30,10 @@
 
 ```json
 {
-  "issues": [{"id": 123, "revision": 4}, {"id": 124, "revision": 1}],
+  "issues": [
+    { "id": 123, "revision": 4 },
+    { "id": 124, "revision": 1 }
+  ],
   "changes": {
     "state": "closed",
     "assignee": "alice",

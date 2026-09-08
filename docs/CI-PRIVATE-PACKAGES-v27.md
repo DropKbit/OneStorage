@@ -1,5 +1,7 @@
 # 私有 npm 依赖的原生云构建
 
+**简体中文** · [English](en/CI-PRIVATE-PACKAGES-v27.md)
+
 v0.27 的 `build` 步骤可以混合使用公开 npmjs 依赖和当前 OneStorage 实例内的私有 npm 包。主 Worker 按固定提交的锁文件从 R2 读取包，校验完整性后将包内容传给独立 WASM 编译 Worker；编译服务没有账户存储绑定，也不会接收部署令牌或 CI 变量值。构建不需要容器或外部 Runner。
 
 ## 使用
@@ -14,14 +16,18 @@ v0.27 的 `build` 步骤可以混合使用公开 npmjs 依赖和当前 OneStorag
   "runner": "worker",
   "variables": ["PACKAGE_TOKEN"],
   "timeout_seconds": 110,
-  "steps": [{
-    "type": "build",
-    "entry": "src/index.ts",
-    "private_registries": [{
-      "project_id": "00000000-0000-4000-8000-000000000001",
-      "token_variable": "PACKAGE_TOKEN"
-    }]
-  }],
+  "steps": [
+    {
+      "type": "build",
+      "entry": "src/index.ts",
+      "private_registries": [
+        {
+          "project_id": "00000000-0000-4000-8000-000000000001",
+          "token_variable": "PACKAGE_TOKEN"
+        }
+      ]
+    }
+  ],
   "deploy": {
     "kind": "worker",
     "entry": "dist/index.js",

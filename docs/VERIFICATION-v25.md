@@ -1,5 +1,7 @@
 # v0.25 包仓库验收
 
+**简体中文** · [English](en/VERIFICATION-v25.md)
+
 日期：2026-09-09（Asia/Singapore）。契约与边界见 [包仓库](PACKAGES-v25.md)。生产候选提交 `0d3444b`，主 Worker `c3eceaf0-ff24-4cf2-ad68-fe3431c35e42`。后续发布仅补充此验证文档及对应源码归档，运行时代码保持一致。
 
 | 环境         | 检查                                                     | 结果                                                                      |

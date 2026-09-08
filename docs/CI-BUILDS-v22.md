@@ -1,5 +1,7 @@
 # Cloudflare 原生 TypeScript / npm 构建
 
+**简体中文** · [English](en/CI-BUILDS-v22.md)
+
 v0.35 更新：公共 npm 压缩包可以通过专用 R2 缓存跨构建复用，见 [缓存说明](CI-NPM-CACHE-v35.md)。下文无 R2 绑定、每次重新下载的描述记录 v0.22 初始实现。
 
 `build` 步骤在独立的 `onestorage-build` Worker 中运行 esbuild 0.28.2 WASM。无需容器、Node 服务器或外部 Runner。控制面读取固定提交中的源码，通过私有 Service Binding 编译，再将产物、应用版本存入 R2，并沿用 D1 租约、工作流门禁、权限撤销和环境 CAS 激活/回滚。

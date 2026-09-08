@@ -1,5 +1,7 @@
 # Jupyter Notebook 预览（v0.37）
 
+**简体中文** · [English](en/NOTEBOOK-v37.md)
+
 仓库代码浏览器打开 `.ipynb` 文件时默认显示只读预览。文件仍通过现有 Git 对象、R2 和仓库鉴权读取，不需要容器、Python、Jupyter 服务或第三方预览网站。预览不会执行 Notebook，也不提供内核、重跑单元或编辑输出的功能。
 
 仓库附带 [示例笔记本](../examples/notebook.ipynb)，可直接在代码浏览器打开。

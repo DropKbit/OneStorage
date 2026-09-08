@@ -1,201 +1,89 @@
-# HTTP API / Git protocol — v0.3
+# HTTP API 与 Git 协议
 
-Base URL: `https://git.1s.hk/api` (local: `http://localhost:8787/api`). API examples use a short-lived personal token in `Authorization: Bearer <token>`. Do not put tokens in clone URLs, query strings or shell history. Browser session mutations additionally require the exact configured `Origin`.
+**简体中文** · [English](en/API.md)
 
-Responses use JSON. Errors contain `{ "error": "..." }`, and validation errors include `details`. Common status codes: 400 validation, 401 authentication, 403 permission, 404 hidden/missing resource, 409 conflict, 413 size limit, 429 saturation, 5xx transient/engine/storage failures.
+基础地址：`https://1s.hk/api`，本地为 `http://localhost:8787/api`。使用 `Authorization: Bearer <token>` 传递短期 PAT；不要把令牌放进 URL、查询参数或命令历史。浏览器会话写请求还必须携带与配置一致的 `Origin`。
 
-## Identity
+本文介绍基础 Git API；完整机器可读契约为 [`/openapi.json`](https://1s.hk/openapi.json)。后续协作与平台接口见各功能指南。响应一般为 JSON；错误含 `error`，校验错误可含 `details`。400 表示参数错误，401 未认证，403 权限不足，404 不存在或隐藏，409 冲突，413 超限，429 限流，5xx 为运行时或存储错误。写请求失败不一定代表未提交，重试前先读取远端引用。
 
-| Method     | Path          | Purpose                                                                   |
-| ---------- | ------------- | ------------------------------------------------------------------------- |
-| GET        | `/setup`      | Whether initial setup is required                                         |
-| POST       | `/setup`      | `{username,password,secret}`; one-time administrator creation             |
-| POST       | `/login`      | `{username,password}`; issues session cookie                              |
-| POST       | `/logout`     | Revoke current browser session                                            |
-| POST       | `/password`   | Session-only `{current_password,new_password}`; revokes sessions and PATs |
-| GET        | `/me`         | Current user or null                                                      |
-| POST       | `/users`      | Administrator creates `{username,password}`                               |
-| GET / POST | `/tokens`     | List/create PATs; creation requires browser session                       |
-| DELETE     | `/tokens/:id` | Revoke own PAT                                                            |
+## 账户与项目
 
-Token creation: `{name,scope:"read"|"write",days:1..365}`. Plaintext token is returned once. Passwords are 12–128 characters. Slugs are lowercase letters, digits, `_` and `-`, beginning with a letter/digit, maximum 48 characters. Route names including `api`, `admin`, `auth` and `settings` are reserved.
+| 方法                 | 路径                      | 用途                                                             |
+| -------------------- | ------------------------- | ---------------------------------------------------------------- |
+| GET / POST           | `/setup`                  | 查询初始化状态；提交 `{username,password,secret}` 创建首个管理员 |
+| POST                 | `/login`                  | `{username,password,otp?}`，签发会话 Cookie                      |
+| POST                 | `/logout`                 | 撤销当前会话                                                     |
+| POST                 | `/password`               | 会话提交 `{current_password,new_password}`，撤销旧会话和 PAT     |
+| GET                  | `/me`                     | 当前用户或 null                                                  |
+| POST                 | `/users`                  | 管理员创建用户                                                   |
+| GET / POST / DELETE  | `/tokens`、`/tokens/:id`  | 列出、创建及撤销自己的 PAT                                       |
+| GET / POST           | `/repos`                  | 查询或创建项目                                                   |
+| GET / PATCH / DELETE | `/repos/:namespace/:repo` | 元数据、设置、软删除并异步回收                                   |
 
-## Projects
+PAT 创建接受 `{name,scope:"read"或"write",days:1..365}`，明文只返回一次，需浏览器会话；启用 MFA 时遵守二次验证。密码为 12–128 字符。用户标识最多 48 个小写字母、数字、下划线或连字符，以字母/数字开头；系统路由名保留。
 
-`/repos` supports GET with `q` and zero-based `page`, and POST with `{name,description?,visibility?,default_branch?}`. Namespaces belong to the creating user. Repositories default to private and `main`.
+项目默认私有、分支 `main`。名称最多五个 `/` 分段、总长 200 字符；完整名称编码为一个路径段，如 `/api/repos/alice/team%2Fproject`。列表接受 `q`、`page`、`limit`（1–100）、`cursor`；原样使用 `next_cursor`。创建可指定名称、描述、可见性、默认分支与 `base_repo`。团队空间与继承权限见[平台指南](PLATFORM-v04.md)。
 
-All paths below are relative to `/repos/:namespace/:repo`.
+以下路径均相对于 `/api/repos/:namespace/:repo`。
 
-| Method      | Path                                  | Payload / result                                       |
-| ----------- | ------------------------------------- | ------------------------------------------------------ |
-| GET         | `/`                                   | Repository metadata, role, clone URL                   |
-| PATCH       | `/`                                   | `{description,visibility,default_branch}`; maintainer  |
-| GET         | `/branches`                           | `{branches:[{name,sha}]}`                              |
-| GET         | `/tree?ref=main&path=src`             | `{ref,path,entries:[{name,type,mode,sha}]}`            |
-| GET         | `/blob?ref=main&path=README.md`       | UTF-8 content, binary flag, size, resolved ref         |
-| GET         | `/search?ref=main&q=keyword`          | Literal text search, 200 matches maximum               |
-| GET         | `/commits?ref=main`                   | Paginated history; optional path filter                |
-| GET         | `/compare?source=feature&target=main` | Immutable SHAs and plain diff                          |
-| POST        | `/commit`                             | `{branch,expected_sha,message,files:[{path,content}]}` |
-| GET / PUT   | `/members`                            | List or upsert `{username,role}`                       |
-| DELETE      | `/members/:username`                  | Remove member                                          |
-| GET / POST  | `/issues`                             | List or create `{title,body?}`                         |
-| GET / PATCH | `/issues/:id`                         | Detail/comments or `{state:"open"                      | "closed"}` |
-| POST        | `/issues/:id/comments`                | `{body}`                                               |
-| GET / POST  | `/merges`                             | List or create `{title,body?,source,target}`           |
-| GET         | `/merges/:id`                         | Reviewed SHA pair and diff                             |
-| POST        | `/merges/:id/merge`                   | Fast-forward and mark merged                           |
-| GET         | `/audit`                              | Last 100 audit events; maintainer                      |
+## 文件、历史与搜索
 
-File API: `content:null` deletes a path. `expected_sha:null` creates an absent branch; otherwise provide its last observed SHA. Use `/branches/create` to create a branch from another branch or revision. API errors or connection loss may follow a committed mutation: read the ref before retrying. Issue and MR numeric IDs are instance-wide, not project-local sequences.
+- `/tree?ref=main&path=src` 返回固定引用及目录条目；`/blob` 返回 UTF-8 内容、二进制标记、大小与解析后的引用。
+- `/files`、`/files/metadata` 接受 `ref,path,recursive,limit,cursor`，后者包含最近修改信息。分页必须保留原筛选和固定版本。
+- `GET/HEAD /file?ref=main&path=README.md` 返回原始字节，支持 ETag、Last-Modified、If-Match、If-None-Match、If-Modified-Since、If-Unmodified-Since、If-Range 和单字节区间 Range；不可满足时返回 416。
+- `/commit?sha=版本` 返回父提交、树、作者与签名等元数据；`/commits?ref=main&path=src&limit=20` 查询路径历史。版本支持完整/无歧义短 SHA、引用、`~n` 和 `^n`，受遍历预算限制。
+- `/diff?ref=新版本&base=旧版本` 返回原生文本/二进制 diff；省略 base 使用第一父提交。`/branches/diff?source=feature&target=main` 使用唯一合并基点；多个基点需显式指定。
+- `/blame?ref=main&path=src/app.ts` 返回行归属；重复 `ranges` 支持数字、正则和函数范围，具体规则见 `src/git/blame-range.ts`。
+- `POST /archive` 接受 `{ref?,include_globs?,exclude_globs?,max_blob_size?,archive?:{prefix?}}`，流式返回 gzip tar，保留模式、链接和 PAX 长路径，不解引用链接。
+- `/search?ref=main&q=keyword` 为项目内字面搜索，最多 200 匹配。`POST /grep` 使用 RE2，接受 `ref`、`query:{pattern,case_sensitive?}`、`paths`、`file_filters`、上下文、结果预算与游标；不支持的正则或预算耗尽明确失败。跨项目[协作搜索](SEARCH-v28.md)与[代码索引](CODE-SEARCH-v32.md)另有接口。
 
-## Git
+## 引用与提交
+
+`GET /branches` 列表、`GET /branch` 单项；`POST /branches/create` 接受 `{target_branch,base_ref?|base_branch?,base_is_ephemeral?,ephemeral?}`。删除 `/branches` 提交 `{branch,expected_sha?,ephemeral?}`。`GET /tags`、`GET /tag` 查询标签；`POST /tags` 接受 `{name,ref?|sha?,ephemeral?}` 创建轻量标签；删除 `/tags/:tag` 时编码完整标签名。原生 Git 支持附注标签。
+
+`GET /notes` 接受 `sha,notes_ref?`；POST 接受 `{sha,note,operation?,notes_ref?,expected_ref_sha?}`，operation 为 create/append；DELETE 接受 `{sha,notes_ref?,expected_ref_sha?}`。`/notes/refs` 列出 Notes 引用，可与原生 `git notes` 互操作。
+
+`POST /commit` 是简单文件编辑：`{branch,expected_sha,message,files:[{path,content}]}`。`content:null` 删除；`expected_sha:null` 要求分支不存在。`POST /commit-files` 支持更完整的 `{target_branch,commit_message,author?,committer?,expected_target_sha?,base_ref?,base_branch?,ephemeral_base?,ephemeral?,files}`。文件可使用文本/Base64、已有 blob SHA，或 null 递归删除；模式支持 `100644,100755,120000,160000`。陈旧预期 SHA 返回 409。
+
+`/commit-pack`、`/diff-commit`、`/restore-commit`、`/reset-commits` 使用 `application/x-ndjson`，首行 metadata，流式接口必须提供作者。文件描述为 `{path,content_id,operation:"upsert"或"delete",mode?}`；后续行为 `{blob_chunk:{content_id,data:BASE64,eof:boolean}}`。每个 upsert 必须完整结束，未完成流不能发布引用。Diff 使用 `{diff_chunk:{data:BASE64,eof:boolean}}`，支持严格上下文的原生文本、binary literal/delta、模式、重命名/复制和引号路径，不模糊应用。Restore/reset 只需 metadata，会以当前分支为父提交创建所选树的新提交，不抹除历史。
+
+## 合并与协作
+
+`GET /merge/preview?source_ref=feature&target_branch=main&include_content=true` 只预览。`POST /merge` 接受 source_ref、target_branch、expected_target_sha、strategy（merge/ff_only/ff_prefer）、squash、allow_unrelated_histories、临时命名空间、提交消息和作者等选项。用预览的源 SHA 和目标 SHA 固定输入；冲突不发布，源分支保留，多个合并基点明确报冲突。
+
+`/issues`、`/issues/:id`、`/issues/:id/comments` 提供 Issue/评论；`/merges`、`/merges/:id`、`/merges/:id/merge` 提供合并请求与审阅操作。数字 ID 为实例级，不是项目内序号。`/members` 与 `/members/:username` 管理成员；`/audit` 供维护者读取审计。版本控制、权限和字段详见[Issue](ISSUES-v09.md)、[审阅](REVIEWS-v07.md)、[CODEOWNERS](REVIEWS-v08.md)、[合并队列](MERGE-QUEUE-v31.md)。
+
+## Git 与 LFS
 
 ```sh
-git clone https://git.1s.hk/alice/project.git
-# Username: alice
-# Password: your PAT (never your account password)
+git clone https://1s.hk/alice/project.git
+# 用户名为 alice；密码使用 PAT，而非账户密码
 ```
 
-Supports HTTPS smart HTTP `info/refs`, `git-upload-pack`, `git-receive-pack`, protocol v0/v2, pack negotiation, refs and tags. SSH, dumb HTTP and encoded/compressed HTTP request bodies are not implemented. Clients using request compression should disable it. Private clones require a PAT; anonymous public clones work. PAT pushes retain the default no-history-rewrite policy. Delegated JWT pushes may rewrite refs unless their first matching ref policy forbids it. Default branch deletion is forbidden. Push batches are all-or-nothing. SHA-256 Git repositories, shallow clone and partial clone/filter are not implemented. Incoming OFS_DELTA, REF_DELTA and thin packs are accepted; output packs contain complete zlib-compressed objects. See README for object, pack and traversal budgets.
+支持 HTTPS smart HTTP、v0/v2、info/refs、upload-pack、receive-pack、OFS_DELTA、REF_DELTA 和 thin pack；输出为完整 zlib 对象。公开仓库允许匿名克隆，私有仓库需有效凭据。PAT 默认禁止改写历史；JWT 可由引用策略限制。默认分支不能删除，批量引用更新全成或全败。不支持 SSH、dumb HTTP、压缩请求体、SHA-256 Git、shallow/partial clone。资源预算见[限制](LIMITS.md)。
 
-## LFS
+LFS 基址为 `https://1s.hk/alice/project.git/info/lfs`。`POST /objects/batch` 接受 operation 与 `{oid,size}` 列表；PUT `/objects/:sha256` 上传并校验 SHA-256（16 MiB），GET 授权流式下载。Action 使用可信实例地址和请求的认证头；缺失对象单项 404。相同 OID 仍按仓库隔离。不支持 LFS 锁和可选 verify action。
 
-Standard endpoint: `https://git.1s.hk/alice/project.git/info/lfs`.
+## 委托身份与引用隔离
 
-- POST `/objects/batch`: `operation: upload|download`, `objects:[{oid,size}]`; basic transfer.
-- PUT `/objects/:sha256`: upload bytes, validate SHA-256 (16 MiB cap).
-- GET `/objects/:sha256`: authorized streaming download.
+浏览器会话管理 `/api/api-keys` 和 `/api/signing-keys`，支持 GET、POST `{name,public_key,algorithm?}`、DELETE `/:id`，每类最多 20 项。API 公钥为 SPKI，支持 ES256/384/512、RS256（RSA 至少 2048 位）；提交签名公钥为 SSH/OpenPGP。私钥保留在客户端。
 
-Actions contain the trusted application origin and carry the requesting Authorization header. A missing object gets a per-object 404. OIDs are isolated by repository even when content hashes match. LFS locking and optional verify actions are not provided.
+JWT 包含算法、可选 kid、iss 用户名、sub、iat、exp、repo 与 scopes。`git:read`、`git:write`、`repo:write`、`org:read` 相互独立，写不隐含读。每次请求检查公钥撤销。引用策略按顺序首次匹配，支持精确名称、末尾 `/*` 或 `*`，限制 `no-push`、`no-force-push`、`verify-sig`。签名要求核验新引入提交，未签名的 API 提交不能绕过。
 
-## SDK
+Git Basic 密码可用 PAT/JWT；`+ephemeral.git` 使用独立临时引用，API 通过 `ephemeral=true` 选择。`+import.git` 仅推送，不能写入已配置上游的仓库。逻辑引用仅 heads/tags/notes，客户端不能寻址内部命名空间。独立[部署令牌](DEPLOY-TOKENS-v26.md)仅提供授权范围内的 Git/LFS 读取和包操作。
 
-Copy/import `sdk/index.ts` in a TypeScript workspace:
+## 生命周期与上游
 
-```ts
-import { OneStorage } from "./sdk/index";
-const storage = new OneStorage({
-  origin: "https://git.1s.hk",
-  token: env.ONESTORAGE_TOKEN,
-});
-await storage.createRepo({ name: "agent-memory", visibility: "private" });
-const repo = storage.repo("alice", "agent-memory");
-const result = await repo.commit({
-  branch: "main",
-  expected_sha: null,
-  message: "Initialize memory",
-  files: [{ path: "memory.md", content: "# Memory\n" }],
-});
-const file = await repo.file("memory.md");
-```
+`base_repo:{id,ref?}` 创建独立 Fork；源授权仍需检查。上游描述支持 provider、owner、name、upstream_host、mode、default_branch，提供方含 GitHub/GitLab/Bitbucket/Gitea/Forgejo/Codeberg/SourceHut。GitHub public 模式支持单向拉取；App 和通用连接可上游优先推送，通用连接需先配置凭据。
 
-## Webhooks (operator opt-in)
+PUT `/upstream` 设置描述或 null，DELETE `/base` 解绑；POST `/pull-upstream` 返回 202 持久任务，GET `/sync-status` 查看状态、次数和安全错误。只同步普通 heads/tags，临时引用和本地 Notes 不外传；未确认上游结果保留恢复屏障，不伪造成功。`/git-credentials` POST/PUT `{username,password}`，GET 只返回 ID/时间，DELETE `/:id`；AES-GCM 保存密文。
 
-All paths relative to `/repos/:namespace/:repo`, maintainer role required:
+浏览器管理 `/api/integrations/github`，PUT `{app_id,installation_id,private_key,webhook_secret}`；App 需 Contents 读写与 push webhook。`/webhooks/github/:username` 核验 HMAC、安装身份和去重后触发真实同步。未配置私有 App 明确失败。GitHub App LFS 区分安装认证与获准存储 action 头；通用/公开上游 LFS 不支持。归档、转移和旧地址权限见[归档](ARCHIVE-v10.md)、[转移](TRANSFER-v11.md)。
 
-- GET/POST `/webhooks`: list or create `{url}` (10 per repository). Create returns `{id,url,secret}`; secret is shown once. Only HTTPS hosts in `WEBHOOK_ALLOWED_HOSTS` may be used.
-- DELETE `/webhooks/:id`: disable a hook and remove its delivery records.
-- GET `/deliveries`: most recent 100 delivery statuses and attempts.
+## Webhook 与 MCP
 
-Create accepts optional `events` filters. The `push` event records only published ref changes, with old/new SHAs, atomically persisted alongside refs in the DO. Rejected pushes and flush-only probes do not emit it. Sync events include `repo.sync.started`, `repo.sync.succeeded`, and `repo.sync.failed`. Collaboration audit events continue to use the D1 outbox. Deliveries are at least once; deduplicate IDs.
+维护者管理项目 `/webhooks`（最多 10 项）、DELETE `/webhooks/:id`、GET `/deliveries`（最近 100 条）。URL 必须为 `WEBHOOK_ALLOWED_HOSTS` 明确允许的 HTTPS 主机。创建只显示一次 secret，可指定 events。已发布 push 事件与 refs 原子保存，拒绝/无变化探针不发成功事件；同步事件含 started/succeeded/failed，协作事件使用 D1 outbox。至少一次投递，接收方按 ID 去重。
 
-Payload: `{id,event,repository_id,actor,detail,timestamp}`. Headers: `X-OneStorage-Delivery`, `X-OneStorage-Timestamp` (Unix seconds), `X-OneStorage-Signature` (`sha256=<hex>`). Compute HMAC-SHA256 over `timestamp + "." + rawBody` with the returned secret, compare in constant time, enforce a recent timestamp window, and deduplicate using the delivery ID. Responses must be 2xx within 10 seconds; redirects are not followed.
+载荷 `{id,event,repository_id,actor,detail,timestamp}`；头为 X-OneStorage-Delivery、X-OneStorage-Timestamp（秒）、X-OneStorage-Signature（sha256=hex）。对 `timestamp + "." + rawBody` 计算 HMAC-SHA256，常量时间比较，检查新鲜时间并去重。10 秒内返回 2xx，不跟随跳转。
 
-## v0.3 authentication and naming
-
-Repository names may contain up to five slash-separated slug segments (200 characters total). Encode the complete name as one API/Git path segment, e.g. `/api/repos/alice/team%2Fproject` and `/alice/team%2Fproject.git`. Usernames remain a single slug. `/repos` accepts `limit` (1–100), `cursor`, `page`, and `q`; use returned `next_cursor` unchanged.
-
-Browser-session-only `/api/api-keys` and `/api/signing-keys` accept GET, POST `{name,public_key,algorithm?}`, and DELETE `/:id`. API keys accept SPKI public PEM with ES256 (default), ES384, ES512 or RS256 (RSA ≥2048 bits). Signing keys accept SSH public keys or armored OpenPGP public keys. Private API/signing keys remain client-side; up to 20 of each per user.
-
-JWT header uses `alg` and optional `kid`; claims include `iss` (username), `sub`, `iat`, `exp`, `repo` (`alice/team/project`) and `scopes`. Scopes `git:read`, `git:write`, `repo:write`, `org:read` are independent: write does not imply read. Listing uses `org:read`; a fork needs target `repo:write` plus `git:read`. Public keys are checked on every request; revocation takes effect without waiting for token expiry. Use the SDK token generators to encode policies correctly. Ordered `refs` policies allow exact names, terminal `/*`, or `*`; first match wins. Supported restrictions: `no-push`, `no-force-push`, `verify-sig`. Verification checks all newly introduced commits against the issuer's currently registered signing keys; unsigned API-generated commits cannot bypass it.
-
-Git HTTP Basic accepts a PAT or JWT as password. For isolated temporary refs use `/alice/project+ephemeral.git`; normal and ephemeral API operations select `ephemeral=true` (query or supported request body). `/alice/project+import.git` is push-only and cannot write a repository configured with an upstream. Logical refs are restricted to heads/tags/notes; clients cannot address internal namespace paths.
-
-## Complete feature operation map
-
-The table maps the 40 preferred Code Storage operations to OneStorage routes. It is a behavior mapping, not a claim of wire compatibility. All paths below include `/api`. Machine-readable contract: `/openapi.json`; the JSON/NDJSON details and SDK types here are authoritative for request construction.
-
-| Operation                  | Method | OneStorage path                                      |
-| -------------------------- | ------ | ---------------------------------------------------- |
-| Get Repo Url By Id         | GET    | `/api/repo-url/{id}`                                 |
-| List Repos                 | GET    | `/api/repos`                                         |
-| Create Repo                | POST   | `/api/repos`                                         |
-| Delete Repo                | DELETE | `/api/repos/{namespace}/{repo}`                      |
-| Get Repo                   | GET    | `/api/repos/{namespace}/{repo}`                      |
-| Update Repository Settings | PATCH  | `/api/repos/{namespace}/{repo}`                      |
-| Archive                    | POST   | `/api/repos/{namespace}/{repo}/archive`              |
-| Unset Base Repo            | DELETE | `/api/repos/{namespace}/{repo}/base`                 |
-| Blame                      | GET    | `/api/repos/{namespace}/{repo}/blame`                |
-| Get Branch                 | GET    | `/api/repos/{namespace}/{repo}/branch`               |
-| Delete Branch              | DELETE | `/api/repos/{namespace}/{repo}/branches`             |
-| List Branches              | GET    | `/api/repos/{namespace}/{repo}/branches`             |
-| Create Branch              | POST   | `/api/repos/{namespace}/{repo}/branches/create`      |
-| Get Branch Diff            | GET    | `/api/repos/{namespace}/{repo}/branches/diff`        |
-| Get Commit                 | GET    | `/api/repos/{namespace}/{repo}/commit`               |
-| Create Commit from Files   | POST   | `/api/repos/{namespace}/{repo}/commit-pack`          |
-| List Commits               | GET    | `/api/repos/{namespace}/{repo}/commits`              |
-| Get Commit Diff            | GET    | `/api/repos/{namespace}/{repo}/diff`                 |
-| Create Commit from Diff    | POST   | `/api/repos/{namespace}/{repo}/diff-commit`          |
-| Get File                   | GET    | `/api/repos/{namespace}/{repo}/file`                 |
-| Get File Headers           | HEAD   | `/api/repos/{namespace}/{repo}/file`                 |
-| List Files                 | GET    | `/api/repos/{namespace}/{repo}/files`                |
-| List Files with Metadata   | GET    | `/api/repos/{namespace}/{repo}/files/metadata`       |
-| Create Git Credential      | POST   | `/api/repos/{namespace}/{repo}/git-credentials`      |
-| Delete Git Credential      | DELETE | `/api/repos/{namespace}/{repo}/git-credentials/{id}` |
-| Update Git Credential      | PUT    | `/api/repos/{namespace}/{repo}/git-credentials`      |
-| Grep                       | POST   | `/api/repos/{namespace}/{repo}/grep`                 |
-| Merge Branch               | POST   | `/api/repos/{namespace}/{repo}/merge`                |
-| Preview Merge              | GET    | `/api/repos/{namespace}/{repo}/merge/preview`        |
-| Delete Note                | DELETE | `/api/repos/{namespace}/{repo}/notes`                |
-| Get Note                   | GET    | `/api/repos/{namespace}/{repo}/notes`                |
-| Create or Append Note      | POST   | `/api/repos/{namespace}/{repo}/notes`                |
-| List Notes Refs            | GET    | `/api/repos/{namespace}/{repo}/notes/refs`           |
-| Pull Upstream              | POST   | `/api/repos/{namespace}/{repo}/pull-upstream`        |
-| Reset Branch to Commit     | POST   | `/api/repos/{namespace}/{repo}/reset-commits`        |
-| Restore Commit             | POST   | `/api/repos/{namespace}/{repo}/restore-commit`       |
-| Get Tag                    | GET    | `/api/repos/{namespace}/{repo}/tag`                  |
-| List Tags                  | GET    | `/api/repos/{namespace}/{repo}/tags`                 |
-| Create Tag                 | POST   | `/api/repos/{namespace}/{repo}/tags`                 |
-| Delete Tag                 | DELETE | `/api/repos/{namespace}/{repo}/tags/{tag}`           |
-
-### Files, history and search
-
-- `GET /commit?sha=<revision>` returns full metadata, parents, tree and signature payload when present. `/commits?ref=main&path=src&limit=20` filters path history. Revisions support full/unambiguous short SHA, refs, `~n`, and `^n` within traversal budgets.
-- `/files` and `/files/metadata`: `ref`, `path`, `recursive`, `limit`, `cursor`; metadata includes last change. Cursor queries must retain their original filters and pinned revision.
-- `/file?ref=main&path=README.md`: raw bytes; GET/HEAD support ETag, Last-Modified, If-Match, If-None-Match, If-Modified-Since, If-Unmodified-Since, If-Range and a single byte Range. Unsatisfied ranges return 416.
-- `POST /archive`: `{ref?,include_globs?:string[],exclude_globs?:string[],max_blob_size?,archive?:{prefix?}}` streams gzip tar with modes, links and PAX long paths. Path filters are globs; archives do not dereference links.
-- `POST /grep`: `{ref?,query:{pattern,case_sensitive?},paths?,file_filters?,context?:{before?,after?},limits?:{max_matches_per_file?,max_lines?},limit?,cursor?}`. RE2 regular expressions; unsupported patterns and budget exhaustion fail explicitly. See SDK/test examples for additional file filters.
-- `/diff?ref=<new>&base=<old>` compares commits; omitted base uses the first parent. `/branches/diff?source=feature&target=main` uses a unique merge base. Result contains a native Git unified/binary diff. Multiple bases require an explicit base.
-- `/blame?ref=main&path=src/app.ts` returns line attribution; repeated `ranges` select numeric, regex or function ranges. Range parser details and fixtures are in `src/git/blame-range.ts` and `tests/forge.test.ts`.
-
-### Ref writes, commit streams and merging
-
-- Create branch: `{target_branch,base_ref?|base_branch?,base_is_ephemeral?,ephemeral?}`. DELETE `/branches` takes JSON `{branch,expected_sha?,ephemeral?}`.
-- POST `/tags`: `{name,ref?|sha?,ephemeral?}` creates a lightweight tag. Native Git supports annotated tags. DELETE `/tags/:tag` URL-encodes the complete tag name.
-- Notes GET uses `sha` and optional `notes_ref`; POST `{sha,note,operation?:"create"|"append",notes_ref?,expected_ref_sha?}`; DELETE takes `{sha,notes_ref?,expected_ref_sha?}`. These are real Git notes refs, interoperable with `git notes`.
-- `/commit-files` takes `{target_branch,commit_message,author?,committer?,expected_target_sha?,base_ref?,base_branch?,ephemeral_base?,ephemeral?,files}`. Each file uses `{path,content,encoding?:"base64",mode?}`, `{path,sha,mode?}` to reuse an existing blob, or `{path,content:null}` to recursively delete. Modes include `100644`, `100755`, `120000`, `160000`. An explicit stale `expected_target_sha` returns 409; null requires an absent branch.
-- `/commit-pack`, `/diff-commit`, `/restore-commit` and `/reset-commits` require `Content-Type: application/x-ndjson`. Metadata is the first line. Stream author is required; JSON routes can derive author from the authenticated user. Commit builder metadata adds `files:[{path,content_id,operation:"upsert"|"delete",mode?}]`. Each subsequent line is `{blob_chunk:{content_id,data:<base64>,eof:<boolean>}}`. Every upsert needs EOF; deletes need no content. Limits are in README. No partial stream publishes refs.
-- Diff streams use the same metadata and `{diff_chunk:{data:<base64>,eof:<boolean>}}`. Native Git text/binary literal/delta patches, modes, rename/copy and quoted paths are supported; context is strict (no fuzzy application).
-- Restore/reset streams contain only `{metadata:{target_branch,base_ref,commit_message,author,...}}`. Both create a new commit with the selected tree and current branch tip as parent; they do not erase history.
-- `/merge/preview?source_ref=feature&target_branch=main&include_content=true` is read-only. POST `/merge` takes `{source_ref,target_branch,expected_target_sha?,strategy:"merge"|"ff_only"|"ff_prefer",squash?,allow_unrelated_histories?,source_is_ephemeral?,target_is_ephemeral?,commit_message?,author?}`. Pin source_ref to preview's source SHA and expected_target_sha to its target SHA. Conflicts prevent publication. Source refs remain. Multiple merge bases return an explicit conflict rather than guessing a recursive base.
-
-### Lifecycle and upstreams
-
-Create `/repos` accepts `name` (or generated when omitted), description/visibility/default_branch and optional `base_repo`. `{base_repo:{id:<repository UUID>,ref?}}` forks an owned source into independent R2 objects/refs. An upstream descriptor uses `{provider,owner,name,upstream_host?,mode?,default_branch?}`. Provider values: github, gitlab, bitbucket, gitea, forgejo, codeberg, sr.ht/sourcehut. GitHub `mode:"public"` enables manual one-way pull; GitHub App and generic providers support upstream-first pushes. Generic credentials must be configured before a successful pull.
-
-PATCH repository updates description/visibility/default_branch; DELETE immediately tombstones it and schedules physical cleanup. GET `/repo-url/:id` resolves stable identity to ordinary, ephemeral and import URLs. Deletion requires maintainer permissions; fork sources must belong to the caller. Membership permissions still apply to other operations.
-
-PUT `/upstream` takes an upstream descriptor or null; DELETE `/base` detaches it. POST `/pull-upstream` returns 202 and a persisted job; GET `/sync-status` exposes status, attempts and sanitized errors. Normal heads/tags sync upstream; ephemeral refs and local Notes stay local. A pending uncertain upstream push blocks normal operations until reconciliation; it never returns fabricated success.
-
-Generic credentials: POST/PUT `/git-credentials` `{username,password}`; GET lists IDs/timestamps only; DELETE `/:id`. This collection-level PUT differs from the reference API's credential-ID route. Secrets are AES-GCM encrypted at rest.
-
-GitHub App: browser-session-only GET/PUT/DELETE `/api/integrations/github`; PUT `{app_id,installation_id,private_key,webhook_secret}`. The app needs repository Contents read/write and push webhooks. Deliver to `/webhooks/github/:username`; validate HMAC and installation identity, deduplicate delivery IDs, queue real sync. An unconfigured private App fails explicitly. GitHub App LFS uses installation authorization for the batch endpoint and only action-provided headers for approved storage hosts; generic/public upstream LFS is unsupported.
-
-## MCP
-
-POST `/mcp` implements stateless Streamable HTTP JSON-RPC (protocol versions 2025-03-26, 2025-06-18, 2025-11-25). Configure `Authorization: Bearer <PAT or JWT>` in your MCP client. Supports initialize, ping, tools/list, tools/call and resources/list/read. GET returns 405: no SSE session is required. Every tool delegates through the same scope/role checks as REST. `/llms.txt` links agent instructions and the OpenAPI document. Never place a token in a URL or checked-in MCP config.
-
-## 项目与空间部署令牌（v0.26）
-
-独立于用户的部署凭据仅可用于授权范围内的 Git/LFS 读取和包操作。管理 API、四项权限、到期/轮换/撤销和跨空间转移规则见 [部署令牌](DEPLOY-TOKENS-v26.md)。
+POST `/mcp` 实现无状态 Streamable HTTP JSON-RPC，支持协议 2025-03-26、2025-06-18、2025-11-25，initialize、ping、tools/list/call、resources/list/read。GET 返回 405，无 SSE 会话。客户端通过 Authorization 传 PAT/JWT，每个工具复用 REST 权限。`/llms.txt` 提供机器入口。SDK 使用方法见[三语言 SDK](SDK.md)。

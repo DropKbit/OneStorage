@@ -1,5 +1,7 @@
 # R2 流式 Git 入站（v0.16）
 
+**简体中文** · [English](en/GIT-RECEIVE-v16.md)
+
 原生 HTTPS `git-receive-pack` 改用增量解析，不再把整个上传、所有展开对象和 delta 同时留在内存。Worker 仍只运行 JavaScript；服务端没有 Git 子进程、磁盘或容器。
 
 ## 持久化顺序

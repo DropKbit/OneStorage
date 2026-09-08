@@ -1,5 +1,7 @@
 # v0.30 密码恢复验收
 
+**简体中文** · [English](en/VERIFICATION-v30.md)
+
 本阶段完成 Workers/D1 内的离线密钥密码找回及密钥写入撤权校验，保持无容器架构。使用流程、第二因子要求和剩余恢复能力见 [密码恢复说明](PASSWORD-RECOVERY-v30.md)。完整 GitLab/Gogs 目标继续推进。
 
 ## 测试与并发证据

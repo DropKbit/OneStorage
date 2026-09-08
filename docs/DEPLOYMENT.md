@@ -1,12 +1,20 @@
 # 部署 OneStorage
 
+**简体中文** · [English](en/DEPLOYMENT.md)
+
 ## 当前实例
 
-规范地址为 **https://git.1s.hk**；`1s.hk` 继续提供 Cubelink。独立 Worker 地址为 `https://onestorage.xbitfun.workers.dev`，浏览器登录和 LFS 应使用规范地址，以匹配 APP_ORIGIN。
+规范地址为 **https://1s.hk**；主域名上的 Cubelink 已由 OneStorage 替换。旧 `git.1s.hk` 网页跳转至主域名，Git HTTPS 与 API 地址继续兼容。独立 Worker 地址为 `https://onestorage.xbitfun.workers.dev`，浏览器登录和 LFS 应使用规范地址，以匹配 APP_ORIGIN。
 
 资源：Worker `onestorage`、私有编译 Worker `onestorage-build`、D1 `onestorage`、R2 `onestorage-objects` 与 `onestorage-npm-cache`、Queue `onestorage-events`、SQLite Durable Object 类 `Repository`。应用由独立 `onestorage-apps` 网关提供。没有 Containers、Docker 镜像或外部 Git 服务器。
 
 首次初始化通过网页完成，用户名和密码由操作者选择。初始化 secret 存放在本机被 Git 忽略的 `.data/production-bootstrap-secret.txt`（权限 0600），同时保存在 Worker secret 中。不要将它加入源码或公开发送。成功创建管理员后，D1 会锁定初始化，可删除云端 BOOTSTRAP_SECRET。
+
+## 主域名与语言
+
+`APP_ORIGIN=https://1s.hk`，`LEGACY_APP_ORIGIN=https://git.1s.hk`。两个域名绑定同一主 Worker；仅旧域名网页 GET/HEAD 重定向，原生 Git 和 API 不重定向。浏览器需在新主域名重新登录；OIDC/OAuth 提供方的回调应改为 `https://1s.hk/api/auth/oidc/callback`。已有仓库 UUID、D1、R2、DO 与加密密钥保持不变。
+
+平台支持简体中文和英文，语言菜单保存本机偏好；首次访问按浏览器语言协商，可用 `?lang=en` 或 `?lang=zh-CN` 指定。文档入口 `/docs` 跳转到所选语言，文档页可切换对应译文。代码、文件名、Issue 正文和其他用户内容不翻译。
 
 ## 从源码部署新的实例
 

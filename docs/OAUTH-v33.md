@@ -1,5 +1,7 @@
 # GitHub 与 GitLab OAuth 登录 v0.33
 
+**简体中文** · [English](en/OAUTH-v33.md)
+
 管理员在“统一登录管理”选择 OpenID Connect、GitHub OAuth 或 GitLab OAuth，配置提供方名称、地址、Client ID/secret、可信主机、注册开关和可选邮箱域名。保存后登录页出现对应按钮；已有账户在账户安全页显式关联，之后可用提供方登录或重新验证。
 
 ## 配置
@@ -10,7 +12,7 @@
 | GitLab | `https://gitlab.com` 或可信 HTTPS 自托管实例地址；对应主机 | `read_user`                                      | `client_secret_post`，或非机密应用选择 `none` |
 | OIDC   | 原有 Issuer/discovery 配置                                 | `openid email profile`                           | 原有三种认证方式                              |
 
-在提供方创建 OAuth 应用，将回调地址设为管理页面显示的地址；本实例为 `https://git.1s.hk/api/auth/oidc/callback`。应用 secret 仅写入，经既有凭据密钥加密保存，编辑时留空保留。地址、Client ID 与协议创建后不可修改；需要变更时建立新提供方并显式关联。GitHub 模式针对 github.com；不声称兼容尚不支持 PKCE 的旧 GitHub Enterprise Server。
+在提供方创建 OAuth 应用，将回调地址设为管理页面显示的地址；本实例为 `https://1s.hk/api/auth/oidc/callback`。应用 secret 仅写入，经既有凭据密钥加密保存，编辑时留空保留。地址、Client ID 与协议创建后不可修改；需要变更时建立新提供方并显式关联。GitHub 模式针对 github.com；不声称兼容尚不支持 PKCE 的旧 GitHub Enterprise Server。
 
 服务端始终使用授权码与 PKCE S256；GitHub 的支持及请求参数见 [GitHub OAuth 文档](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)，GitLab 的应用注册与 PKCE 流程见 [GitLab OAuth 文档](https://docs.gitlab.com/api/oauth2/)。不使用隐式授权、设备流或用户密码授权。
 

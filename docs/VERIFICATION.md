@@ -1,42 +1,33 @@
-# Verification — v0.3.0
+# v0.3.0 历史验证记录
 
-Date: 2026-09-08, Asia/Singapore. Baseline v0.2 commit `e72e52d`. Runtime: local workerd and Cloudflare Workers, with the same container-free JavaScript Git engine. Native Git is a client/oracle only.
+**简体中文** · [English](en/VERIFICATION.md)
 
-## Reference and acceptance scope
+日期 2026-09-08，Asia/Singapore，基线 v0.2/e72e52d。服务在本地 workerd 与 Cloudflare 运行相同无容器 JavaScript Git 引擎；原生 Git 仅作客户端和独立验证。此处记录当时结果，不是当前版本测试次数。
 
-Reviewed the public Code Storage docs index, 101 unique Markdown pages and OpenAPI. `parity.json` maps 40 preferred operations and 11 cross-cutting capabilities to implementation files and test evidence. `test:parity` validates the manifest; it is not a substitute for behavioral tests or a claim of cloud verification. API paths, SDK packages, storage architecture and capacity differ from the reference.
+## 对照与本地验证
 
-## Local results
+研究 Code Storage 的公开索引、101 个独立 Markdown 页面和 OpenAPI，parity.json 将 40 个首选操作与 11 项横向能力映射到实现和证据。test:parity 只检查映射，不代替行为或云端验收；API 路径、SDK、存储与容量并非完全兼容。
 
-- `npm run check`: TypeScript and **57 passing tests**, including Git objects/protocol, corruption rejection, immutable storage/ref failures, signatures, merge/patch/blame, JWT/SDK, sync persistence, GitHub App crypto and LFS forwarding, deletion and webhook leases/outbox.
-- `npm run test:e2e`: **43 HTTP assertions** plus native Git v0/v2, binary/modes/tags/thin pushes, concurrent CAS, LFS, roles, Issues, pinned fast-forward MRs, CSRF and revocation. Fixture: `owner/e2e_f58f9952`.
-- `npm run test:features`: **65 advanced HTTP checks** against real workerd/D1/R2/DO: scopes/revocation, policy, namespace isolation, NDJSON, Notes/tags, raw ranges/conditions, fork/default branch/deletion, credentials, MCP permissions.
-- `npm run test:git-features`: actual native Git SSH-signed push accepted; unsigned and revoked-key pushes rejected; grouped repository names, ephemeral/import remotes and Git Notes interoperable.
-- `npm run test:sdks`: TypeScript, Python and Go use generated short-lived signing keys against workerd; binary streaming, Notes, ephemeral refs, fork, UUID URL resolution, archive sinks and seven agent workflows passed. Keys revoked after the run. Python 3.12.14/cryptography 50.0.1, Go 1.27.1; no external service credentials involved.
-- Native Git independently accepts generated text/binary patches, including literal/delta, mode changes, rename/copy and UTF-8 quoted paths. Merge fixtures cover three-way changes, conflicts, rename/edit and ambiguous multiple bases. Blame covers ranges and moved/copied blocks.
-- Public GitHub import has been exercised through the local Queue and JavaScript HTTP Git client against `octocat/Hello-World`; the final clean rerun also passed. One earlier rerun timed out after a dev hot reload interrupted queue work; no failing run is counted as a pass.
-- Browser: local key and Git workbench screens inspected; created `ui-check` in the ephemeral namespace from normal `main`, observed its real SHA, then deleted it and confirmed zero ephemeral branches. No full accessibility/cross-browser audit claimed.
+类型检查及57项测试通过；核心43次HTTP断言加原生v0/v2、二进制/模式/标签/thin pack、CAS、LFS、权限、Issue、固定MR、CSRF/撤销通过。高级65项真实workerd/D1/R2/DO检查覆盖scope/策略/隔离/NDJSON/Notes/Range/Fork/生命周期/凭据/MCP。
 
-## Failure and external-service coverage
+真实SSH签名推送成功，未签名和撤销公钥拒绝；分段项目名、临时/import远程与Notes互操作通过。TypeScript/Python/Go SDK通过短期签名密钥执行流式二进制、Notes、临时引用、Fork、UUID解析、归档sink和七类Agent示例，结束后撤销密钥。使用Python3.12.14/cryptography50.0.1及Go1.27.1，无外部私有凭据。
 
-Injected R2/ref writes cannot publish missing objects. SQLite-backed tests exercise persistent sync jobs, leases, event projection/replay and deleted-repository cleanup. Fork copies while holding the destination queue so deletion cannot clean up before a late copy. Upstream-first publication retains its recovery marker until the following sync job is durable. Pending uncertain outcomes fail closed and retry actual upstream fetches.
+原生Git接受文本/二进制literal/delta补丁、模式/重命名/复制/UTF-8路径；合并覆盖三方/冲突/重命名编辑/多基点拒绝，blame覆盖范围/移动复制。公开octocat/Hello-World经本地Queue与JS Git客户端真实导入；一次热更新中断后的超时未计成功，清理后重跑通过。浏览器实际创建并删除临时ui-check分支、核对SHA和清空结果，没有完整无障碍/跨浏览器审计声明。
 
-A local native Git HTTP backend is an independent upstream protocol fixture for bidirectional push/fetch. GitHub App token and signed incoming webhook tests use real RSA/HMAC cryptography with a simulated provider. LFS batch/action forwarding and cache digest checks are tested with a simulated provider. **No real private GitHub App installation or external private upstream credential was supplied**; that deployment-specific integration is not cloud verified. Outgoing Webhook tests use controlled receivers, not real third-party messages.
+## 故障与外部服务
 
-## Release verification
+注入R2/ref失败不能发布缺失对象。SQLite覆盖同步任务、租约、事件重放、删除回收；Fork持有目标队列避免晚到复制越过删除。上游优先写入在后续同步任务持久前保留恢复标记，不确定结果关闭普通操作并实际重拉。
 
-Production runtime deployed as version `096eea88-8894-42e2-ae86-a0b6c8920240` on **https://git.1s.hk**. D1 migration 0004 applied after an operator-local D1 export; the existing `1shk/nb` mirror was backed up and passed native `git fsck --full --strict`. A fresh 32-byte credential-encryption secret was uploaded without including it in source. Existing account and repository identity were preserved.
+本地原生Git HTTP后端验证双向协议；GitHub App令牌/webhook使用真实RSA/HMAC与模拟提供方，LFS转发/摘要同样模拟。没有提供真实私有GitHub App安装或私有上游凭据，因此不宣称这部分云端实测。Webhook仅受控接收端，无真实第三方消息。
 
-`node --import tsx scripts/verify-cloud.mjs` passed **14 groups of checks** on generated, operator-owned private repositories using a temporary process copy of the authorized PAT. It exercised all 40 mapped REST operations: grouped names, URL lookup/listing, streamed binary commits, raw GET/HEAD/Range/ETag, archive, files/metadata/history/grep/blame, branch and ephemeral refs, diff patch, merge preview/merge, restore/reset, Notes/tags CRUD, default branch/fork, encrypted credential CRUD/detach, and pull-upstream. MCP tools discovery and anonymous denial, llms.txt and the 40-operation OpenAPI also passed.
+## 发布证据
 
-Public `octocat/Hello-World` import passed through **actual remote Queue, Worker Git client/pack parser, R2 and DO refs**. All generated acceptance repos were deleted, and reads confirmed tombstone/hidden state. Deletion schedules physical cleanup; unit tests separately cover its incremental algorithm. The original private `1shk/nb` was not used for destructive acceptance.
+历史主Worker096eea88-8894-42e2-ae86-a0b6c8920240部署于git.1s.hk。D1导出后应用0004；原1shk/nb镜像备份并严格fsck，保留账号/仓库身份。新32字节加密密钥仅上传secret，不进源码。
 
-The runtime received one subsequent bounded grep-cursor correction (covered by a new regression test and an actual two-page cloud query). Complete source commit `908c916b95a3a87e4782c731ffec41ae13b288d8` was pushed to the existing private `1shk/nb`; a fresh HTTPS mirror clone returned that exact SHA and passed `git fsck --full --strict`. The deployed source archive's SHA-256 exactly matched the local generated archive.
+verify-cloud通过14组检查，使用操作者所属临时私有项目覆盖40项映射REST操作：分段名称/ID地址/列表、二进制流提交、GET/HEAD/Range/ETag、归档/元数据/历史/grep/blame、分支/临时引用、diff/merge/restore/reset、Notes/标签、默认分支/Fork、加密凭据/解绑/上游拉取。MCP发现与匿名拒绝、llms/OpenAPI通过。公开GitHub导入在真实远端Queue、JS pack解析、R2和DO完成。临时项目删除并验证隐藏，未用源码项目做破坏测试。
 
-Two initial full-source push attempts returned an object/ref persistence failure and left the remote at `e72e52d`; a later unchanged retry succeeded. The underlying exception was not reproduced after adding structured server diagnostics to the Git publication error path, so this is recorded as successful recovery, not a proven root-cause fix. Unexpected storage failures keep the existing safe client error and now provide operator logs. The final follow-up commit contains these diagnostics and the completed verification record. `1s.hk` returned HTTP 200 with the Cubelink page after deployment. No root-domain route or Cubelink resource changed. Source archive audit excluded `.data`, `.wrangler`, dependencies, cached bytecode, PATs and embedded private keys.
+随后修正有界grep游标，新增回归和实际云端两页查询。源码908c916b95a3a87e4782c731ffec41ae13b288d8推送到原私有仓库，独立HTTPS镜像得到相同SHA并严格fsck，线上源码归档SHA-256与本地一致。
 
-`cloud_verified` means the listed acceptance cases passed, not that every local security fixture or all supported providers were repeated remotely. In particular, JWT/signature policies and generic bidirectional/GitHub App behavior retain their explicit local/mock verification scope. Historical v0.2 cloud/upgrade evidence remains in [VERIFICATION-v0.2.md](VERIFICATION-v0.2.md); its unclaimed-administrator statements are historical, not current state.
+两次初始全源码推送失败且远端保留e72e52d，之后未改内容重试成功。结构化诊断后未复现，记作恢复成功而非定位/修复根因。后续提交补充诊断和报告。当时Cubelink仍200且根域名资源未变。允许列表排除.data/.wrangler/依赖/缓存/PAT/私钥。
 
-## Limits not validated as production guarantees
-
-No load/region-failure/complete disaster-recovery exercise, independent security audit, SHA1DC equivalence, native git-lfs CLI or TB-scale claim. No real private GitHub App installation test. The merge/blame/rename and protocol limits in README/API are intentional exposed boundaries; future scale, quotas, active-object GC, backup tooling and full GitLab organization/CI features are outside this Code Storage feature mapping.
+cloud_verified仅表示列出的云端用例通过，不代表所有本地安全/提供方测试都重复到生产；JWT/签名策略、通用双向/App保留本地或模拟范围。旧初始化状态见[v0.2历史记录](VERIFICATION-v0.2.md)。未做负载/区域故障/联合灾备、独立审计、SHA1DC等价、原生git-lfs CLI或TB规模承诺。当前功能和预算见[路线图](ROADMAP.md)、[限制](LIMITS.md)。

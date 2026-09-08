@@ -19,7 +19,7 @@ export function deploymentConfigs(main, compiler, apps) {
   if (
     main.routes?.length ||
     main.account_id ||
-    main.vars?.APP_ORIGIN === "https://git.1s.hk"
+    ["https://git.1s.hk", "https://1s.hk"].includes(main.vars?.APP_ORIGIN)
   )
     throw Error(
       "Use the portable deploy branch, not a production configuration",

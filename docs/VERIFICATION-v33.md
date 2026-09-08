@@ -1,5 +1,7 @@
 # v0.33 OAuth 验收记录
 
+**简体中文** · [English](en/VERIFICATION-v33.md)
+
 本阶段添加 GitHub 与 GitLab OAuth 登录适配，完整 GitLab/Gogs 平台目标继续有效。
 
 类型检查及 349 项测试通过。新增检查覆盖固定 HTTPS endpoint/可信主机、PKCE 参数、稳定数字 ID、token/admin 字段不返回、GitHub 已验证邮箱与有界分页、GitLab 活跃账户和已确认主邮箱、畸形 token/响应/重定向/超限 JSON，以及账户关联后改名仍登录同一用户、提供方停用和登录中配置变更使流程失效。原有 OIDC 测试也通过。

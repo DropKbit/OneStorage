@@ -1,5 +1,7 @@
 # Workers 构建中的 tsconfig
 
+**简体中文** · [English](en/CI-TSCONFIG-v36.md)
+
 `build` 可以读取所选源码中的 `tsconfig.json`，或通过 `tsconfig` 字段指定另一份配置。支持 JSONC 注释和尾逗号、相对路径 `extends`（含父配置数组）、`baseUrl`、`paths` 和部分影响转译的 TypeScript 选项。所有配置和源文件必须属于本次固定 Git 提交、位于 `sources` 选择范围内；不会读取部署机器文件或下载外部配置。
 
 ```json

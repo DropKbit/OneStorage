@@ -3,7 +3,7 @@
 Run with Node 22+ after `npm ci`:
 
 ```sh
-export ONESTORAGE_ORIGIN=https://git.1s.hk
+export ONESTORAGE_ORIGIN=https://1s.hk
 export ONESTORAGE_REPO=your-namespace/your-repository
 # Supply ONESTORAGE_TOKEN through your shell's secret manager.
 node --import tsx examples/run.ts sessions

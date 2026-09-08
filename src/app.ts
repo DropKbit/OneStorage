@@ -1,3 +1,5 @@
+import { requestLocale } from "./i18n/locale";
+import { canonicalPageURL } from "./domain";
 import packageInfo from "../package.json" with { type: "json" };
 import { registerSearch } from "./search";
 import { registerPasswordRecovery } from "./password-recovery";
@@ -344,6 +346,8 @@ app.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
 });
 const staticPaths = new Set([
+  "/i18n.js",
+  "/docs-client.js",
   "/deploy-tokens.js",
   "/packages.js",
   "/app.js",
@@ -367,15 +371,48 @@ const staticPaths = new Set([
   "/source.tar.gz",
 ]);
 app.get("*", async (c, next) => {
+  const canonical = canonicalPageURL(
+    c.req.raw,
+    c.env.APP_ORIGIN,
+    c.env.LEGACY_APP_ORIGIN,
+  );
+  if (canonical) return c.redirect(canonical, 308);
   const path = c.req.path;
+  let decodedPath: string;
+  try {
+    decodedPath = decodeURI(path);
+  } catch {
+    return c.text("Invalid URL encoding", 400);
+  }
+  if (path === "/docs" || path === "/docs/") {
+    c.header("Cache-Control", "no-store");
+    return c.redirect(`/docs/${requestLocale(c.req.raw)}/index.html`, 302);
+  }
+  const docsAlias = path.match(
+    /^\/docs\/(en|zh-CN)(?:\/([A-Za-z0-9_-]+))?\/?$/,
+  );
+  if (docsAlias)
+    return c.redirect(
+      `/docs/${docsAlias[1]}/${docsAlias[2] || "index"}.html`,
+      302,
+    );
+  if (
+    path.startsWith("/docs/") &&
+    !/^\/docs\/(?:site\.css|(?:en|zh-CN)\/[A-Za-z0-9_.-]+\.html)$/.test(path)
+  )
+    return c.notFound();
   if (
     /^\/(api|mcp|webhooks)(\/|$)/.test(path) ||
     path === "/llms.txt" ||
-    decodeURI(path).includes(".git")
+    decodedPath.includes(".git")
   )
     return next();
   const url = new URL(c.req.url),
-    asset = staticPaths.has(path);
+    asset =
+      staticPaths.has(path) ||
+      /^\/docs\/(?:site\.css|(?:en|zh-CN)\/(?:[A-Za-z0-9_.-]+\.html)?)$/.test(
+        path,
+      );
   if (!asset) {
     url.pathname = "/index.html";
     url.search = "";
@@ -384,10 +421,14 @@ app.get("*", async (c, next) => {
   const response = await c.env.ASSETS.fetch(
     new Request(url, {
       method: "GET",
-      headers: { "If-None-Match": c.req.header("if-none-match") || "" },
+      headers: asset
+        ? { "If-None-Match": c.req.header("if-none-match") || "" }
+        : {},
     }),
   );
   const headers = new Headers(response.headers);
+  const documentLocale = path.match(/^\/docs\/(en|zh-CN)\//)?.[1];
+  if (documentLocale) headers.set("Content-Language", documentLocale);
   headers.set(
     "Cache-Control",
     c.env.APP_ORIGIN.startsWith("http://localhost")
@@ -396,11 +437,50 @@ app.get("*", async (c, next) => {
         ? "public, max-age=31536000, immutable"
         : "public, max-age=0, must-revalidate",
   );
-  return new Response(response.body, {
+  if (!asset) {
+    headers.set("Vary", "Accept-Language, Cookie");
+    headers.delete("ETag");
+    headers.set("Content-Language", requestLocale(c.req.raw));
+  }
+  const output = new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
     headers,
   });
+  if (!asset && response.status === 200 && requestLocale(c.req.raw) === "en") {
+    const shell: Record<string, string> = {
+      projects: "Projects",
+      workspace: "Workspace",
+      loading: "Loading projects",
+    };
+    return new HTMLRewriter()
+      .on("html", {
+        element(e) {
+          e.setAttribute("lang", "en");
+        },
+      })
+      .on("[data-i18n-shell]", {
+        element(e) {
+          const key = e.getAttribute("data-i18n-shell");
+          if (key && shell[key]) e.setInnerContent(shell[key]);
+        },
+      })
+      .on("[aria-label=正在加载项目]", {
+        element(e) {
+          e.setAttribute("aria-label", shell.loading);
+        },
+      })
+      .on('meta[name="description"]', {
+        element(e) {
+          e.setAttribute(
+            "content",
+            "OneStorage — Open-source, self-hosted Git collaboration.",
+          );
+        },
+      })
+      .transform(output);
+  }
+  return output;
 });
 app.use("*", async (c, next) => {
   const origin = c.req.header("origin");

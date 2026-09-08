@@ -1,12 +1,14 @@
 # OneStorage
 
+**简体中文** · [English](README.en.md)
+
 **运行在 Cloudflare 上的开源 Git 协作平台。**
 
 像使用 GitLab / Gogs 一样托管代码、管理团队和审阅变更。Git 服务由 JavaScript 在 Workers 中实现，数据保存在你自己的 Cloudflare 账号中，无需服务器、Docker 或容器。
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FDropKbit%2FOneStorage%2Ftree%2Fdeploy)
 
-[在线体验](https://git.1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [自托管仓库](https://git.1s.hk/1shk/nb) · [部署指南](docs/DEPLOYMENT.md) · [版本记录](docs/CHANGELOG.md)
+[在线体验](https://1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [自托管仓库](https://1s.hk/1shk/nb) · [部署指南](docs/DEPLOYMENT.md) · [版本记录](docs/CHANGELOG.md)
 
 ## 能做什么
 
@@ -15,6 +17,7 @@
 - **团队协作**：多工作空间与切换、角色权限、Issue / 看板 / 里程碑、合并请求、行级讨论、CODEOWNERS 和受保护分支。
 - **CI/CD**：推送与定时触发、日志、变量 / 密钥、缓存和产物；云端构建 TypeScript / TSX、JS / CSS 与锁定 npm 依赖，支持应用发布和回滚。
 - **项目管理**：npm / 通用包仓库、版本发布、Wiki、通知、审计日志和管理员后台。
+- **语言与文档**：简体中文 / English 界面，保存语言偏好，提供可切换语言的[在线文档](https://1s.hk/docs)。
 - **账户与集成**：访问令牌、双重验证、OAuth / OIDC 登录、Webhook、REST API、MCP，以及 TypeScript / Python / Go SDK。
 
 ## 如何运行
@@ -42,12 +45,14 @@
 
 模板自动迁移数据库，依次部署编译服务、应用网关和主服务，并连接共享存储与服务地址。需要相应 Cloudflare 服务额度及部署权限；详见 [部署说明](docs/DEPLOYMENT.md#关于一键部署)。已有实例升级请保留原有资源和加密密钥。
 
+主站使用 **1s.hk**，替换原 Cubelink 服务。旧 `git.1s.hk` 网页跳转到主站，Git HTTPS 与 API 地址继续兼容；新客户端和外部登录回调请使用主域名。
+
 ## 本地体验
 
 需要 Node.js 22.13+ 和 npm：
 
 ```sh
-git clone https://git.1s.hk/1shk/nb.git onestorage
+git clone https://1s.hk/1shk/nb.git onestorage
 cd onestorage
 npm ci
 npm run dev
@@ -57,7 +62,7 @@ npm run dev
 
 ## 使用范围
 
-当前为 **v0.37 alpha**。云端 CI 支持 JS / WASM，不运行任意 shell、Python 或 npm 生命周期脚本；通用命令构建可接入自行管理的外部 Runner。暂不支持 SSH Git 传输、shallow / partial clone，也不兼容全部 GitLab API。容量与大仓库限制见 [使用边界](docs/LIMITS.md)。
+当前为 **v0.38 alpha**。云端 CI 支持 JS / WASM，不运行任意 shell、Python 或 npm 生命周期脚本；通用命令构建可接入自行管理的外部 Runner。暂不支持 SSH Git 传输、shallow / partial clone，也不兼容全部 GitLab API。容量与大仓库限制见 [使用边界](docs/LIMITS.md)。
 
 [部署与恢复](docs/DEPLOYMENT.md) · [CI/CD](docs/CI-BUILDS-v22.md) · [API](docs/API.md) · [SDK](docs/SDK.md) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md)
 

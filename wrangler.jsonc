@@ -10,11 +10,14 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
     "run_worker_first": true,
   },
   "vars": {
     "APPS_ORIGIN": "https://onestorage-apps.xbitfun.workers.dev",
-    "APP_ORIGIN": "https://git.1s.hk",
+    "APP_ORIGIN": "https://1s.hk",
+    "LEGACY_APP_ORIGIN": "https://git.1s.hk",
     "WEBHOOK_ALLOWED_HOSTS": "",
   },
   "d1_databases": [
@@ -68,5 +71,8 @@
     "crons": ["*/5 * * * *"],
   },
   "workers_dev": true,
-  "routes": [{ "pattern": "git.1s.hk", "custom_domain": true }],
+  "routes": [
+    { "pattern": "1s.hk", "custom_domain": true },
+    { "pattern": "git.1s.hk", "custom_domain": true },
+  ],
 }
