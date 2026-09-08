@@ -53,7 +53,7 @@ npx wrangler secret put CREDENTIAL_ENCRYPTION_KEY
 
 [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FDropKbit%2FOneStorage%2Ftree%2Fdeploy) 使用 [GitHub 的 deploy 分支](https://github.com/DropKbit/OneStorage/tree/deploy)。它包含完整源码和独立部署配置，不使用现有 `git.1s.hk` 的域名、数据库 ID 或凭据。
 
-Cloudflare 的部署表单创建新的 D1、两个 R2 桶和 Queue，并把实际资源写入配置。首次部署保留 `APP_ORIGIN` / `APPS_ORIGIN` 为空，Worker 名使用 2–50 个小写字母、数字或连字符，且以字母开头、以字母或数字结尾。选择名称时，为衍生的 `<名称>-build` 和 `<名称>-apps` 也预留空闲名称；不要复用现有实例的资源。
+Cloudflare 的部署表单创建或选择 D1、两个 R2 桶和 Queue，并把实际资源写入配置。服务地址由脚本自动生成，不需要在表单中填写。Worker 名使用 2–50 个小写字母、数字或连字符，且以字母开头、以字母或数字结尾。选择名称时，为衍生的 `<名称>-build` 和 `<名称>-apps` 也预留空闲名称；新实例不要复用已有实例的资源，尤其要检查下拉框是否自动选中了同名资源。
 
 填写两个独立的随机值：`BOOTSTRAP_SECRET` 使用 `openssl rand -hex 32` 生成；`CREDENTIAL_ENCRYPTION_KEY` 使用 `openssl rand -base64 32` 生成。前者用于网页首次初始化，后者用于加密凭据，必须妥善保管且升级时保持不变。
 
@@ -62,6 +62,8 @@ Cloudflare 的部署表单创建新的 D1、两个 R2 桶和 Queue，并把实�
 该流程在 Cloudflare 官方单 Worker 按钮之上增加部署编排。构建使用的 Cloudflare API token 需要本账户 Workers Scripts、D1、R2、Queues 的对应管理权限；若平台生成的 token 权限不足，在 Workers Builds 中选择具有这些权限的部署 token 后重试。首次使用需启用相关服务与额度，费用按实际资源使用计费。失败不会删除已有数据；修复配置后重新部署即可，自动清理未完成实例需另行操作。
 
 GitHub `main` 与自托管仓库保存常规源码；`deploy` 是配置经过转换的发布分支。维护者在独立 checkout 中运行 `node scripts/prepare-deploy.mjs <checkout目录>` 更新模板，不能直接在现有实例目录覆盖配置。官方入口要求及限制见 [Cloudflare 文档](https://developers.cloudflare.com/workers/platform/deploy-buttons/)。
+
+验证状态（2026-09-09）：模板已通过官方部署表单解析；使用独立资源运行同一部署脚本，已验证数据库迁移、三个 Worker 发布、共享绑定、自动地址和首次管理员初始化。官方按钮的完整在线构建尚未验证：测试账户在创建 GitHub 仓库前返回 `Your GitHub authorization has expired`。这与 Wrangler 登录及仓库部署密钥不同，需要按 [Cloudflare GitHub 集成说明](https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/#reinstall-the-cloudflare-github-app) 恢复授权；重装共享 GitHub App 会影响其他项目的构建连接，应由账号管理员处理。
 
 ## 更新和 v0.1 迁移
 
