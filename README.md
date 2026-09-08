@@ -125,4 +125,4 @@ Copyright © 2026 OneStorage contributors. [AGPL-3.0-only](LICENSE)。修改部�
 
 ## v0.25 项目包仓库
 
-新增真实 npm 与通用文件仓库：原生 publish/install/dist-tag/unpublish、作用域名称、R2 文件与完整性校验、当前项目权限、不可覆盖版本、异步回收和网页管理。用法、CI 接入及限制见 [包仓库](docs/PACKAGES-v25.md)。完整平台目标仍持续推进。
+新增真实 npm 与通用文件仓库：原生 publish/install/dist-tag/unpublish、作用域名称、R2 文件与完整性校验、当前项目权限、不可覆盖版本、异步回收和网页管理。用法、CI 接入及限制见 [包仓库](docs/PACKAGES-v25.md)，本地和生产测试见 [验收记录](docs/VERIFICATION-v25.md)。完整平台目标仍持续推进。
