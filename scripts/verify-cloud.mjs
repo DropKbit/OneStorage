@@ -1,6 +1,6 @@
 // Opt-in acceptance on an operator-owned instance. Only generated repositories are mutated.
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { OneStorage } from "../sdk/index.ts";
 if (process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
   throw Error(
@@ -25,7 +25,12 @@ const author = {
   email: "acceptance@example.com",
 };
 const health = await (await fetch(origin + "/api/health")).json();
-assert.equal(health.version, "0.3.0");
+assert.equal(
+  health.version,
+  JSON.parse(
+    await readFile(new URL("../package.json", import.meta.url), "utf8"),
+  ).version,
+);
 const p = await client.createRepo({ name: name + "/project" });
 assert.equal(p.namespace, namespace);
 const repo = client.repo(namespace, p.name);

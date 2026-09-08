@@ -1,3 +1,4 @@
+import { ObjectCache } from "./git/object-cache";
 import { upstreamClient, pullRepository, scheduleSync } from "./sync";
 import { forgeEvent, dispatchEvent, ForgeEvent } from "./events";
 import type { Repo } from "./types";
@@ -19,6 +20,7 @@ import { importSnapshot } from "./git/legacy";
 export class Repository extends DurableObject<Env> {
   private tail: Promise<unknown> = Promise.resolve();
   private waiting = 0;
+  private objectCache = new ObjectCache();
   async fetch(request: Request): Promise<Response> {
     if (this.waiting >= 16)
       return Response.json(
@@ -51,8 +53,10 @@ export class Repository extends DurableObject<Env> {
   }
   async alarm() {
     const result = this.tail.then(async () => {
-      if (await this.ctx.storage.get("deleted"))
+      if (await this.ctx.storage.get("deleted")) {
+        this.objectCache.clear();
         return collectDeleted(this.env, this.ctx.storage);
+      }
       for (const [key, event] of await this.ctx.storage.list<ForgeEvent>({
         prefix: "event:",
         limit: 20,
@@ -103,12 +107,16 @@ export class Repository extends DurableObject<Env> {
         "main",
     );
     const url = new URL(request.url),
-      store = new ObjectStore(id, this.env.OBJECTS);
-    const metadata = await this.env.DB.prepare(
-      "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
-    )
-      .bind(id)
-      .first<Repo>();
+      store = new ObjectStore(id, this.env.OBJECTS, this.objectCache);
+    // Public API access was checked against fresh D1 metadata by the outer Worker.
+    // Reads need only durable refs/tombstone; mutation/sync hooks load authoritative metadata.
+    const metadata = ["GET", "HEAD"].includes(request.method)
+      ? null
+      : await this.env.DB.prepare(
+          "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+        )
+          .bind(id)
+          .first<Repo>();
     if (url.pathname === "/internal/sync" && request.method === "POST") {
       if (!metadata) fail(404, "Repository not found");
       return Response.json(
@@ -245,6 +253,43 @@ export class Repository extends DurableObject<Env> {
               url.searchParams.getAll("path"),
             ),
           );
+        case "/browse": {
+          const branches = repo.listBranches({ limit: 256 }).branches;
+          if (!branches.length)
+            return Response.json({
+              branches,
+              default_branch: defaultBranch,
+              data: null,
+              readme: null,
+            });
+          const ref = q.ref || defaultBranch,
+            filePath = q.path || "",
+            blob = q.view === "blob";
+          const data = blob
+            ? await repo.blob(ref, filePath)
+            : await repo.tree(ref, filePath);
+          let readme = null;
+          if (
+            !blob &&
+            !filePath &&
+            "entries" in data &&
+            data.entries.some(
+              (e) => e.name === "README.md" && e.type === "blob",
+            )
+          ) {
+            try {
+              readme = await repo.blob(data.ref, "README.md");
+            } catch (e) {
+              if (!(e instanceof HTTPException) || e.status !== 413) throw e;
+            }
+          }
+          return Response.json({
+            branches,
+            default_branch: defaultBranch,
+            data,
+            readme,
+          });
+        }
         case "/branch": {
           const name = q.branch || q.name || defaultBranch,
             sha = repo.refs["refs/heads/" + name];

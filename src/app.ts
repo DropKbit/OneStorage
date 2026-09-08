@@ -122,13 +122,15 @@ async function repoAccess(
   }
   const user = c.get("user");
   const owner = user?.id === r.owner_id;
-  const member = user
-    ? await c.env.DB.prepare(
-        "SELECT role FROM members WHERE repo_id=? AND user_id=?",
-      )
-        .bind(r.id, user.id)
-        .first<{ role: string }>()
-    : null;
+  const member =
+    user && !owner
+      ? await c.env.DB.prepare(
+          "SELECT role FROM members WHERE repo_id=? AND user_id=?",
+        )
+          .bind(r.id, user.id)
+          .first<{ role: string }>()
+      : null;
+  c.set("repoRole", owner ? "owner" : member?.role || "guest");
   if (level === "read" && (r.visibility === "public" || owner || member))
     return r;
   if (!user) fail(401, "Authentication required");
@@ -241,7 +243,52 @@ app.use("*", async (c, next) => {
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
   );
-  c.header("Cache-Control", "no-store");
+  if (!c.res.headers.has("Cache-Control"))
+    c.header("Cache-Control", "no-store");
+});
+const staticPaths = new Set([
+  "/app.js",
+  "/forge.js",
+  "/style.css",
+  "/favicon.svg",
+  "/openapi.json",
+  "/source.tar.gz",
+]);
+app.get("*", async (c, next) => {
+  const path = c.req.path;
+  if (
+    /^\/(api|mcp|webhooks)(\/|$)/.test(path) ||
+    path === "/llms.txt" ||
+    decodeURI(path).includes(".git")
+  )
+    return next();
+  const url = new URL(c.req.url),
+    asset = staticPaths.has(path);
+  if (!asset) {
+    url.pathname = "/index.html";
+    url.search = "";
+  }
+  // Shell and build assets contain no private repository/session data.
+  const response = await c.env.ASSETS.fetch(
+    new Request(url, {
+      method: "GET",
+      headers: { "If-None-Match": c.req.header("if-none-match") || "" },
+    }),
+  );
+  const headers = new Headers(response.headers);
+  headers.set(
+    "Cache-Control",
+    c.env.APP_ORIGIN.startsWith("http://localhost")
+      ? "no-store"
+      : asset && /^[a-f0-9]{16}$/.test(url.searchParams.get("v") || "")
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=0, must-revalidate",
+  );
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 });
 app.use("*", async (c, next) => {
   const origin = c.req.header("origin");
@@ -310,7 +357,17 @@ app.use("*", async (c, next) => {
 registerIdentityRoutes(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.3.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.3.1", status: "ok" }),
+);
+app.get("/api/bootstrap", async (c) =>
+  c.json({
+    user: c.get("user"),
+    required: c.get("user")
+      ? false
+      : !(await c.env.DB.prepare(
+          "SELECT value FROM settings WHERE key='initialized'",
+        ).first()),
+  }),
 );
 app.get("/api/setup", async (c) =>
   c.json({
@@ -677,17 +734,9 @@ app.post("/api/repos", async (c) => {
 });
 app.get("/api/repos/:namespace/:repo", async (c) => {
   const r = await repoAccess(c);
-  const user = c.get("user");
-  const member = user
-    ? await c.env.DB.prepare(
-        "SELECT role FROM members WHERE repo_id=? AND user_id=?",
-      )
-        .bind(r.id, user.id)
-        .first<{ role: string }>()
-    : null;
   return c.json({
     ...r,
-    role: user?.id === r.owner_id ? "owner" : member?.role || "guest",
+    role: c.get("repoRole"),
     clone_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}.git`,
   });
 });

@@ -35,6 +35,7 @@ export type App = {
   Bindings: Env;
   Variables: {
     user: User | null;
+    repoRole: string;
     scope: "read" | "write";
     kind: "pat" | "session" | "jwt" | null;
     delegation?: import("./delegation").Delegation;

@@ -1,4 +1,8 @@
-import { keyPage, forgePage, upstreamPage } from "./forge.js";
+import {
+  keyPage,
+  forgePage,
+  upstreamPage,
+} from "./forge.js?v=5830e6e9cedfecd4";
 const root = document.querySelector("#app");
 const esc = (x) =>
   String(x ?? "").replace(
@@ -29,25 +33,112 @@ const date = (s) =>
 let user = null,
   setup = false,
   routeVersion = 0;
+let booting = true,
+  hasRendered = false,
+  navigation = new AbortController(),
+  cacheEpoch = 0;
+const pendingReads = new Map(),
+  repositoryMetadata = new Map(),
+  primedReads = new Map();
 async function api(path, options = {}) {
-  const r = await fetch("/api" + path, {
-    ...options,
-    headers: {
-      ...(options.body ? { "content-type": "application/json" } : {}),
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  const data = await r.json();
-  if (!r.ok)
-    throw new Error(
-      data.error +
-        (data.details
-          ? "：" + data.details.map((i) => i.message).join("；")
-          : ""),
-    );
-  return data;
+  const reading = !options.method || options.method === "GET";
+  if (reading && primedReads.has(path)) {
+    const promise = primedReads.get(path);
+    primedReads.delete(path);
+    return promise;
+  }
+  const metadata = reading && /^\/repos\/[^/]+\/[^/]+$/.test(path);
+  if (metadata) {
+    const cached = repositoryMetadata.get(path);
+    if (cached && cached.expires > Date.now()) return cached.data;
+  }
+  if (reading && pendingReads.has(path)) return pendingReads.get(path);
+  if (!reading) {
+    cacheEpoch++;
+    repositoryMetadata.clear();
+    pendingReads.clear();
+    primedReads.clear();
+  }
+  const epoch = cacheEpoch;
+  const request = (async () => {
+    const r = await fetch("/api" + path, {
+      ...options,
+      signal: options.signal || (reading ? navigation.signal : undefined),
+      headers: {
+        ...(options.body ? { "content-type": "application/json" } : {}),
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      if ([401, 403, 404].includes(r.status)) repositoryMetadata.clear();
+      const error = new Error(
+        data.error +
+          (data.details
+            ? "：" + data.details.map((i) => i.message).join("；")
+            : ""),
+      );
+      error.status = r.status;
+      throw error;
+    }
+    if (metadata && epoch === cacheEpoch) {
+      if (repositoryMetadata.size >= 20)
+        repositoryMetadata.delete(repositoryMetadata.keys().next().value);
+      repositoryMetadata.set(path, { data, expires: Date.now() + 15000 });
+    }
+    return data;
+  })();
+  if (reading) pendingReads.set(path, request);
+  try {
+    return await request;
+  } finally {
+    if (pendingReads.get(path) === request) pendingReads.delete(path);
+    if (!reading) {
+      cacheEpoch++;
+      repositoryMetadata.clear();
+    }
+  }
 }
+function loadingContent(title = "项目") {
+  return `<div class="titlebar"><h1>${esc(title)}</h1></div><section class="panel page-loading" aria-busy="true" aria-label="正在加载${esc(title)}"><div class="skeleton skeleton-heading"></div>${'<div class="skeleton skeleton-row"></div>'.repeat(5)}<span class="sr-only" role="status">正在加载${esc(title)}</span></section>`;
+}
+function browseURL(ap) {
+  const q = new URLSearchParams(location.search),
+    params = new URLSearchParams({
+      path: q.get("path") || "",
+      view: q.get("view") === "blob" ? "blob" : "tree",
+    });
+  if (q.get("ref")) params.set("ref", q.get("ref"));
+  return ap + "/browse?" + params;
+}
+function primeRoute() {
+  const path = location.pathname,
+    parts = path.split("/").filter(Boolean);
+  const reads = [];
+  if (path === "/") {
+    const q = new URLSearchParams(location.search);
+    reads.push(
+      "/repos?q=" +
+        encodeURIComponent(q.get("q") || "") +
+        "&page=" +
+        (Number(q.get("page")) || 0),
+    );
+  } else if (parts.length >= 2 && !["settings", "admin"].includes(parts[0])) {
+    const ap = "/repos/" + parts[0] + "/" + parts[1];
+    reads.push(ap);
+    if (!parts[2]) reads.push(browseURL(ap));
+    else if (["commits", "members", "issues", "merges"].includes(parts[2]))
+      reads.push(ap + "/" + parts[2] + (parts[3] ? "/" + parts[3] : ""));
+  }
+  // Attach rejection handlers immediately; the page awaits the same in-flight reads.
+  for (const path of reads) {
+    const promise = api(path);
+    primedReads.set(path, promise);
+    promise.catch(() => {});
+  }
+}
+
 function notice(message) {
   const n = document.querySelector("#notice");
   n.textContent = message;
@@ -72,7 +163,7 @@ window.addEventListener("popstate", render);
 const link = (path, label, cls = "") =>
   `<a data-link href="${esc(path)}" class="${cls}">${label}</a>`;
 function layout(content, crumb = "项目", active = "repos") {
-  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || "公开空间")}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div><div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user?.admin ? link("/admin/users", icon("users") + "用户管理", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.3.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
+  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || (booting ? "工作空间" : "公开空间"))}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div><div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user?.admin ? link("/admin/users", icon("users") + "用户管理", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.3.1 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
   document.querySelector("#logout")?.addEventListener("click", async () => {
     await api("/logout", { method: "POST" });
     user = null;
@@ -191,10 +282,16 @@ function copyButton(value, id = "copy") {
 const writeable = (r) => ["owner", "maintainer", "developer"].includes(r.role);
 async function codePage(r, base, ap, version) {
   const params = new URLSearchParams(location.search),
-    ref = params.get("ref") || r.default_branch,
     p = params.get("path") || "",
     blob = params.get("view") === "blob";
-  const { branches } = await api(ap + "/branches");
+  const {
+    branches,
+    data,
+    readme: readmeFile,
+    default_branch,
+  } = await api(browseURL(ap));
+  const ref = params.get("ref") || default_branch;
+  r = { ...r, default_branch };
   if (version !== routeVersion) return;
   const clone = `<button class="btn" id="copy">克隆地址 ↗</button>`;
   const aside = `<aside class="aside"><section><h3>关于项目</h3><p class="muted">${esc(r.description || "暂无描述")}</p><span class="pill">${r.visibility === "public" ? "公开仓库" : "私有仓库"}</span></section><section><h3>使用 Git 克隆</h3><code>${esc(r.clone_url)}</code><p class="muted">HTTPS 凭证：用户名 + 访问令牌</p>${link("/settings/tokens", "管理访问令牌 →")}</section><section><h3>仓库详情</h3><p class="muted">${branches.length} 个分支<br>默认分支 ${esc(r.default_branch)}<br>创建于 ${date(r.created_at)}</p></section></aside>`;
@@ -212,17 +309,9 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
     copyButton(r.clone_url);
     return;
   }
-  const data = await api(
-    `${ap}/${blob ? "blob" : "tree"}?ref=${encodeURIComponent(ref)}&path=${encodeURIComponent(p)}`,
-  );
-  let readme = "";
-  if (!blob && !p && data.entries.some((f) => f.name === "README.md")) {
-    const b = await api(
-      `${ap}/blob?ref=${encodeURIComponent(ref)}&path=README.md`,
-    ).catch(() => null);
-    if (b?.content)
-      readme = `<section class="panel readme"><div class="panelhead"><strong>README.md</strong></div><pre>${esc(b.content)}</pre></section>`;
-  }
+  const readme = readmeFile?.content
+    ? `<section class="panel readme"><div class="panelhead"><strong>README.md</strong></div><pre>${esc(readmeFile.content)}</pre></section>`
+    : "";
   if (version !== routeVersion) return;
   const nav = `<div class="toolbar"><div class="actionbar"><select class="select-branch" id="branch" aria-label="选择分支">${branches.map((b) => `<option ${b.name === ref ? "selected" : ""} value="${esc(b.name)}">⑂ ${esc(b.name)}</option>`).join("")}</select><span class="muted">${esc(p || "/")}</span></div>${writeable(r) ? link(`${base}/edit?ref=${encodeURIComponent(ref)}${blob ? "&path=" + encodeURIComponent(p) : ""}`, blob ? "编辑文件" : "新建文件", "btn small") : ""}</div>`;
   const up = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
@@ -501,9 +590,37 @@ function adminPage() {
   });
 }
 async function render() {
+  if (booting) return;
+  if (hasRendered) {
+    navigation.abort();
+    navigation = new AbortController();
+    pendingReads.clear();
+    primedReads.clear();
+  }
+  hasRendered = true;
   const version = ++routeVersion;
   const path = location.pathname;
   document.title = "OneStorage · Code, together.";
+  const titles = {
+    tokens: "访问令牌",
+    keys: "密钥与连接",
+    commits: "提交",
+    forge: "Git 工具",
+    upstream: "同步与 Fork",
+    issues: "Issues",
+    merges: "合并请求",
+    members: "成员",
+    settings: "设置",
+    search: "搜索",
+  };
+  const segment = path.split("/").filter(Boolean).at(-1),
+    title = titles[segment] || "项目";
+  layout(
+    loadingContent(title),
+    title,
+    path.startsWith("/settings/") ? segment : "repos",
+  );
+  primeRoute();
   try {
     if (path === "/login" || setup) {
       authPage();
@@ -551,6 +668,7 @@ async function render() {
     const r = await api(ap);
     if (version !== routeVersion) return;
     document.title = `${r.namespace} / ${r.name} · OneStorage`;
+    repoLayout(r, tab || "code", loadingContent(titles[tab] || "文件"));
     if (!tab) await codePage(r, base, ap, version);
     else if (tab === "forge") await forgePage(r, base, ap, helpers);
     else if (tab === "upstream") await upstreamPage(r, base, ap, helpers);
@@ -570,11 +688,18 @@ async function render() {
     );
   }
 }
+layout(loadingContent("项目"));
+primeRoute();
 try {
-  const [me, status] = await Promise.all([api("/me"), api("/setup")]);
-  user = me.user;
-  setup = status.required;
+  const state = await api("/bootstrap", { signal: AbortSignal.timeout(20000) });
+  user = state.user;
+  setup = state.required;
+  booting = false;
   await render();
 } catch (e) {
-  root.innerHTML = `<div class="content"><h1>OneStorage</h1><div class="error">${esc(e.message)}</div><p>服务尚未就绪，请检查数据库迁移与部署配置。</p></div>`;
+  booting = false;
+  layout(
+    `<h1>暂时无法加载</h1><div class="error">${esc(e.message)}</div><button id="retry-start" class="btn primary">重试</button>`,
+  );
+  document.querySelector("#retry-start").onclick = () => location.reload();
 }

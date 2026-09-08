@@ -1,4 +1,5 @@
 import "./openapi.mjs";
+import "./assets.mjs";
 // Build-time only: publish an explicit allowlist of source files, never local state/secrets.
 import { readFile, readdir, lstat, writeFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";

@@ -26,6 +26,7 @@ const author = z.object({
 });
 export function registerForgeRoutes(app: Hono<App>, h: Helpers) {
   for (const [route, path] of Object.entries({
+    browse: "/browse",
     file: "/file",
     files: "/files",
     "files/metadata": "/files/metadata",

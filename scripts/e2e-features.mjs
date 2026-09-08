@@ -48,6 +48,13 @@ const { data: created } = await req(
   "session",
   201,
 );
+const emptyBrowse = (await req(path + "/browse")).data;
+assert.deepEqual(emptyBrowse, {
+  branches: [],
+  default_branch: "main",
+  data: null,
+  readme: null,
+});
 const pair = await generateKeyPair("ES256", { extractable: true });
 const { data: key } = await req(
   "/api/api-keys",
@@ -72,6 +79,7 @@ const initial = {
   commit_message: "First",
   files: [
     { path: "hello.txt", content: "hello\nworld\n" },
+    { path: "README.md", content: "# Browse fixture\n" },
     { path: "sub/code.ts", content: "const answer = 42;\n" },
   ],
 };
@@ -82,6 +90,27 @@ const { data: first } = await req(
   writer,
   201,
 );
+const browse = (await req(path + "/browse", "GET", undefined, reader)).data;
+assert.equal(browse.data.ref, first.sha);
+assert.equal(browse.readme.ref, first.sha);
+assert.equal(browse.readme.content, "# Browse fixture\n");
+assert.deepEqual(
+  browse.data,
+  (await req(path + "/tree?ref=main", "GET", undefined, reader)).data,
+);
+assert.equal(
+  (
+    await req(
+      path + "/browse?view=blob&path=hello.txt",
+      "GET",
+      undefined,
+      reader,
+    )
+  ).data.data.content,
+  "hello\nworld\n",
+);
+await req(path + "/browse", "GET", undefined, writer, 403);
+await req(path + "/browse", "GET", undefined, null, 401);
 await req(path + "/branches", "GET", undefined, writer, 403);
 await req(path + "/commit-files", "POST", initial, reader, 403);
 await req(path + "/grep", "POST", { query: { pattern: "answer" } }, reader);
@@ -351,7 +380,31 @@ assert.equal(
   ).result.isError,
   true,
 );
+const updated = (
+  await req(
+    path + "/commit-files",
+    "POST",
+    {
+      target_branch: "main",
+      commit_message: "Refresh browse cache",
+      files: [{ path: "README.md", content: "# Updated fixture\n" }],
+    },
+    writer,
+    201,
+  )
+).data;
+const refreshed = (
+  await req(path + "/browse?ref=main", "GET", undefined, reader)
+).data;
+assert.equal(
+  (await req(path + "/browse", "GET", undefined, reader)).data.data.ref,
+  (await req(path + "/branch?branch=promoted", "GET", undefined, reader)).data
+    .sha,
+);
+assert.equal(refreshed.data.ref, updated.sha);
+assert.equal(refreshed.readme.content, "# Updated fixture\n");
 await req("/api/api-keys/" + key.id, "DELETE");
+await req(path + "/browse", "GET", undefined, reader, 401);
 await req(path + "/branches", "GET", undefined, reader, 401);
 await req(path, "DELETE");
 await req(path, "GET", undefined, "session", 404);

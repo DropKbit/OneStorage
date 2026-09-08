@@ -1,3 +1,4 @@
+import type { ObjectCache } from "./object-cache";
 import { fail } from "../security";
 export const LIMITS = {
   object: 8 * 1024 * 1024,
@@ -213,6 +214,7 @@ export class ObjectStore {
   constructor(
     readonly repoId: string,
     private bucket: Pick<R2Bucket, "get" | "put">,
+    private shared?: ObjectCache,
   ) {}
   private remember(o: GitObject) {
     const old = this.cache.get(o.oid);
@@ -230,12 +232,16 @@ export class ObjectStore {
     if (!isOid(oid)) fail(400, "Invalid object ID");
     const existing = this.staged.get(oid) || this.cache.get(oid);
     if (existing) return existing;
+    const cached = this.shared?.get(this.repoId, oid);
+    if (cached) return this.remember(cached);
     const r = await this.bucket.get(`repos/${this.repoId}/objects/${oid}`);
     if (!r) fail(409, "Missing Git object " + oid);
     if (r.size > LIMITS.object + 64) fail(413, "Stored object exceeds limit");
-    return this.remember(
+    const object = this.remember(
       await readCanonical(new Uint8Array(await r.arrayBuffer()), oid),
     );
+    this.shared?.put(this.repoId, object);
+    return object;
   }
   add(o: GitObject) {
     this.remember(o);
@@ -262,6 +268,7 @@ export class ObjectStore {
         )
           fail(409, "Conflicting stored Git object; refs unchanged");
       }
+      this.shared?.put(this.repoId, o);
     }
   }
   async walk(roots: string[], exclude = new Set<string>()) {
