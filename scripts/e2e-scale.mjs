@@ -13,8 +13,10 @@ import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787",
   remote = !["localhost", "127.0.0.1"].includes(new URL(origin).hostname);
-const singleImport = process.env.ONESTORAGE_SINGLE_IMPORT === "1",
-  payloadBytes = (singleImport ? 35 : 42) * 1024 * 1024;
+const cacheAcceptance = process.env.ONESTORAGE_PACK_CACHE === "1",
+  singleImport =
+    cacheAcceptance || process.env.ONESTORAGE_SINGLE_IMPORT === "1",
+  payloadBytes = (cacheAcceptance ? 10 : singleImport ? 35 : 42) * 1024 * 1024;
 if (remote && process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
   throw Error("Remote acceptance requires opt-in");
 const existing = process.env.ONESTORAGE_TOKEN_FILE
@@ -138,14 +140,16 @@ try {
     const folder = join(directory, "source", "batch" + batch);
     await mkdir(folder);
     await Promise.all(
-      Array.from({ length: singleImport ? 2100 : 900 }, (_, i) =>
-        writeFile(join(folder, "file" + i), `batch ${batch} file ${i}\n`),
+      Array.from(
+        { length: cacheAcceptance ? 1100 : singleImport ? 2100 : 900 },
+        (_, i) =>
+          writeFile(join(folder, "file" + i), `batch ${batch} file ${i}\n`),
       ),
     );
-    for (let i = 0; i < (singleImport ? 5 : 1); i++)
+    for (let i = 0; i < (cacheAcceptance ? 2 : singleImport ? 5 : 1); i++)
       await writeFile(
         join(folder, `large${i}.bin`),
-        randomBytes(7 * 1024 * 1024),
+        randomBytes((cacheAcceptance ? 5 : 7) * 1024 * 1024),
       );
     await git(["-C", "source", "add", "."]);
     await git(["-C", "source", "commit", "-m", "Batch " + batch]);
@@ -163,8 +167,10 @@ try {
       const packBytes = (await stat(join(directory, `initial-${hash}.pack`)))
         .size;
       assert.ok(
-        packBytes > 16 * 1024 * 1024,
-        "initial pack exceeds old 16 MiB wire limit",
+        packBytes > (cacheAcceptance ? 8 : 16) * 1024 * 1024,
+        cacheAcceptance
+          ? "cache fixture spans at least three R2 chunks"
+          : "initial pack exceeds old 16 MiB wire limit",
       );
       console.log(
         JSON.stringify({
@@ -181,7 +187,7 @@ try {
     await git(["-C", "source", "rev-list", "--objects", "--all", "--count"]),
   );
   assert.ok(
-    count > (singleImport ? 2000 : 5000),
+    count > (cacheAcceptance ? 1100 : singleImport ? 2000 : 5000),
     "fixture must exceed the previous object ceiling",
   );
   const stats = await git(["-C", "source", "count-objects", "-v"]);
@@ -192,6 +198,7 @@ try {
       objects: count,
       uncompressedPayload: payloadBytes,
       singleInitialPush: singleImport,
+      cacheAcceptance,
       stats,
     }),
   );
@@ -222,6 +229,21 @@ try {
     await git(["--git-dir=clone-v0.git", "rev-parse", "main"]),
     head,
   );
+  if (cacheAcceptance) {
+    await git([
+      "-c",
+      "protocol.version=2",
+      "clone",
+      "--bare",
+      url,
+      "clone-warm.git",
+    ]);
+    await git(["--git-dir=clone-warm.git", "fsck", "--full", "--strict"]);
+    assert.equal(
+      await git(["--git-dir=clone-warm.git", "rev-parse", "main"]),
+      head,
+    );
+  }
   await writeFile(
     join(directory, "source", "incremental"),
     `One new file after ${payloadBytes} bytes of history\n`,
@@ -249,6 +271,14 @@ try {
     "+refs/heads/main:refs/heads/main",
   ]);
   await git(["--git-dir=clone-v0.git", "fsck", "--full", "--strict"]);
+  if (cacheAcceptance) {
+    const next = await git(["-C", "source", "rev-parse", "HEAD"]);
+    for (const name of ["changed-cold.git", "changed-warm.git"]) {
+      await git(["-c", "protocol.version=2", "clone", "--bare", url, name]);
+      await git(["--git-dir=" + name, "fsck", "--full", "--strict"]);
+      assert.equal(await git(["--git-dir=" + name, "rev-parse", "main"]), next);
+    }
+  }
   const packet = (value) =>
     Buffer.from(
       (Buffer.byteLength(value) + 4).toString(16).padStart(4, "0") + value,
@@ -298,6 +328,7 @@ try {
       objects: count,
       uncompressedPayload: payloadBytes,
       singleInitialPush: singleImport,
+      cacheAcceptance,
       nativeGit: "v0/v2 clone, incremental push/fetch and fsck passed",
       timings,
     }),

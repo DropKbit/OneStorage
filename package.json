@@ -1,6 +1,6 @@
 {
   "name": "onestorage",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": true,
   "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
   "license": "AGPL-3.0-only",
@@ -48,7 +48,8 @@
     "test:workflow-ui": "node scripts/e2e-workflow-ui.mjs",
     "test:workflow-git": "node scripts/e2e-workflow-git.mjs",
     "test:git-reliability": "node scripts/e2e-git-reliability.mjs",
-    "test:receive-scale": "ONESTORAGE_SINGLE_IMPORT=1 node scripts/e2e-scale.mjs"
+    "test:receive-scale": "ONESTORAGE_SINGLE_IMPORT=1 node scripts/e2e-scale.mjs",
+    "test:pack-cache": "ONESTORAGE_PACK_CACHE=1 node scripts/e2e-scale.mjs"
   },
   "dependencies": {
     "diff": "9.0.0",

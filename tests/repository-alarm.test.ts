@@ -44,6 +44,7 @@ test("busy repository alarms return without joining the HTTP queue; idle alarms 
   }
   let reads = 0,
     alarm = 0,
+    cacheUnavailable = false,
     release!: () => void;
   const gate = new Promise<void>((r) => {
     release = r;
@@ -53,7 +54,11 @@ test("busy repository alarms return without joining the HTTP queue; idle alarms 
       reads++;
       return undefined;
     },
-    list: async () => new Map(),
+    list: async ({ prefix }: { prefix: string }) => {
+      if (cacheUnavailable && prefix === "pack-cache:entry:")
+        throw Error("cache unavailable");
+      return new Map();
+    },
     setAlarm: async (value: number) => {
       alarm = value;
     },
@@ -85,4 +90,9 @@ test("busy repository alarms return without joining the HTTP queue; idle alarms 
   assert.equal(repository.waiting, 0);
   await repository.alarm();
   assert.ok(reads > 0);
+  cacheUnavailable = true;
+  const prior = reads;
+  await repository.alarm();
+  assert.ok(reads > prior + 1, "cache failure does not stop other alarm work");
+  assert.ok(alarm >= Date.now() + 29000);
 });

@@ -16,6 +16,7 @@ import {
 } from "./objects";
 import { pkt, FLUSH, DELIM, readPackets } from "./pkt";
 import { parsePack } from "./pack";
+import type { PackCache } from "./pack-cache";
 import { packChunks, streamResponse } from "./pack-stream";
 const agent = "agent=onestorage/0.5";
 const uploadCaps = `side-band-64k ofs-delta no-progress multi_ack_detailed no-done ${agent} object-format=sha1`;
@@ -200,6 +201,7 @@ async function packFor(
   wants: string[],
   haves: string[],
   includeTags = false,
+  cache?: PackCache,
 ) {
   if (
     !wants.length ||
@@ -226,12 +228,19 @@ async function packFor(
     }
     for (const id of await repo.store.walk(tags, exclude)) selected.add(id);
   }
-  return packChunks([...selected], (oid) => repo.store.get(oid), {
-    size: (oid) => repo.store.index?.get(oid)?.size,
-    observe: (bytes, objects) => repo.store.observePrefetch(bytes, objects),
-  });
+  const ids = [...selected].sort();
+  const generate = () =>
+    packChunks(ids, (oid) => repo.store.get(oid), {
+      size: (oid) => repo.store.index?.get(oid)?.size,
+      observe: (bytes, objects) => repo.store.observePrefetch(bytes, objects),
+    });
+  return cache && !haves.length ? cache.stream(ids, generate) : generate();
 }
-export async function upload(repo: GitRepository, data: Uint8Array) {
+export async function upload(
+  repo: GitRepository,
+  data: Uint8Array,
+  cache?: PackCache,
+) {
   const packets = readPackets(data).packets,
     lines = packets
       .filter((p): p is Uint8Array => p instanceof Uint8Array)
@@ -322,6 +331,7 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
           wants,
           known,
           args.includes("include-tag"),
+          cache,
         );
         return streamedPack(
           pack,
@@ -345,6 +355,7 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
       wants,
       haves,
       args.includes("include-tag"),
+      cache,
     );
     return streamedPack(pack, pkt("packfile\n"), true);
   }
@@ -370,7 +381,7 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
       caps.includes("multi_ack_detailed") &&
       caps.includes("no-done")
     ) {
-      const pack = await packFor(repo, wants, known);
+      const pack = await packFor(repo, wants, known, false, cache);
       return streamedPack(
         pack,
         concat(
@@ -393,7 +404,7 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
         : pkt("NAK\n"),
     );
   }
-  const pack = await packFor(repo, wants, known);
+  const pack = await packFor(repo, wants, known, false, cache);
   return streamedPack(
     pack,
     pkt(common ? `ACK ${common}\n` : "NAK\n"),

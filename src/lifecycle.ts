@@ -250,4 +250,6 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
   await storage.delete(["refs.v2", "snapshot", "default-branch"]);
   const incoming = await storage.list({ prefix: "incoming:" });
   if (incoming.size) await storage.delete([...incoming.keys()]);
+  const packCache = await storage.list({ prefix: "pack-cache:" });
+  if (packCache.size) await storage.delete([...packCache.keys()]);
 }

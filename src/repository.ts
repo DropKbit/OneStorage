@@ -1,3 +1,4 @@
+import { PackCache, collectPackCache } from "./git/pack-cache";
 import { responseCompletion } from "./git/pack-stream";
 import { receiveStream } from "./git/receive-stream";
 import { collectIncoming } from "./git/incoming-area";
@@ -91,6 +92,12 @@ export class Repository extends DurableObject<Env> {
       if (await this.ctx.storage.get("deleted")) {
         this.objectCache.clear();
         return collectDeleted(this.env, this.ctx.storage);
+      }
+      try {
+        await collectPackCache(this.env.OBJECTS, this.ctx.storage);
+      } catch {
+        // A disposable cache must not stall event delivery or upstream reconciliation.
+        await this.ctx.storage.setAlarm(Date.now() + 30000);
       }
       const incomingPending = await collectIncoming(
         this.env.OBJECTS,
@@ -740,9 +747,11 @@ export class Repository extends DurableObject<Env> {
     if (path === "/git/git-receive-pack" && request.method === "POST")
       return receiveStream(repo, request, this.env.OBJECTS, this.ctx.storage);
     if (path === "/git/git-upload-pack" && request.method === "POST") {
+      const packCache = new PackCache(id, this.env.OBJECTS, this.ctx.storage);
       const response = await upload(
         repo,
         await boundedBody(request, 1024 * 1024),
+        packCache,
       );
       const completion = responseCompletion(response);
       if (completion)
@@ -751,6 +760,7 @@ export class Repository extends DurableObject<Env> {
             console.info("Git transfer drained", {
               repoId: id,
               ...store.ioUsage,
+              packCache: packCache.metrics,
             });
           }),
         );
