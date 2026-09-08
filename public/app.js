@@ -1,4 +1,4 @@
-const globalSearch = () => import("./search.js?v=da1099b414f06039");
+const globalSearch = () => import("./search.js?v=6a7618b7a0242477");
 const deployTokens = () => import("./deploy-tokens.js?v=3624ebb344aa8e94");
 const packages = () => import("./packages.js?v=940a14d638488fa5");
 const account = () => import("./account.js?v=78a530138d3ce5b3");
@@ -583,7 +583,7 @@ async function searchPage(r, base, ap, version) {
     "search",
     `<section class="panel" id="code-index-status"></section><form class="toolbar" id="code-search"><div class="search"><input name="q" value="${esc(q)}" required maxlength="128" placeholder="在默认分支搜索代码…" aria-label="搜索代码"></div><button class="btn primary" type="submit">搜索代码</button></form><div class="panel"><div class="panelhead"><strong>${result.matches.length} 处匹配</strong><span class="muted">${esc(r.default_branch)}${result.truncated ? " · 仅显示前 200 条" : ""}</span></div>${result.matches.map((m) => `<div class="comment">${link(base + "?view=blob&path=" + encodeURIComponent(m.path), esc(m.path) + ":" + m.line)}<pre>${esc(m.text)}</pre></div>`).join("") || '<div class="empty"><p>' + (q ? "没有匹配的代码。" : "输入关键词，搜索仓库中的文本文件。") + "</p></div>"}</div>`,
   );
-  const indexUI = await import("./search.js?v=da1099b414f06039");
+  const indexUI = await import("./search.js?v=6a7618b7a0242477");
   if (version !== routeVersion) return;
   indexUI.mountCodeIndex(document.querySelector("#code-index-status"), r, ap, {
     api,

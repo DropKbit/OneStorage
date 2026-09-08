@@ -9,7 +9,12 @@ const origin = process.env.TEST_ORIGIN || "http://localhost:8787",
   remote = !["localhost", "127.0.0.1"].includes(new URL(origin).hostname);
 if (remote && process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
   throw Error("Remote acceptance requires opt-in");
-const prefix = ".data/v32-" + (remote ? "production" : "local") + "-index",
+const shared = process.env.ONESTORAGE_SHARED_CODE === "1";
+const prefix =
+    ".data/" +
+    (shared ? "v34-" : "v32-") +
+    (remote ? "production" : "local") +
+    "-index",
   suffix = randomBytes(4).toString("hex"),
   keyword = "needle_v32_" + suffix;
 const token = process.env.ONESTORAGE_TOKEN_FILE
@@ -65,6 +70,26 @@ async function git(...args) {
     timeout: 180000,
     maxBuffer: 1024 * 1024,
   });
+}
+async function indexedRows() {
+  const sql = `SELECT d.path,d.content_id,c.grams FROM code_documents d JOIN code_contents c ON c.id=d.content_id JOIN code_index_state s ON s.repo_id=d.repo_id AND s.generation=d.generation WHERE d.repo_id='${repo.id}' ORDER BY d.path`;
+  const { stdout } = await exec(
+    "npx",
+    [
+      "wrangler",
+      "d1",
+      "execute",
+      "DB",
+      ...(remote
+        ? ["--remote"]
+        : ["--local", "--config", "wrangler.local.jsonc"]),
+      "--command",
+      sql,
+      "--json",
+    ],
+    { maxBuffer: 1024 * 1024 },
+  );
+  return JSON.parse(stdout)[0].results;
 }
 async function waitIndex(sha, after = 0) {
   for (let i = 0; i < 120; i++) {
@@ -162,6 +187,12 @@ try {
   assert.equal(initial.coverage.indexed_files, 19);
   assert.equal(initial.coverage.skipped.large_file, 1);
   assert.equal(initial.coverage.skipped.binary, 1);
+  const originalRows = shared ? await indexedRows() : [];
+  if (shared) {
+    assert.equal(initial.coverage.index_version, 2);
+    assert.equal(initial.coverage.created_contents, 19);
+    assert.equal(initial.coverage.reused_files, 0);
+  }
   let found = await query();
   assert.equal(found.results.length, 19);
   assert.ok(found.results.every((r) => r.indexed_sha === first.sha));
@@ -194,7 +225,17 @@ try {
   );
   await page.locator("[data-rebuild-index]").click();
   assert.equal((await rebuild).status(), 202);
-  await waitIndex(first.sha, initial.indexed_at);
+  const rebuilt = await waitIndex(first.sha, initial.indexed_at),
+    rebuiltRows = shared ? await indexedRows() : [];
+  if (shared) {
+    assert.equal(rebuilt.coverage.created_contents, 19);
+    assert.equal(rebuilt.coverage.reused_files, 0);
+    assert.ok(
+      rebuiltRows.every(
+        (r) => !originalRows.some((o) => o.content_id === r.content_id),
+      ),
+    );
+  }
   const pat = (
     await api(
       "/tokens",
@@ -231,12 +272,44 @@ try {
     "# added\n" + keyword + ' = "native push"\n',
   );
   await git("-C", work, "add", "src/new.py");
+  if (shared) {
+    await fs.copyFile(work + "/src/file1.ts", work + "/src/copy.ts");
+    await git("-C", work, "add", "src/copy.ts");
+  }
   await git("-C", work, "commit", "-m", "Reindex native rename and deletion");
   await git("-C", work, "push", "origin", "HEAD:main");
   const sha = (await git("-C", work, "rev-parse", "HEAD")).stdout.trim();
   const updated = await waitIndex(sha);
+  const updatedRows = shared ? await indexedRows() : [];
+  if (shared) {
+    assert.equal(updated.coverage.indexed_files, 20);
+    assert.equal(updated.coverage.reused_files, 19);
+    assert.equal(updated.coverage.created_contents, 1);
+    const old = new Map(rebuiltRows.map((r) => [r.path, r.content_id])),
+      ids = new Set(rebuiltRows.map((r) => r.content_id));
+    assert.equal(
+      updatedRows.find((r) => r.path === "src/renamed.ts").content_id,
+      old.get("src/alpha.ts"),
+    );
+    assert.equal(
+      updatedRows.find((r) => r.path === "src/copy.ts").content_id,
+      old.get("src/file1.ts"),
+    );
+    const fresh = updatedRows.filter((r) => !ids.has(r.content_id));
+    assert.equal(fresh.length, 1);
+    assert.equal(fresh[0].path, "src/new.py");
+    assert.equal(updated.coverage.written_postings, fresh[0].grams);
+    assert.ok(
+      updated.coverage.written_postings < updated.coverage.postings / 4,
+    );
+    await page.goto(origin + base + "/search");
+    await page
+      .getByText("本次复用 19 个文件的内容索引", { exact: false })
+      .waitFor();
+    await page.screenshot({ path: prefix + "-reuse.png", fullPage: true });
+  }
   found = await query();
-  assert.equal(found.results.length, 19);
+  assert.equal(found.results.length, shared ? 20 : 19);
   assert.ok(found.results.every((r) => r.indexed_sha === sha));
   assert.equal(
     found.results.some((r) =>
@@ -275,6 +348,9 @@ try {
   assert.ok(found.results.some((r) => r.path === "src/alpha.ts"));
   assert.ok(!found.results.some((r) => r.path === "src/new.py"));
   const result = {
+    shared,
+    rebuilt,
+    ...(shared ? { originalRows, rebuiltRows, updatedRows } : {}),
     switched,
     origin,
     checks,
@@ -309,12 +385,32 @@ try {
       );
   }
   if (user) {
+    let contentIDs = [];
+    if (shared && repo) {
+      const { stdout } = await exec(
+        "npx",
+        [
+          "wrangler",
+          "d1",
+          "execute",
+          "DB",
+          ...(remote
+            ? ["--remote"]
+            : ["--local", "--config", "wrangler.local.jsonc"]),
+          "--command",
+          `SELECT id FROM code_contents WHERE repo_id='${repo.id}'`,
+          "--json",
+        ],
+        { maxBuffer: 1024 * 1024 },
+      );
+      contentIDs = JSON.parse(stdout)[0].results.map((r) => "'" + r.id + "'");
+    }
     const ids = [user, guest]
       .filter(Boolean)
       .map((u) => "'" + u.id.replaceAll("'", "''") + "'")
       .join(",");
     const repoId = repo ? "'" + repo.id + "'" : "''";
-    const sql = `SELECT (SELECT count(*) FROM repositories WHERE owner_id IN(${ids})) repositories,(SELECT count(*) FROM credentials WHERE user_id IN(${ids})) credentials,(SELECT count(*) FROM users WHERE id IN(${ids}) AND disabled=0) enabled_users,(SELECT count(*) FROM code_documents WHERE repo_id=${repoId}) documents,(SELECT count(*) FROM code_index_state WHERE repo_id=${repoId}) index_states`;
+    const sql = `SELECT (SELECT count(*) FROM repositories WHERE owner_id IN(${ids})) repositories,(SELECT count(*) FROM credentials WHERE user_id IN(${ids})) credentials,(SELECT count(*) FROM users WHERE id IN(${ids}) AND disabled=0) enabled_users,(SELECT count(*) FROM code_documents WHERE repo_id=${repoId}) documents,(SELECT count(*) FROM code_index_state WHERE repo_id=${repoId}) index_states${shared ? `,(SELECT count(*) FROM code_contents WHERE repo_id=${repoId}) contents,(SELECT count(*) FROM code_content_grams WHERE content_id IN(${contentIDs.join(",") || "''"})) content_grams` : ""}`;
     let counts;
     for (let i = 0; i < 60; i++) {
       const { stdout } = await exec(

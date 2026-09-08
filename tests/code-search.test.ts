@@ -48,6 +48,34 @@ function setup() {
       )
       .run("b".repeat(40), r);
   }
+  // Mixed rollout: personal and workspace projects use shared content, others remain legacy.
+  for (const repo of ["r", "team"]) {
+    const d = f.db
+      .prepare("SELECT * FROM code_documents WHERE repo_id=?")
+      .get(repo)!;
+    const id = "shared-" + repo,
+      grams = codeGrams(String(d.body));
+    f.db
+      .prepare(
+        "INSERT INTO code_contents(id,repo_id,epoch,blob_sha,body,bytes,grams) VALUES(?,?,'test',?,?,?,?)",
+      )
+      .run(
+        id,
+        repo,
+        d.blob_sha,
+        d.body,
+        new TextEncoder().encode(String(d.body)).length,
+        grams.length,
+      );
+    for (const gram of grams)
+      f.db
+        .prepare("INSERT INTO code_content_grams(gram,content_id) VALUES(?,?)")
+        .run(gram, id);
+    f.db
+      .prepare("UPDATE code_documents SET content_id=?,body='' WHERE id=?")
+      .run(id, d.id);
+    // Deliberately retain old postings: the legacy branch must not duplicate shared results.
+  }
   const search = (user: string | null, options: Record<string, unknown> = {}) =>
     searchCode(
       f.env,

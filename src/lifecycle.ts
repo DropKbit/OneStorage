@@ -271,6 +271,15 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
     await storage.setAlarm(Date.now() + 1000);
     return;
   }
+  const contents = await env.DB.prepare(
+    "DELETE FROM code_contents WHERE id IN(SELECT id FROM code_contents WHERE repo_id=? LIMIT 5)",
+  )
+    .bind(id)
+    .run();
+  if (contents.meta.changes) {
+    await storage.setAlarm(Date.now() + 1000);
+    return;
+  }
   await env.DB.prepare(
     "DELETE FROM repositories WHERE id=? AND deleted_at IS NOT NULL",
   )

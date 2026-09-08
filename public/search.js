@@ -176,6 +176,15 @@ export function mountCodeIndex(host, r, ap, h) {
             (c.unscanned ? "还有未扫描内容；已达到本轮索引限制。" : "") +
             "</p>"
           : "") +
+        (c?.index_version === 2 && row.indexed_sha
+          ? "<p>本次复用 " +
+            c.reused_files +
+            " 个文件的内容索引，新建 " +
+            c.created_contents +
+            " 份内容，写入 " +
+            c.written_postings +
+            " 条倒排关系。</p>"
+          : "") +
         (row.stale
           ? "<p>有待处理更新。下方项目内搜索直接读取 Git，跨项目搜索使用已发布索引快照。</p>"
           : "") +

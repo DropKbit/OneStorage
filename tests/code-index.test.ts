@@ -206,3 +206,195 @@ test("backfill wakeup attempts rotate past unavailable DOs without abandoning du
     27,
   );
 });
+
+function observeWrites(f: any) {
+  f.db.exec(
+    "CREATE TABLE observed_grams(content_id TEXT);CREATE TRIGGER observe_gram_write AFTER INSERT ON code_content_grams BEGIN INSERT INTO observed_grams VALUES(NEW.content_id);END;",
+  );
+  return () =>
+    Number(f.db.prepare("SELECT count(*) n FROM observed_grams").get().n);
+}
+test("incremental snapshots reuse unchanged, renamed and duplicate blobs without reading them or rewriting grams", async () => {
+  const f = await setup();
+  await f.settle();
+  const writes = observeWrites(f);
+  const before = new Map<string, string>(
+    f.db
+      .prepare("SELECT blob_sha,id FROM code_contents WHERE repo_id='r'")
+      .all()
+      .map((r: any) => [r.blob_sha, r.id]),
+  );
+  const files = { ...f.files };
+  delete files["src/file00.ts"];
+  delete files["src/file01.ts"];
+  files["renamed.ts"] = f.files["src/file00.ts"];
+  files["copy.ts"] = f.files["src/file02.ts"];
+  files["src/file03.ts"] = "modified needle";
+  files["new.ts"] = "new needle";
+  const next = await f.commit(files, f.sha);
+  await f.store.flush();
+  f.git.refs["refs/heads/main"] = next;
+  const get = f.store.get.bind(f.store),
+    reads: string[] = [];
+  f.store.get = async (sha: string) => {
+    reads.push(sha);
+    return get(sha);
+  };
+  await stageCodeIndex(f.env, "r", "refs/heads/main");
+  await f.tick();
+  assert.equal((await f.search()).results.length, 20);
+  await f.settle();
+  const state = f.db
+      .prepare("SELECT * FROM code_index_state WHERE repo_id='r'")
+      .get()!,
+    coverage = JSON.parse(String(state.coverage));
+  assert.equal(coverage.indexed_files, 21);
+  assert.equal(coverage.reused_files, 19);
+  assert.equal(coverage.created_contents, 2);
+  assert.equal(writes(), coverage.written_postings);
+  assert.ok(writes() < coverage.postings / 3);
+  for (const [sha, id] of before) {
+    assert.equal(reads.includes(sha), false);
+    const c = f.db
+      .prepare("SELECT id FROM code_contents WHERE blob_sha=? AND repo_id='r'")
+      .get(sha);
+    if (c) assert.equal(c.id, id);
+  }
+  assert.equal((await f.search()).results.length, 21);
+  assert.ok((await f.search()).results.every((r) => r.indexed_sha === next));
+  assert.equal(
+    f.db
+      .prepare("SELECT count(*) n FROM code_contents WHERE repo_id='r'")
+      .get()!.n,
+    20,
+  );
+  assert.equal(
+    f.db.prepare("SELECT count(*) n FROM code_postings").get()!.n,
+    0,
+  );
+  assert.equal(f.db.prepare("PRAGMA foreign_key_check").all().length, 0);
+});
+test("manual rebuild publishes a fresh cache epoch; a concurrent ordinary push does not repeat forced content writes", async () => {
+  const f = await setup();
+  await f.settle();
+  const old = f.db
+      .prepare("SELECT content_epoch FROM code_index_state WHERE repo_id='r'")
+      .get()!.content_epoch,
+    writes = observeWrites(f);
+  f.db.exec(
+    "UPDATE code_index_state SET requested=requested+1,force_rebuild=1 WHERE repo_id='r'",
+  );
+  await f.tick();
+  const building = f.db
+    .prepare("SELECT * FROM code_index_state WHERE repo_id='r'")
+    .get()!;
+  assert.equal(building.force_rebuild, 0);
+  assert.notEqual(building.build_epoch, old);
+  await stageCodeIndex(f.env, "r", "refs/heads/main");
+  await f.settle();
+  const state = f.db
+      .prepare("SELECT * FROM code_index_state WHERE repo_id='r'")
+      .get()!,
+    coverage = JSON.parse(String(state.coverage));
+  assert.equal(state.content_epoch, building.build_epoch);
+  assert.equal(state.completed, state.requested);
+  assert.equal(coverage.created_contents, 20);
+  assert.equal(coverage.reused_files, 0);
+  assert.equal(writes(), coverage.written_postings);
+  assert.equal(
+    f.db.prepare("SELECT count(*) n FROM code_contents WHERE epoch=?").get(old)!
+      .n,
+    0,
+  );
+});
+test("a newer forced rebuild during an active build is preserved and receives another fresh epoch", async () => {
+  const f = await setup();
+  await f.settle();
+  f.db.exec(
+    "UPDATE code_index_state SET requested=requested+1,force_rebuild=1 WHERE repo_id='r'",
+  );
+  await f.tick();
+  const first = f.db
+    .prepare("SELECT build_epoch FROM code_index_state WHERE repo_id='r'")
+    .get()!.build_epoch;
+  f.db.exec(
+    "UPDATE code_index_state SET requested=requested+1,force_rebuild=1 WHERE repo_id='r'",
+  );
+  await f.settle();
+  const state = f.db
+    .prepare("SELECT * FROM code_index_state WHERE repo_id='r'")
+    .get()!;
+  assert.notEqual(state.content_epoch, first);
+  assert.equal(state.completed, state.requested);
+  assert.equal(state.force_rebuild, 0);
+  assert.equal((await f.search()).results.length, 20);
+});
+test("a rebuild request racing build initialization is not lost by the conditional claim", async () => {
+  const f = await setup();
+  await f.settle();
+  await stageCodeIndex(f.env, "r", "refs/heads/main");
+  f.git.refs["refs/heads/main"] = await f.commit(
+    { "changed.ts": "needle" },
+    f.sha,
+  );
+  await f.store.flush();
+  const prepare = f.env.DB.prepare.bind(f.env.DB);
+  let once = true;
+  f.env.DB.prepare = ((sql: string) => {
+    const stmt = prepare(sql);
+    if (sql.startsWith("UPDATE code_index_state SET build_generation=")) {
+      const run = stmt.run.bind(stmt);
+      stmt.run = async () => {
+        if (once) {
+          once = false;
+          f.db.exec(
+            "UPDATE code_index_state SET requested=requested+1,force_rebuild=1 WHERE repo_id='r'",
+          );
+        }
+        return run();
+      };
+    }
+    return stmt;
+  }) as any;
+  await f.tick();
+  assert.equal(
+    f.db
+      .prepare(
+        "SELECT build_generation FROM code_index_state WHERE repo_id='r'",
+      )
+      .get()!.build_generation,
+    null,
+  );
+  await f.settle();
+  const s = f.db
+    .prepare("SELECT * FROM code_index_state WHERE repo_id='r'")
+    .get()!;
+  assert.equal(s.completed, s.requested);
+  assert.equal(s.force_rebuild, 0);
+  assert.notEqual(s.content_epoch, "v34");
+});
+test("format migration is scheduled even when an old worker consumed the migration request", async () => {
+  const f = await setup();
+  f.db.exec(
+    "UPDATE code_index_state SET completed=requested,status='ready' WHERE repo_id='r'",
+  );
+  const seen: string[] = [];
+  f.env.REPOSITORIES = {
+    idFromName: (id: string) => id,
+    get: (id: string) => ({
+      fetch: async () => {
+        seen.push(id);
+        return new Response(null, { status: 204 });
+      },
+    }),
+  } as any;
+  await publishCodeIndexes(f.env);
+  assert.ok(seen.includes("r"));
+  await f.settle();
+  assert.equal(
+    f.db
+      .prepare("SELECT index_version FROM code_index_state WHERE repo_id='r'")
+      .get()!.index_version,
+    2,
+  );
+});

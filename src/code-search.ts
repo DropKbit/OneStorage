@@ -113,15 +113,20 @@ export async function searchCode(env: Env, b: Input, p: SearchPrincipal) {
     ];
   // Start from an indexed trigram rather than scanning every indexed file. Remaining
   // grams are exact indexed probes; instr verifies order, multiplicity and adjacency.
-  const sql = `WITH principal AS (${principalSQL}),visible AS (${visibleSQL})
+  const sql = `WITH principal AS (${principalSQL}),visible AS (${visibleSQL}),candidates AS (
+ SELECT d.repo_id,d.generation,d.path,d.blob_sha,d.body,d.extension FROM code_postings first CROSS JOIN code_documents d ON d.id=first.document_id
+ WHERE d.content_id IS NULL AND first.gram=? AND NOT EXISTS(SELECT 1 FROM json_each(?) q WHERE NOT EXISTS(SELECT 1 FROM code_postings p WHERE p.gram=q.value AND p.document_id=d.id))
+ UNION ALL
+ SELECT d.repo_id,d.generation,d.path,d.blob_sha,b.body,d.extension FROM code_content_grams first JOIN code_contents b ON b.id=first.content_id JOIN code_documents d ON d.content_id=b.id AND d.repo_id=b.repo_id
+ WHERE first.gram=? AND NOT EXISTS(SELECT 1 FROM json_each(?) q WHERE NOT EXISTS(SELECT 1 FROM code_content_grams p WHERE p.gram=q.value AND p.content_id=b.id))
+ )
  SELECT d.repo_id,r.namespace,r.name,r.archived_at,d.path,d.blob_sha,
  substr(d.body,max(1,instr(lower(d.body),lower(?))-100),length(?)+300) AS excerpt,
  length(substr(d.body,1,instr(lower(d.body),lower(?))-1))-length(replace(substr(d.body,1,instr(lower(d.body),lower(?))-1),char(10),''))+1 AS line,
  s.indexed_sha,s.indexed_branch,s.indexed_at,s.status,s.requested,s.completed
- FROM code_postings first JOIN code_documents d ON d.id=first.document_id
+ FROM candidates d
  JOIN visible r ON r.id=d.repo_id JOIN code_index_state s ON s.repo_id=d.repo_id AND s.generation=d.generation AND s.indexed_branch=r.default_branch
- WHERE first.gram=? AND NOT EXISTS(SELECT 1 FROM json_each(?) q WHERE NOT EXISTS(SELECT 1 FROM code_postings p WHERE p.gram=q.value AND p.document_id=d.id))
- AND instr(lower(d.body),lower(?))>0 AND (?='' OR instr(lower(d.path),lower(?))>0)
+ WHERE instr(lower(d.body),lower(?))>0 AND (?='' OR instr(lower(d.path),lower(?))>0)
  AND (?='' OR d.extension=lower(?)) AND (d.repo_id,d.path)>(?,?)
  ORDER BY d.repo_id,d.path LIMIT ?`;
   const [auth, rows, coverage] = await env.DB.batch([
@@ -130,12 +135,14 @@ export async function searchCode(env: Env, b: Input, p: SearchPrincipal) {
     ).bind(p?.id || "", ...identity),
     env.DB.prepare(sql).bind(
       ...scope,
-      b.q,
-      b.q,
-      b.q,
-      b.q,
       grams[0],
       JSON.stringify(grams.slice(1)),
+      grams[0],
+      JSON.stringify(grams.slice(1)),
+      b.q,
+      b.q,
+      b.q,
+      b.q,
       b.q,
       b.path,
       b.path,
