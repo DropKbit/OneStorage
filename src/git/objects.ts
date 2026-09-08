@@ -221,6 +221,8 @@ export class ObjectStore {
   private r2Writes = 0;
   private readBytes = 0;
   private peakStaged = 0;
+  private prefetchPeakBytes = 0;
+  private prefetchPeakObjects = 0;
   private pending = new Map<string, Promise<GitObject>>();
   constructor(
     readonly repoId: string,
@@ -237,6 +239,8 @@ export class ObjectStore {
       r2Writes: this.r2Writes,
       readBytes: this.readBytes,
       peakStagedBytes: this.peakStaged,
+      prefetchPeakBytes: this.prefetchPeakBytes,
+      prefetchPeakObjects: this.prefetchPeakObjects,
       ...this.memoryUsage,
     };
   }
@@ -246,6 +250,10 @@ export class ObjectStore {
       peakCachedBytes: this.peakSize,
       stagedBytes: this.stagedSize,
     };
+  }
+  observePrefetch(bytes: number, objects: number) {
+    this.prefetchPeakBytes = Math.max(this.prefetchPeakBytes, bytes);
+    this.prefetchPeakObjects = Math.max(this.prefetchPeakObjects, objects);
   }
   private remember(o: GitObject) {
     const old = this.cache.get(o.oid);

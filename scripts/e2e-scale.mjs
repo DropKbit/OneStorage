@@ -43,7 +43,7 @@ if (!existing)
     ).cookie,
   };
 const owner = (await api("/me")).data.user,
-  name = "scale_v12_" + randomBytes(4).toString("hex"),
+  name = "scale_" + randomBytes(4).toString("hex"),
   directory = await mkdtemp(join(tmpdir(), "onestorage-scale-"));
 let repo,
   credential,
@@ -81,7 +81,12 @@ async function git(args) {
   const ms = Math.round(performance.now() - start);
   if (args.some((a) => ["clone", "fetch", "push"].includes(a))) {
     timings.push({ command: args.join(" "), ms });
-    console.log(JSON.stringify({ stage: args[0], ms }));
+    console.log(
+      JSON.stringify({
+        stage: args.find((a) => ["clone", "fetch", "push"].includes(a)),
+        ms,
+      }),
+    );
   }
   return result.out.trim();
 }

@@ -307,7 +307,8 @@ function layout(content, crumb = "项目", active = "repos") {
 function bindForm(id, handler) {
   const form = document.querySelector(id);
   form?.querySelectorAll("input,textarea,select").forEach((input, i) => {
-    input.id = form.id + "-" + (input.name || i);
+    if (!input.id || input.id === input.name)
+      input.id = form.id + "-" + (input.name || i);
     const label = input.closest(".field")?.querySelector("label");
     if (label) label.htmlFor = input.id;
   });

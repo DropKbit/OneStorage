@@ -199,7 +199,10 @@ async function packFor(
     }
     for (const id of await repo.store.walk(tags, exclude)) selected.add(id);
   }
-  return packChunks([...selected], (oid) => repo.store.get(oid));
+  return packChunks([...selected], (oid) => repo.store.get(oid), {
+    size: (oid) => repo.store.index?.get(oid)?.size,
+    observe: (bytes, objects) => repo.store.observePrefetch(bytes, objects),
+  });
 }
 export async function upload(repo: GitRepository, data: Uint8Array) {
   const packets = readPackets(data).packets,

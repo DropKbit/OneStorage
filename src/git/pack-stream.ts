@@ -2,10 +2,12 @@ import { createHash } from "node:crypto";
 import { Deflate } from "pako";
 import { LIMITS, bytes, type GitObject } from "./objects";
 import { fail } from "../security";
+import { prefetchObjects, type PrefetchOptions } from "./prefetch";
 /** One object at a time. The incremental hash covers the exact header and zlib bytes emitted. */
 export async function* packChunks(
   ids: readonly string[],
   load: (oid: string) => Promise<GitObject>,
+  prefetch?: PrefetchOptions,
 ): AsyncGenerator<Uint8Array> {
   if (ids.length > LIMITS.transferGraph)
     fail(413, "Fetch graph exceeds operation budget");
@@ -17,8 +19,7 @@ export async function* packChunks(
   hash.update(header);
   yield header;
   let emitted = 12;
-  for (const oid of ids) {
-    const object = await load(oid);
+  for await (const object of prefetchObjects(ids, load, prefetch)) {
     let size = object.data.length;
     if (size > LIMITS.object) fail(413, "Git object exceeds 8 MiB");
     const type = { commit: 1, tree: 2, blob: 3, tag: 4 }[object.type],

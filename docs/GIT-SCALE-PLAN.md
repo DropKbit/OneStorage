@@ -23,4 +23,4 @@ v0.12 生产 v2 冷克隆实测 640,543 毫秒，5,423 次 R2 读取、44,365,16
 3. 单独测量下载期间同仓库页面、fetch 与写入的等待时间。目前响应流持有仓库队列，慢下载会让后续仓库引擎操作排队。若引入快照读取或读租约，必须重新验证归档、转移、删除的确认语义、权限版本、取消和 GC，不能直接移除现有屏障。
 4. 流式入站解析与 delta 暂存解决单次首次导入的 16 MiB/2,000 对象限制。必须覆盖超限、中断、缺失基对象、R2 写入失败和最终 pack 校验和失败，确保 refs 不推进。
 
-Cloudflare 当前对每次调用同时等待响应头的连接数限制为六，包含 R2；响应头到达后的连接不再计入该限制。预取调度还应保留应用其他 I/O 的余量。参见 [Workers 连接限制](https://developers.cloudflare.com/workers/platform/limits/#simultaneous-open-connections)。这些是待实现与验证的后续目标，不是 v0.12 已完成能力。
+Cloudflare 当前对每次调用同时等待响应头的连接数限制为六，包含 R2；响应头到达后的连接不再计入该限制。预取调度还应保留应用其他 I/O 的余量。参见 [Workers 连接限制](https://developers.cloudflare.com/workers/platform/limits/#simultaneous-open-connections)。上述第 1 项已在 v0.13 实现并验证，见 [有界预取记录](GIT-PREFETCH-v13.md)；第 2–4 项仍待完成，不是当前已具备能力。
