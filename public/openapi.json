@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.15.0",
+    "version": "0.23.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3249,6 +3249,639 @@
             }
           }
         }
+      }
+    },
+    "/api/auth/oidc/providers": {
+      "get": {
+        "operationId": "get__api_auth_oidc_providers",
+        "summary": "Enabled public identity-provider names and IDs.",
+        "description": "Enabled public identity-provider names and IDs. See docs/OIDC-v23.md.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        }
+      }
+    },
+    "/api/auth/oidc/{id}/start": {
+      "post": {
+        "operationId": "post__api_auth_oidc_id_start",
+        "summary": "Matching Origin required",
+        "description": "Matching Origin required. Link requires browser session and local proof; reauth is bound to the current account. Returns authorization URL and sets ten-minute HttpOnly flow cookie. See docs/OIDC-v23.md.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "login",
+                      "link",
+                      "reauth"
+                    ],
+                    "default": "login"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/oidc/callback": {
+      "get": {
+        "operationId": "get__api_auth_oidc_callback",
+        "summary": "Single-use state and browser-cookie binding",
+        "description": "Single-use state and browser-cookie binding. Verifies code, PKCE and ID Token; redirects to account, home, local MFA/registration or generic failure. See docs/OIDC-v23.md.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "303": {
+            "description": "Browser redirect; errors do not expose provider details"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "iss",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/auth/oidc/pending": {
+      "get": {
+        "operationId": "get__api_auth_oidc_pending",
+        "summary": "Requires the pending flow cookie",
+        "description": "Requires the pending flow cookie. Returns stage and provider name. See docs/OIDC-v23.md.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        }
+      }
+    },
+    "/api/auth/oidc/complete": {
+      "post": {
+        "operationId": "post__api_auth_oidc_complete",
+        "summary": "Matching Origin and pending flow cookie required",
+        "description": "Matching Origin and pending flow cookie required. Complete local MFA or choose username for an ordinary passwordless account. See docs/OIDC-v23.md.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/account/identities": {
+      "get": {
+        "operationId": "get__api_account_identities",
+        "summary": "Browser session required",
+        "description": "Browser session required. List own linked and available identities and local-password availability. See docs/OIDC-v23.md.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        }
+      }
+    },
+    "/api/account/identities/{id}/unlink": {
+      "post": {
+        "operationId": "post__api_account_identities_id_unlink",
+        "summary": "Local proof and browser session required",
+        "description": "Local proof and browser session required. Keep one enabled login method. Revokes this provider's sessions and derived PATs for the account. See docs/OIDC-v23.md.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/identity-providers": {
+      "get": {
+        "operationId": "get__api_admin_identity_providers",
+        "summary": "Administrator only",
+        "description": "Administrator only. Lists configuration without client secrets and reports callback URL. See docs/OIDC-v23.md.",
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post__api_admin_identity_providers",
+        "summary": "Administrator with write scope",
+        "description": "Administrator with write scope. Validates discovery and approved HTTPS hosts before inserting. Maximum twenty providers. See docs/OIDC-v23.md.",
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "issuer",
+                  "client_id",
+                  "allowed_hosts"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "issuer": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "maxLength": 4096,
+                    "writeOnly": true
+                  },
+                  "auth_method": {
+                    "type": "string",
+                    "enum": [
+                      "client_secret_basic",
+                      "client_secret_post",
+                      "none"
+                    ],
+                    "default": "client_secret_basic"
+                  },
+                  "allowed_hosts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "email_domains": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "registration": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/identity-providers/{id}": {
+      "put": {
+        "operationId": "put__api_admin_identity_providers_id_",
+        "summary": "Administrator with write scope and current revision",
+        "description": "Administrator with write scope and current revision. Issuer/client ID immutable; omitted secret retained. Revokes provider credentials and pending flows. See docs/OIDC-v23.md.",
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "issuer",
+                  "client_id",
+                  "allowed_hosts",
+                  "revision"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "issuer": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "maxLength": 512
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "maxLength": 4096,
+                    "writeOnly": true
+                  },
+                  "auth_method": {
+                    "type": "string",
+                    "enum": [
+                      "client_secret_basic",
+                      "client_secret_post",
+                      "none"
+                    ],
+                    "default": "client_secret_basic"
+                  },
+                  "allowed_hosts": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "email_domains": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "registration": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete__api_admin_identity_providers_id_",
+        "summary": "Administrator with write scope",
+        "description": "Administrator with write scope. Refuses deletion while linked accounts exist. See docs/OIDC-v23.md.",
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid configuration or input"
+          },
+          "401": {
+            "description": "Invalid or expired authentication"
+          },
+          "403": {
+            "description": "Origin, permissions or local proof rejected"
+          },
+          "409": {
+            "description": "Identity, revision, current authorization or login method changed"
+          },
+          "429": {
+            "description": "Verification attempts exceeded"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/api/workspaces": {

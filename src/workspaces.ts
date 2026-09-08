@@ -232,10 +232,9 @@ export function registerWorkspaceRoutes(
     ];
     if (b.password)
       statements.push(
-        c.env.DB.prepare("UPDATE users SET password=? WHERE id=?").bind(
-          await passwordHash(b.password),
-          u.id,
-        ),
+        c.env.DB.prepare(
+          "UPDATE users SET password=?,has_password=1 WHERE id=?",
+        ).bind(await passwordHash(b.password), u.id),
       );
     if (b.password || b.disabled || b.revoke_sessions)
       statements.push(

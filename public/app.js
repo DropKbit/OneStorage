@@ -1,6 +1,7 @@
-const account = () => import("./account.js?v=1efd29f8c34c0b77");
+const account = () => import("./account.js?v=d9bd32b82f5426d8");
+const oidc = () => import("./oidc.js?v=d111df485dceede5");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
-const platform = () => import("./manage.js?v=5b7f6291703af45c");
+const platform = () => import("./manage.js?v=f4a2f3a52ef91939");
 import {
   keyPage,
   forgePage,
@@ -354,6 +355,44 @@ function authPage() {
     await reloadSpaces();
     go("/");
   });
+  if (!initializing) {
+    const holder = document.createElement("div");
+    holder.id = "oidc-login";
+    holder.className = "form";
+    document.querySelector(".auth-form").append(holder);
+    if (new URLSearchParams(location.search).has("oidc_error"))
+      holder.textContent = "统一登录未完成，请重新开始或使用原登录方式。";
+    api("/auth/oidc/providers")
+      .then(({ providers }) => {
+        if (!holder.isConnected) return;
+        holder.insertAdjacentHTML(
+          "beforeend",
+          providers
+            .map(
+              (p) =>
+                `<button type="button" class="btn" data-oidc-login="${p.id}">使用 ${esc(p.name)} 登录</button>`,
+            )
+            .join(""),
+        );
+        holder.querySelectorAll("[data-oidc-login]").forEach(
+          (b) =>
+            (b.onclick = async () => {
+              b.disabled = true;
+              try {
+                const result = await api(
+                  "/auth/oidc/" + b.dataset.oidcLogin + "/start",
+                  { method: "POST", body: { mode: "login" } },
+                );
+                location.assign(result.url);
+              } catch (e) {
+                notice(e.message);
+                b.disabled = false;
+              }
+            }),
+        );
+      })
+      .catch(() => {});
+  }
 }
 async function projects(version) {
   const query = new URLSearchParams(location.search),
@@ -829,6 +868,15 @@ async function render() {
       qr: () => import("./qr.js?v=9bb5494c3ba088b6"),
       markdown: applyMarkdown,
     };
+    if (path === "/login/oidc") {
+      await (await oidc()).completeLogin(helpers);
+      return;
+    }
+    if (path === "/admin/identity") {
+      if (!user?.admin) throw Error("需要管理员权限");
+      await (await oidc()).providerAdmin(helpers);
+      return;
+    }
     if (path === "/settings/account") {
       if (!user) return go("/login");
       await (await account()).securityPage(helpers);

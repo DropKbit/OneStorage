@@ -7,6 +7,10 @@ const { chromium } = await import(
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787";
 if (!["localhost", "127.0.0.1"].includes(new URL(origin).hostname))
   throw Error("This browser fixture is local-only");
+// Local-only fixture traffic gets its own rate-limit bucket; production limits are unchanged.
+const fixtureHeaders = {
+  "cf-connecting-ip": "192.0.2." + (1 + (randomBytes(1)[0] % 254)),
+};
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.CHROME_EXECUTABLE
@@ -15,6 +19,7 @@ const browser = await chromium.launch({
 });
 const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
+    extraHTTPHeaders: fixtureHeaders,
   }),
   page = await context.newPage(),
   errors = [],
@@ -211,7 +216,9 @@ try {
   );
   checks++;
   await shot("code-mobile");
-  const readerContext = await browser.newContext(),
+  const readerContext = await browser.newContext({
+      extraHTTPHeaders: fixtureHeaders,
+    }),
     readerPage = await readerContext.newPage(),
     renamed = "/" + space + "/renamed";
   const readerLogin = await readerContext.request.post(origin + "/api/login", {
@@ -249,7 +256,7 @@ try {
     fullPage: true,
   });
   await readerContext.close();
-  const guest = await browser.newContext(),
+  const guest = await browser.newContext({ extraHTTPHeaders: fixtureHeaders }),
     anonymous = await guest.newPage();
   anonymous.on("pageerror", (error) => errors.push(error.message));
   const guestResponses = [];

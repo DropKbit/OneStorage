@@ -8,6 +8,14 @@ async function update(path, content) {
   if ((await readFile(path, "utf8")) !== content)
     await writeFile(path, content);
 }
+const oidcVersion = hash(await readFile("public/oidc.js"));
+await update(
+  "public/account.js",
+  (await readFile("public/account.js", "utf8")).replace(
+    /from "\.\/oidc\.js(?:\?v=[a-f0-9]+)?"/,
+    `from "./oidc.js?v=${oidcVersion}"`,
+  ),
+);
 const cacheVersion = hash(await readFile("public/ci-cache.js"));
 await update(
   "public/manage.js",
@@ -32,6 +40,7 @@ for (const name of [
   "highlight",
   "collaboration",
   "account",
+  "oidc",
   "markdown",
   "qr",
 ]) {

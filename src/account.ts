@@ -67,10 +67,25 @@ export async function passwordProof(c: Context<App>, password: string) {
   const user = c.get("user") || fail(401, "Sign in required");
   await securityLimit(c.env, "password:" + user.id);
   const row = await c.env.DB.prepare(
-    "SELECT password,auth_epoch FROM users WHERE id=? AND disabled=0",
+    "SELECT password,auth_epoch,has_password FROM users WHERE id=? AND disabled=0",
   )
     .bind(user.id)
-    .first<{ password: string; auth_epoch: number }>();
+    .first<{ password: string; auth_epoch: number; has_password: number }>();
+  if (row && !row.has_password) {
+    if (
+      c.get("kind") !== "session" ||
+      !(await c.env.DB.prepare(
+        "SELECT c.hash FROM credentials c JOIN oidc_providers p ON p.id=c.oidc_provider_id WHERE c.hash=? AND c.user_id=? AND c.kind='session' AND c.expires_at>? AND c.authenticated_at>? AND p.enabled=1",
+      )
+        .bind(c.get("credential"), user.id, Date.now(), Date.now() - 300000)
+        .first())
+    )
+      fail(
+        403,
+        "Complete OIDC sign-in again before changing security settings",
+      );
+    return row;
+  }
   if (!row || !(await verifyPassword(password, row.password)))
     fail(403, "Current password is incorrect");
   return row;
@@ -86,6 +101,7 @@ export async function stepUp(c: Context<App>, otp = "") {
   const m = await mfaState(c.env, c.get("user")!.id);
   if (m?.enabled && !(await consumeFactor(c.env, m.user_id, otp, m.version)))
     fail(403, "A fresh authenticator or recovery code is required");
+  return m?.enabled ? m.version : null;
 }
 async function recoveryCodes(
   env: Env,

@@ -26,6 +26,7 @@ import { scheduleSync } from "./sync";
 import { registerForgeRoutes } from "./forge-routes";
 import { verifyDelegation, requireScope } from "./delegation";
 import { registerIdentityRoutes } from "./identity-routes";
+import { registerOIDC } from "./oidc-routes";
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
@@ -307,6 +308,7 @@ const staticPaths = new Set([
   "/collaboration.js",
   "/issues.js",
   "/account.js",
+  "/oidc.js",
   "/markdown.js",
   "/qr.js",
   "/highlight.js",
@@ -420,9 +422,10 @@ app.use("*", async (c, next) => {
 registerIdentityRoutes(app);
 registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
+registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.22.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.23.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -496,13 +499,20 @@ app.post("/api/login", async (c) => {
     fail(429, "Too many sign-in attempts; retry in ten minutes");
   const user = await c.env.DB.prepare("SELECT * FROM users WHERE username=?")
     .bind(b.username.toLowerCase())
-    .first<User & { password: string; disabled: number; auth_epoch: number }>();
+    .first<
+      User & {
+        password: string;
+        disabled: number;
+        auth_epoch: number;
+        has_password: number;
+      }
+    >();
   const valid = await verifyPassword(
     b.password,
     user?.password ||
       "pbkdf2:100000:00000000000000000000000000000000:0000000000000000000000000000000000000000000000000000000000000000",
   );
-  if (!user || user.disabled || !valid)
+  if (!user || user.disabled || !user.has_password || !valid)
     fail(401, "Invalid username or password");
   const mfa = await mfaState(c.env, user.id);
   if (mfa?.enabled) {
@@ -574,7 +584,7 @@ app.post("/api/password", async (c) => {
   const newHash = await passwordHash(b.new_password);
   const changed = await c.env.DB.batch([
     c.env.DB.prepare(
-      "UPDATE users SET password=? WHERE id=? AND password=? AND auth_epoch=? AND disabled=0 AND EXISTS(SELECT 1 FROM credentials WHERE hash=? AND user_id=users.id AND kind='session' AND expires_at>?)",
+      "UPDATE users SET password=?,has_password=1 WHERE id=? AND password=? AND auth_epoch=? AND disabled=0 AND EXISTS(SELECT 1 FROM credentials WHERE hash=? AND user_id=users.id AND kind='session' AND expires_at>?)",
     ).bind(
       newHash,
       u.id,
@@ -644,7 +654,7 @@ app.post("/api/tokens", async (c) => {
   const token = randomToken(),
     id = crypto.randomUUID();
   const minted = await c.env.DB.prepare(
-    "INSERT INTO credentials(hash,id,user_id,name,kind,scope,expires_at) SELECT ?,?,?,?,'pat',?,? WHERE EXISTS(SELECT 1 FROM users u JOIN credentials c ON c.user_id=u.id WHERE u.id=? AND u.auth_epoch=? AND u.disabled=0 AND c.hash=? AND c.kind='session' AND c.expires_at>?)",
+    "INSERT INTO credentials(hash,id,user_id,name,kind,scope,expires_at,oidc_provider_id) SELECT ?,?,?,?,'pat',?,?,(SELECT oidc_provider_id FROM credentials WHERE hash=?) WHERE EXISTS(SELECT 1 FROM users u JOIN credentials c ON c.user_id=u.id WHERE u.id=? AND u.auth_epoch=? AND u.disabled=0 AND c.hash=? AND c.kind='session' AND c.expires_at>?)",
   )
     .bind(
       await digest(token),
@@ -653,6 +663,7 @@ app.post("/api/tokens", async (c) => {
       b.name,
       b.scope,
       Date.now() + b.days * 86400000,
+      c.get("credential"),
       u.id,
       snapshot.auth_epoch,
       c.get("credential"),

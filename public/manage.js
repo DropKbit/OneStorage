@@ -108,7 +108,7 @@ export async function adminConsole(h, user) {
   else
     content = `<div class="panel audit-list">${data.events.map((e) => `<article><div class="actionbar"><strong>${esc(e.action)}</strong><span class="muted">${esc(e.actor || "system")} · ${esc(e.created_at)}</span></div><pre>${esc(e.detail)}</pre></article>`).join("") || '<div class="empty">暂无审计记录</div>'}</div>`;
   layout(
-    `<div class="titlebar"><div><h1>管理员后台</h1><p class="muted">账号、团队与实例运行情况。</p></div></div><div class="stats">${[
+    `<div class="titlebar"><div><h1>管理员后台</h1><p class="muted">账号、团队与实例运行情况。</p></div><a class="btn" data-link href="/admin/identity">统一登录</a></div><div class="stats">${[
       ["用户", overview.users],
       ["团队空间", overview.workspaces],
       ["仓库", overview.repositories],

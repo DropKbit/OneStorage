@@ -1,5 +1,9 @@
+import { identityPanel, bindIdentity } from "./oidc.js?v=d111df485dceede5";
+let hasPassword = true;
 const passwordInput = () =>
-  '<div class="field"><label>当前密码<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password"></label></div>';
+  hasPassword
+    ? '<div class="field"><label>当前密码<input name="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password"></label></div>'
+    : '<input type="hidden" name="password" value=""><p class="hint">使用最近五分钟内的统一登录验证。</p>';
 const otpInput = (label = "验证码或恢复码") =>
   `<div class="field"><label>${label}<input name="otp" maxlength="64" autocomplete="one-time-code" required></label></div>`;
 function bindActions(h, fn) {
@@ -19,16 +23,22 @@ function bindActions(h, fn) {
 }
 export async function securityPage(h) {
   const { api, layout, esc, field, bindForm, render } = h,
-    [security, { sessions }] = await Promise.all([
+    [security, { sessions }, identities] = await Promise.all([
       api("/account/security"),
       api("/account/sessions"),
+      api("/account/identities"),
     ]);
   if (!h.current()) return;
+  hasPassword = identities.has_password;
   layout(
     `<div class="titlebar"><div><h1>账户安全</h1><p>保护登录凭据，查看和撤销浏览器会话。</p></div><span class="pill">${security.enabled ? "双重验证已启用" : "尚未启用双重验证"}</span></div><section class="panel"><div class="form"><h2>身份验证器</h2><p>支持使用六位 TOTP 验证码的身份验证器。Git HTTPS 和 API 继续使用访问令牌。</p>${security.enabled ? `<p>剩余 ${security.recovery_codes_remaining} 个一次性恢复码。</p><form id="rotate-recovery">${passwordInput()}${otpInput()}<button class="btn" type="submit">重新生成恢复码</button></form><details><summary>关闭双重验证</summary><form id="disable-mfa">${passwordInput()}${otpInput()}<button type="submit" class="btn danger">关闭双重验证</button></form></details>` : `<form id="setup-mfa">${passwordInput()}<button class="btn primary" type="submit">设置身份验证器</button></form>`}<div id="enrollment"></div><div id="recovery-result" role="status"></div></div></section><section class="panel"><div class="panelhead"><h2>浏览器会话</h2></div>${sessions.map((s) => `<div class="token-row"><div><strong>${s.current ? "当前会话" : "其他会话"}</strong><p>${esc(s.created_at)} · 到期 ${new Date(s.expires_at).toLocaleString()}</p></div><button class="btn small" type="button" data-session="${s.id}">${s.current ? "退出当前会话" : "撤销"}</button></div>`).join("")}</section>`,
     "账户安全",
     "account",
   );
+  document
+    .querySelector(".content")
+    .insertAdjacentHTML("beforeend", identityPanel(h, identities));
+  bindIdentity(h);
   const showRecovery = (codes) => {
     document.querySelector("#recovery-result").innerHTML =
       `<h3>请保存恢复码</h3><p>每个恢复码只能使用一次，页面关闭后不再显示。保存到离线或安全位置。</p><pre>${esc(codes.join("\n"))}</pre><button type="button" id="finish-security" class="btn primary">我已保存</button>`;

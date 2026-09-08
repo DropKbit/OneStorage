@@ -1,3 +1,4 @@
+import { addOIDCPaths } from "./oidc-openapi.mjs";
 import { addLifecyclePaths } from "./lifecycle-openapi.mjs";
 import { addIssuePaths } from "./issue-openapi.mjs";
 import { addReviewPaths } from "./review-openapi.mjs";
@@ -277,6 +278,7 @@ for (const feature of parity.features) {
     };
   (paths[path] ||= {})[method] = op;
 }
+addOIDCPaths(paths);
 addPlatformPaths(paths);
 addAccountPaths(paths);
 addReviewPaths(paths);
@@ -289,7 +291,9 @@ await writeFile(
       openapi: "3.1.0",
       info: {
         title: "OneStorage",
-        version: "0.15.0",
+        version: JSON.parse(
+          await readFile(new URL("../package.json", import.meta.url), "utf8"),
+        ).version,
         description:
           "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs.",
       },

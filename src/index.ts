@@ -1,4 +1,5 @@
 import { collectCICaches } from "./ci-cache";
+import { cleanupOIDC } from "./oidc-routes";
 import { publishSchedules, consumeSchedule } from "./ci-schedules";
 import { consumeCI, consumeCIEvent, publishCI } from "./ci";
 export { Repository } from "./repository";
@@ -66,6 +67,7 @@ export default {
     );
   },
   async scheduled(_event: ScheduledController, env: Env) {
+    await cleanupOIDC(env);
     await publishSchedules(env);
     await publishCI(env);
     await collectCICaches(env);
