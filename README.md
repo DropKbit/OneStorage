@@ -1,6 +1,6 @@
 # OneStorage
 
-v0.37 增加 Jupyter Notebook 只读预览：代码高亮、Markdown、静态表格/图表、源码切换及分页，沿用仓库权限和固定提交。见 [Notebook 预览](docs/NOTEBOOK-v37.md)。
+v0.37 增加 Jupyter Notebook 只读预览：代码高亮、Markdown、静态表格/图表、源码切换及分页，沿用仓库权限和固定提交。见 [Notebook 预览](docs/NOTEBOOK-v37.md) 与 [验收记录](docs/VERIFICATION-v37.md)。
 
 v0.36 增加云端 tsconfig/JSONC、本地配置继承、baseUrl/paths 别名和 TypeScript 源文件扩展名解析。见 [构建配置](docs/CI-TSCONFIG-v36.md)。
 

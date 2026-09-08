@@ -162,4 +162,4 @@ Worker WASM 编译支持所选 tsconfig/JSONC、相对配置继承、baseUrl/pat
 
 ## v0.37：Notebook 预览
 
-补齐数据分析仓库的 `.ipynb` 浏览入口，提供只读单元/输出/附件、源码切换和安全降级。实现与限制见 [Notebook 预览](NOTEBOOK-v37.md)。完整 GitLab/Gogs 目标仍在推进，Notebook 预览不包含交互内核或任意 Python 运行时。
+补齐数据分析仓库的 `.ipynb` 浏览入口，提供只读单元/输出/附件、源码切换和安全降级。实现与限制见 [Notebook 预览](NOTEBOOK-v37.md)。本轮开发范围到 v0.37 为止。Notebook 预览不包含交互内核或任意 Python 运行时，后续功能作为独立需求规划。
