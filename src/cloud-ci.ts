@@ -1,3 +1,4 @@
+import { cacheFilesSchema, CLOUD_CACHE_LIMIT } from "./ci-cache-schema";
 import { loadRunVariables, assertVariablesActive } from "./ci-variables";
 import { redact } from "./ci-redaction";
 import { z } from "zod";
@@ -97,6 +98,7 @@ export async function executeJavaScript(
   step: z.infer<typeof cloudStep>,
   artifacts: CloudFiles,
   dependencies: DependencyFiles = {},
+  caches: Record<string, CloudFiles> = {},
 ) {
   if (!env.LOADER)
     throw Error("Cloudflare Dynamic Workers binding is not configured");
@@ -127,12 +129,13 @@ export default { async fetch(request) { try { const input = await request.json()
         artifacts,
         dependencies,
         variables,
+        caches,
       }),
       signal: AbortSignal.timeout(20000),
     }),
   );
   const raw = new TextDecoder().decode(
-    await boundedBody(response, 2 * 1024 * 1024),
+    await boundedBody(response, 6 * 1024 * 1024),
   );
   if (!response.ok)
     throw Error(
@@ -151,6 +154,7 @@ export default { async fetch(request) { try { const input = await request.json()
     );
   const result = z
     .object({
+      caches: z.record(z.string(), cacheFilesSchema).optional(),
       logs: z.array(z.string().max(4096)).max(32).default([]),
       artifacts: z.record(cloudPath, z.string().max(1024 * 1024)).default({}),
     })
@@ -164,6 +168,18 @@ export default { async fetch(request) { try { const input = await request.json()
         return result;
       })(),
     );
+  if (result.caches) {
+    if (
+      new TextEncoder().encode(JSON.stringify(result.caches)).length >
+      CLOUD_CACHE_LIMIT
+    )
+      throw Error("Cloud caches exceed 4 MiB");
+    for (const [slot, files] of Object.entries(result.caches)) {
+      if (!Object.hasOwn(caches, slot))
+        throw Error("Unconfigured cache output");
+      caches[slot] = files;
+    }
+  }
   for (const [name, content] of Object.entries(result.artifacts))
     artifacts[name] = { content };
   if (

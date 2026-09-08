@@ -8,6 +8,14 @@ async function update(path, content) {
   if ((await readFile(path, "utf8")) !== content)
     await writeFile(path, content);
 }
+const cacheVersion = hash(await readFile("public/ci-cache.js"));
+await update(
+  "public/manage.js",
+  (await readFile("public/manage.js", "utf8")).replace(
+    /from "\.\/ci-cache\.js(?:\?v=[a-f0-9]+)?"/,
+    `from "./ci-cache.js?v=${cacheVersion}"`,
+  ),
+);
 const variableVersion = hash(await readFile("public/ci-variables.js"));
 await update(
   "public/manage.js",

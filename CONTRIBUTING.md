@@ -23,3 +23,5 @@ For Git persistence changes, also run `npm run test:git-reliability`: it extends
 For scheduled CI changes, run `npm run test:schedules` and `npm run test:schedule-ui`. The former waits for a real Cron/Queue occurrence (up to nine minutes on Cloudflare); the latter uses the same optional Playwright environment. Await fixture cleanup before rebuilding or deploying. Remote acceptance requires explicit opt-in and a private token file.
 
 For CI variables, run `npm run test:variables` (real Worker and shipped external Runner, lease/rotation/log masking) and `npm run test:variable-ui` (write-only values, edits, permissions, mobile). The same fixture cleanup and remote opt-in rules apply. Never use real deployment credentials as test variable values.
+
+For shared CI caches, run `npm run test:caches` and `npm run test:cache-ui`. Verify real Worker and shipped external Runner reuse, failed workflow isolation, generation invalidation, lease rejection, bounded archive extraction, quota and eventual R2 reclamation. Wait for all fixtures to finish cleanup before editing runtime files or deploying.

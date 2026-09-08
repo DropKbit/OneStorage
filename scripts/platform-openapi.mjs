@@ -22,6 +22,10 @@ export const platformOperations = [
   ["patch", "/api/admin/repositories/{id}", "admin_update_repository"],
   ["delete", "/api/admin/repositories/{id}", "admin_delete_repository"],
   ["get", "/api/admin/audit", "admin_audit"],
+  ["get", base + "/caches", "ci_list_caches"],
+  ["post", base + "/caches/clear", "ci_clear_caches"],
+  ["get", "/api/runner/runs/{id}/caches/{slot}", "runner_restore_cache"],
+  ["put", "/api/runner/runs/{id}/caches/{slot}", "runner_upload_cache"],
   ["get", base + "/variables", "ci_list_variables"],
   ["post", base + "/variables", "ci_create_variable"],
   ["put", base + "/variables/{variable}", "ci_update_variable"],
@@ -152,6 +156,51 @@ export function addPlatformPaths(paths) {
       },
     };
     const operation = paths[path][method];
+    if (id.includes("cache")) {
+      operation.description =
+        "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.";
+      if (id === "ci_clear_caches")
+        operation.requestBody = {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                additionalProperties: false,
+                properties: { generation: { type: "integer", minimum: 0 } },
+                required: ["generation"],
+              },
+            },
+          },
+        };
+      if (id === "runner_upload_cache") {
+        operation.parameters.push(
+          {
+            name: "Content-Length",
+            in: "header",
+            required: true,
+            schema: { type: "integer", minimum: 1, maximum: 67108864 },
+          },
+          {
+            name: "X-Cache-SHA256",
+            in: "header",
+            required: true,
+            schema: { type: "string", pattern: "^[a-f0-9]{64}$" },
+          },
+        );
+        operation.requestBody = {
+          required: true,
+          content: {
+            "application/gzip": {
+              schema: { type: "string", format: "binary" },
+            },
+          },
+        };
+      }
+      if (id === "runner_restore_cache")
+        operation.description +=
+          " A miss returns JSON {hit:false}; a hit is application/gzip with Content-Length and X-Cache-SHA256. All responses are no-store.";
+    }
     if (id.includes("variable")) {
       operation.description =
         "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.";

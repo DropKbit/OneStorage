@@ -1,3 +1,4 @@
+import { cacheSchema } from "./ci-cache-schema";
 import { variableKey, jobEnvironment } from "./ci-variable-schema";
 import { z } from "zod";
 import { branch } from "./security";
@@ -18,6 +19,14 @@ export const executionSchema = z
   .object({
     name: z.string().trim().min(1).max(80).default("Build and deploy"),
     runner: z.enum(["worker", "external"]),
+    caches: z
+      .array(cacheSchema)
+      .max(4)
+      .refine(
+        (c) => new Set(c.map((v) => v.id)).size === c.length,
+        "Duplicate cache ID",
+      )
+      .optional(),
     variables: z
       .array(variableKey)
       .max(30)

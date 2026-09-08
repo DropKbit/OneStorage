@@ -1,3 +1,4 @@
+import { restoreCaches, saveCaches } from "./runner-cache.mjs";
 import { StringDecoder } from "node:string_decoder";
 // Run under a dedicated account on a host trusted to execute this repository's code.
 import {
@@ -45,7 +46,7 @@ async function request(path, body, lease, options = {}) {
       ...options.headers,
     },
     body: body === undefined ? options.body : JSON.stringify(body),
-    signal: AbortSignal.timeout(60000),
+    signal: options.signal || AbortSignal.timeout(60000),
   });
   if (!response.ok)
     throw Error(
@@ -259,6 +260,7 @@ async function execute(run, lease) {
         return true;
       },
     });
+    await restoreCaches({ run, lease, work, dir, request, log: sendLog });
     for (const step of run.config.steps) {
       if (stopped || stop || Date.now() > deadline)
         throw Error("Run canceled or timed out");
@@ -324,6 +326,7 @@ async function execute(run, lease) {
       sendLog("Artifact: " + path + "\n");
     }
     if (stopped || stop) throw Error("Run canceled");
+    await saveCaches({ run, lease, work, dir, request, log: sendLog });
     await pending;
     await request(base + "/complete", { status: "succeeded" }, lease);
     console.log(run.id + " succeeded");

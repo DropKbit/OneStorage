@@ -1,3 +1,4 @@
+import { collectCICaches } from "./ci-cache";
 import { publishSchedules, consumeSchedule } from "./ci-schedules";
 import { consumeCI, consumeCIEvent, publishCI } from "./ci";
 export { Repository } from "./repository";
@@ -10,6 +11,7 @@ export default {
   async queue(batch: MessageBatch<{ id: string }>, env: Env) {
     const jobs = batch.messages.filter(
       (message) =>
+        message.body.id.startsWith("ci-cache-gc:") ||
         message.body.id.startsWith("ci:") ||
         message.body.id.startsWith("ci-event:") ||
         message.body.id.startsWith("ci-schedule:"),
@@ -20,7 +22,9 @@ export default {
         while (next < jobs.length) {
           const message = jobs[next++];
           try {
-            if (message.body.id.startsWith("ci-schedule:"))
+            if (message.body.id.startsWith("ci-cache-gc:"))
+              await collectCICaches(env, message.body.id.slice(12));
+            else if (message.body.id.startsWith("ci-schedule:"))
               await consumeSchedule(env, message.body.id.slice(12));
             else if (message.body.id.startsWith("ci-event:"))
               await consumeCIEvent(env, message.body.id.slice(9));
@@ -54,7 +58,8 @@ export default {
             !m.body.id.startsWith("sync:") &&
             !m.body.id.startsWith("ci:") &&
             !m.body.id.startsWith("ci-event:") &&
-            !m.body.id.startsWith("ci-schedule:"),
+            !m.body.id.startsWith("ci-schedule:") &&
+            !m.body.id.startsWith("ci-cache-gc:"),
         ),
       },
       env,
@@ -63,6 +68,7 @@ export default {
   async scheduled(_event: ScheduledController, env: Env) {
     await publishSchedules(env);
     await publishCI(env);
+    await collectCICaches(env);
     await publishPending(env);
     await publishSyncJobs(env);
   },

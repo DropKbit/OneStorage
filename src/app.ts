@@ -303,6 +303,7 @@ const staticPaths = new Set([
   "/forge.js",
   "/manage.js",
   "/ci-variables.js",
+  "/ci-cache.js",
   "/collaboration.js",
   "/issues.js",
   "/account.js",
@@ -421,7 +422,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.20.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.21.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({

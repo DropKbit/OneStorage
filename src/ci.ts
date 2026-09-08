@@ -1,3 +1,5 @@
+import { registerCacheRoutes } from "./ci-cache-routes";
+import { cloudCacheInputs, saveCloudCaches } from "./ci-cache";
 import { registerVariableRoutes } from "./ci-variable-routes";
 import { loadRunVariables, maskRunLog, maskLogRows } from "./ci-variables";
 import { activeTick, registerScheduleRoutes } from "./ci-schedules";
@@ -322,6 +324,8 @@ export async function consumeCI(env: Env, id: string) {
   try {
     await loadRunVariables(env, run);
     const dependencies = await dependencyArtifacts(env, run);
+    const caches = await cloudCacheInputs(env, run);
+    for (const event of caches.events) await log(env, run, seq++, event + "\n");
     for (const step of config.steps) {
       if (Date.now() >= deadline) throw Error("Pipeline timeout");
       const active = await env.DB.prepare(
@@ -338,6 +342,7 @@ export async function consumeCI(env: Env, id: string) {
           step,
           artifacts,
           dependencies,
+          caches.files,
         );
         for (let offset = 0; offset < output.length; offset += 4096)
           await log(env, run, seq++, output.slice(offset, offset + 4096));
@@ -384,6 +389,8 @@ export async function consumeCI(env: Env, id: string) {
       } else throw Error("Unsupported Worker step");
     }
     if (Date.now() >= deadline) throw Error("Pipeline timeout");
+    for (const event of await saveCloudCaches(env, run, caches.files))
+      await log(env, run, seq++, event + "\n");
     if (Object.keys(artifacts).length || config.deploy)
       await saveCloudOutput(env, pending, run, artifacts, config.deploy);
     else await finish(env, run, "succeeded");
@@ -693,6 +700,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
     }
     return { runner: r, run };
   }
+  registerCacheRoutes(app, { access, lease });
   app.post("/api/runner/claim", async (c) => {
     const r = await runner(c);
     await c.env.DB.prepare("UPDATE ci_runners SET last_seen=? WHERE id=?")

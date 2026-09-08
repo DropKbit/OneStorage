@@ -4002,6 +4002,297 @@
         }
       }
     },
+    "/api/repos/{namespace}/{repo}/ci/caches": {
+      "get": {
+        "operationId": "ci_list_caches",
+        "summary": "ci list caches",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/caches/clear": {
+      "post": {
+        "operationId": "ci_clear_caches",
+        "summary": "ci clear caches",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "generation": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "generation"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/caches/{slot}": {
+      "get": {
+        "operationId": "runner_restore_cache",
+        "summary": "runner restore cache",
+        "tags": [
+          "Runner"
+        ],
+        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries. A miss returns JSON {hit:false}; a hit is application/gzip with Content-Length and X-Cache-SHA256. All responses are no-store.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "put": {
+        "operationId": "runner_upload_cache",
+        "summary": "runner upload cache",
+        "tags": [
+          "Runner"
+        ],
+        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Content-Length",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 67108864
+            }
+          },
+          {
+            "name": "X-Cache-SHA256",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/gzip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/repos/{namespace}/{repo}/ci/variables": {
       "get": {
         "operationId": "ci_list_variables",
