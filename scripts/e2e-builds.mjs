@@ -3,6 +3,8 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+const verifyCache = process.env.ONESTORAGE_NPM_CACHE === "1";
+const cacheReports = [];
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787";
 const remote = !["localhost", "127.0.0.1"].includes(new URL(origin).hostname);
 if (remote && process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
@@ -168,7 +170,9 @@ try {
     201,
   );
   await writeFile(
-    ".data/v22-last-fixture.json",
+    verifyCache
+      ? `.data/v35-${remote ? "production" : "local"}-fixture.json`
+      : ".data/v22-last-fixture.json",
     JSON.stringify({ name, repoId: repo.id, ap }),
     { mode: 0o600 },
   );
@@ -200,6 +204,25 @@ try {
   await commit({ "src/index.tsx": source("two") });
   const second = await done((await start()).id),
     dep2 = await deployment(second);
+  if (verifyCache) {
+    const report = (run) =>
+      run.logs
+        .map((l) => l.content)
+        .find((s) => s.includes("npm cache enabled:"));
+    const cold = report(first),
+      warm = report(second);
+    check(!!cold && !!warm, "Cache telemetry is persisted in CI logs");
+    check(
+      /npm cache enabled: 1 hits, 0 misses, 0 writes, 0 errors, 0 downloaded bytes/.test(
+        warm,
+      ),
+      "Fresh build reuses verified R2 tarball without registry download",
+    );
+    cacheReports.push(
+      { run: first.id, log: cold },
+      { run: second.id, log: warm },
+    );
+  }
   await activate(dep2.id, dep1.id, "Cloud npm two");
   await activate(dep1.id, dep2.id, "Cloud npm one");
   await api(
@@ -292,6 +315,7 @@ try {
     JSON.stringify({
       checks,
       requests,
+      cacheReports,
       workspace: name,
       first: first.id,
       second: second.id,

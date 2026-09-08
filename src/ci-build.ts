@@ -93,6 +93,16 @@ export async function executeBuild(
       artifacts: z.record(cloudPath, z.string().max(1024 * 1024)),
       packages: z.number().int().nonnegative(),
       compiler: z.string().max(80),
+      npm_cache: z
+        .object({
+          enabled: z.boolean(),
+          hits: z.number().int().nonnegative(),
+          misses: z.number().int().nonnegative(),
+          writes: z.number().int().nonnegative(),
+          errors: z.number().int().nonnegative(),
+          downloaded_bytes: z.number().int().nonnegative(),
+        })
+        .optional(),
     })
     .parse(JSON.parse(raw));
   await assertVariablesActive(env, run);
@@ -104,5 +114,9 @@ export async function executeBuild(
       BUILD_LIMIT.output
   )
     throw Error("Cloud artifacts exceed 10 files / 2 MiB");
-  return `PASS ${result.compiler} ${step.entry} → ${step.outfile}; ${result.packages} integrity-verified npm packages\n`;
+  const cache = result.npm_cache;
+  const report = cache
+    ? `; npm cache ${cache.enabled ? "enabled" : "disabled"}: ${cache.hits} hits, ${cache.misses} misses, ${cache.writes} writes, ${cache.errors} errors, ${cache.downloaded_bytes} downloaded bytes`
+    : "";
+  return `PASS ${result.compiler} ${step.entry} → ${step.outfile}; ${result.packages} integrity-verified npm packages${report}\n`;
 }

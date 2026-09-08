@@ -9,5 +9,8 @@
   "rules": [
     { "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": true },
   ],
+  "r2_buckets": [
+    { "binding": "NPM_CACHE", "bucket_name": "onestorage-npm-cache" },
+  ],
   "dev": { "port": 8788, "ip": "127.0.0.1" },
 }

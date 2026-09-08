@@ -2,6 +2,7 @@ import { Inflate } from "pako";
 import { exports as packageExports } from "resolve.exports";
 import { BUILD_LIMIT } from "./ci-build-schema";
 import { decodeBase64 } from "./base64";
+import type { PublicPackageCache } from "./build-package-cache";
 
 const encoder = new TextEncoder(),
   decoder = new TextDecoder("utf-8", { fatal: true });
@@ -200,6 +201,14 @@ export class BuildFileSystem {
   files: Record<string, string>;
   packages: ReturnType<typeof lockPackages>;
   loaded = new Map<string, Promise<void>>();
+  cacheStats = {
+    enabled: false,
+    hits: 0,
+    misses: 0,
+    writes: 0,
+    errors: 0,
+    downloaded_bytes: 0,
+  };
   compressed = 0;
   expanded = 0;
   count = 0;
@@ -212,7 +221,9 @@ export class BuildFileSystem {
     private fetcher: typeof fetch = globalThis.fetch.bind(globalThis),
     private signal: AbortSignal = new AbortController().signal,
     private supplied: Record<string, string> = {},
+    private cache?: PublicPackageCache,
   ) {
+    this.cacheStats.enabled = !!cache;
     if (Object.keys(supplied).length > BUILD_LIMIT.packages)
       throw Error("Private npm package count limit exceeded");
     let encoded = 0;
@@ -245,42 +256,91 @@ export class BuildFileSystem {
       this.signal.throwIfAborted();
       const pkg = this.packages[path];
       const supplied = Object.hasOwn(this.supplied, pkg.resolved);
-      const response = supplied
-        ? new Response(decodeBase64(this.supplied[pkg.resolved]))
-        : await this.fetcher(pkg.resolved, {
-            redirect: "manual",
-            signal: AbortSignal.any([this.signal, AbortSignal.timeout(15000)]),
-          });
-      if (!response.ok || !response.body) {
-        await response.body?.cancel();
-        throw Error("Locked npm package download failed");
-      }
-      const reader = response.body.getReader();
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      try {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          size += value.length;
-          if (!supplied) this.compressed += value.length;
-          if (this.compressed > BUILD_LIMIT.compressed)
-            throw Error("npm compressed byte limit exceeded");
-          chunks.push(value);
+      const eligible =
+        !supplied &&
+        new URL(pkg.resolved).origin === "https://registry.npmjs.org" &&
+        !!this.cache;
+      const read = async (
+        response: Response,
+        network: boolean,
+        cached = false,
+      ) => {
+        if (!response.ok || !response.body) {
+          await response.body?.cancel();
+          throw Error("Locked npm package download failed");
         }
-      } finally {
-        await reader.cancel();
+        const reader = response.body.getReader(),
+          chunks: Uint8Array[] = [];
+        const readingSignal = cached
+          ? AbortSignal.any([this.signal, AbortSignal.timeout(3000)])
+          : this.signal;
+        const cancel = () => {
+          void reader.cancel().catch(() => {});
+        };
+        readingSignal.addEventListener("abort", cancel, { once: true });
+        let size = 0;
+        const budget = supplied
+          ? BUILD_LIMIT.compressed
+          : BUILD_LIMIT.compressed - this.compressed;
+        try {
+          for (;;) {
+            readingSignal.throwIfAborted();
+            const { done, value } = await reader.read();
+            if (done) break;
+            size += value.length;
+            if (network) this.cacheStats.downloaded_bytes += value.length;
+            if (size > budget)
+              throw Error("npm compressed byte limit exceeded");
+            chunks.push(value);
+          }
+        } finally {
+          readingSignal.removeEventListener("abort", cancel);
+          await reader.cancel();
+        }
+        readingSignal.throwIfAborted();
+        const bytes = new Uint8Array(size);
+        let offset = 0;
+        for (const c of chunks) {
+          bytes.set(c, offset);
+          offset += c.length;
+        }
+        const hash = new Uint8Array(
+          await crypto.subtle.digest("SHA-512", bytes),
+        );
+        if ("sha512-" + btoa(String.fromCharCode(...hash)) !== pkg.integrity)
+          throw Error("npm SHA-512 integrity mismatch: " + path);
+        return bytes;
+      };
+      let bytes: Uint8Array | undefined,
+        hit = false;
+      if (eligible) {
+        try {
+          const cached = await this.cache!.get(pkg.resolved, pkg.integrity);
+          if (cached) {
+            bytes = await read(cached, false, true);
+            hit = true;
+            this.cacheStats.hits++;
+          }
+        } catch {
+          this.signal.throwIfAborted();
+          this.cacheStats.errors++;
+        }
+        if (!hit) this.cacheStats.misses++;
       }
-      const bytes = new Uint8Array(size);
-      let offset = 0;
-      for (const c of chunks) {
-        bytes.set(c, offset);
-        offset += c.length;
+      if (!bytes) {
+        this.signal.throwIfAborted();
+        const response = supplied
+          ? new Response(decodeBase64(this.supplied[pkg.resolved]))
+          : await this.fetcher(pkg.resolved, {
+              redirect: "manual",
+              signal: AbortSignal.any([
+                this.signal,
+                AbortSignal.timeout(15000),
+              ]),
+            });
+        bytes = await read(response, !supplied);
       }
-      const hash = new Uint8Array(await crypto.subtle.digest("SHA-512", bytes));
-      const sri = "sha512-" + btoa(String.fromCharCode(...hash));
-      if (sri !== pkg.integrity)
-        throw Error("npm SHA-512 integrity mismatch: " + path);
+      if (!supplied) this.compressed += bytes.length;
       const extracted = unpackPackage(
         bytes,
         BUILD_LIMIT.expanded - this.expanded,
@@ -295,6 +355,16 @@ export class BuildFileSystem {
         throw Error("npm manifest version mismatch");
       if (supplied && manifest.name !== path.split("node_modules/").at(-1))
         throw Error("Private npm manifest name mismatch");
+      this.signal.throwIfAborted();
+      if (eligible && !hit) {
+        try {
+          await this.cache!.put(pkg.resolved, pkg.integrity, bytes);
+          this.cacheStats.writes++;
+        } catch {
+          this.signal.throwIfAborted();
+          this.cacheStats.errors++;
+        }
+      }
       for (const [p, content] of Object.entries(unpacked)) {
         this.files[path + "/" + p] = content;
       }

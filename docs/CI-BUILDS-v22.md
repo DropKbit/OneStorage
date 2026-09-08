@@ -1,5 +1,7 @@
 # Cloudflare 原生 TypeScript / npm 构建
 
+v0.35 更新：公共 npm 压缩包可以通过专用 R2 缓存跨构建复用，见 [缓存说明](CI-NPM-CACHE-v35.md)。下文无 R2 绑定、每次重新下载的描述记录 v0.22 初始实现。
+
 `build` 步骤在独立的 `onestorage-build` Worker 中运行 esbuild 0.28.2 WASM。无需容器、Node 服务器或外部 Runner。控制面读取固定提交中的源码，通过私有 Service Binding 编译，再将产物、应用版本存入 R2，并沿用 D1 租约、工作流门禁、权限撤销和环境 CAS 激活/回滚。
 
 此功能编译和打包 JS/TS/JSX/TSX、JSON、CSS；**不是任意 `npm run build` 的执行器**。不运行 npm 生命周期脚本、Vite/Next 配置、shell、原生插件或 TypeScript 类型检查。需要这些工具的项目仍可使用外部 Runner。构建 Worker 不接收 CI 密钥，没有 D1/R2/账户绑定，不执行输入源码；部署后的应用仍使用现有无出站网络、无账户绑定的 Dynamic Worker。
@@ -12,15 +14,17 @@ CI/CD 页面提供「TypeScript / npm 云端构建」模板，可保存页面配
 {
   "runner": "worker",
   "timeout_seconds": 110,
-  "steps": [{
-    "type": "build",
-    "entry": "src/index.ts",
-    "sources": ["src", "package.json", "package-lock.json"],
-    "outfile": "dist/index.js",
-    "platform": "worker",
-    "minify": true,
-    "sourcemap": false
-  }],
+  "steps": [
+    {
+      "type": "build",
+      "entry": "src/index.ts",
+      "sources": ["src", "package.json", "package-lock.json"],
+      "outfile": "dist/index.js",
+      "platform": "worker",
+      "minify": true,
+      "sourcemap": false
+    }
+  ],
   "deploy": {
     "kind": "worker",
     "entry": "dist/index.js",

@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdtemp, mkdir, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+const verifyCache = process.env.ONESTORAGE_NPM_CACHE === "1";
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787";
 const remote = !["localhost", "127.0.0.1"].includes(new URL(origin).hostname);
 if (remote && process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
@@ -277,7 +278,9 @@ async function prepareRegistry() {
     { project_id: registryRepo.id, token_variable: "PACKAGE_TOKEN" },
   ];
   await writeFile(
-    ".data/v27-private-fixture.json",
+    verifyCache
+      ? ".data/v35-private-fixture.json"
+      : ".data/v27-private-fixture.json",
     JSON.stringify({ space: name, repositories: [repo.id, registryRepo.id] }),
     { mode: 0o600 },
   );
@@ -374,7 +377,9 @@ try {
     201,
   );
   await writeFile(
-    ".data/v27-last-build-fixture.json",
+    verifyCache
+      ? ".data/v35-private-build-fixture.json"
+      : ".data/v27-last-build-fixture.json",
     JSON.stringify({ name, repoId: repo.id, ap }),
     { mode: 0o600 },
   );
@@ -393,6 +398,15 @@ try {
       ),
     "Native WASM build uses exact commit and verified dependency",
   );
+  if (verifyCache)
+    check(
+      first.logs.some((l) =>
+        /2 integrity-verified npm packages; npm cache enabled: 1 hits, 0 misses, 0 writes, 0 errors, 0 downloaded bytes/.test(
+          l.content,
+        ),
+      ),
+      "Only the public dependency uses warm cache; private package still follows supplied authorization path",
+    );
   const artifact = first.artifacts.find((a) => a.name === "dist/index.js");
   check(
     !!artifact && artifact.size > 1000,

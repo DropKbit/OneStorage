@@ -1,5 +1,6 @@
 import * as esbuild from "esbuild-wasm/lib/browser.js";
 import wasmModule from "esbuild-wasm/esbuild.wasm";
+import { R2PublicPackageCache } from "./build-package-cache";
 import { BuildFileSystem } from "./build-packages";
 import { buildRequest, BUILD_LIMIT } from "./ci-build-schema";
 
@@ -29,9 +30,12 @@ async function body(request: Request, limit: number) {
   }
   return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 }
-// Private service binding only. This Worker has no account bindings or credentials.
+// Private service binding only. Dedicated public package cache; no project data or credentials.
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: { NPM_CACHE?: R2Bucket },
+  ): Promise<Response> {
     if (request.method !== "POST" || new URL(request.url).pathname !== "/build")
       return new Response("Not found", { status: 404 });
     if (busy)
@@ -59,6 +63,7 @@ export default {
         undefined,
         controller.signal,
         packages,
+        env.NPM_CACHE ? new R2PublicPackageCache(env.NPM_CACHE) : undefined,
       );
       initialization ??= esbuild
         .initialize({ wasmModule, worker: false })
@@ -151,6 +156,7 @@ export default {
       return Response.json({
         artifacts,
         packages: fs.count,
+        npm_cache: fs.cacheStats,
         compiler: "esbuild-wasm/0.28.2",
       });
     } catch (error) {

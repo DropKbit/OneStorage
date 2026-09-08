@@ -10,6 +10,12 @@ import {
   BuildFileSystem,
 } from "../src/build-packages";
 import { pipelineSchema } from "../src/ci-config";
+import {
+  R2PublicPackageCache,
+  packageCacheKey,
+  NPM_CACHE_TTL,
+  type PublicPackageCache,
+} from "../src/build-package-cache";
 
 function archive(files: Record<string, string>, type = "0") {
   const chunks: Uint8Array[] = [];
@@ -225,4 +231,226 @@ test("virtual source normalization stays inside the project", () => {
   assert.equal(normalizePath("src/a/../b.ts"), "src/b.ts");
   for (const p of ["../x", "a/../../x", "/x", "a\\x", "a\0x"])
     assert.throws(() => normalizePath(p));
+});
+
+test("public package cache survives fresh compiler instances and verifies every hit", async () => {
+  const data = new Map<string, Uint8Array>();
+  let downloads = 0;
+  const cache: PublicPackageCache = {
+    async get(url, integrity) {
+      const b = data.get(await packageCacheKey(url, integrity));
+      return b ? new Response(new Uint8Array(b)) : null;
+    },
+    async put(url, integrity, bytes) {
+      data.set(await packageCacheKey(url, integrity), bytes.slice());
+    },
+  };
+  const create = () =>
+    new BuildFileSystem(
+      files(),
+      "worker",
+      (async () => {
+        downloads++;
+        return new Response(tar);
+      }) as typeof fetch,
+      undefined,
+      {},
+      cache,
+    );
+  const cold = create();
+  await cold.resolve("example", "src/main.ts");
+  assert.equal(cold.cacheStats.misses, 1);
+  assert.equal(cold.cacheStats.writes, 1);
+  const warm = create();
+  await warm.resolve("example", "src/main.ts");
+  assert.equal(downloads, 1);
+  assert.equal(warm.cacheStats.hits, 1);
+  assert.equal(warm.cacheStats.downloaded_bytes, 0);
+  assert.equal(warm.compressed, tar.length);
+  assert.equal(
+    warm.files["node_modules/example/esm.js"],
+    cold.files["node_modules/example/esm.js"],
+  );
+  data.set(
+    await packageCacheKey(entry.resolved, entry.integrity),
+    new Uint8Array([1, 2]),
+  );
+  const corrupt = create();
+  await corrupt.resolve("example", "src/main.ts");
+  assert.equal(downloads, 2);
+  assert.equal(corrupt.cacheStats.errors, 1);
+  assert.equal(corrupt.cacheStats.writes, 1);
+  assert.equal(corrupt.compressed, tar.length);
+});
+
+test("cache outages fall back, invalid registry bytes are never cached, and private packages bypass cache", async () => {
+  const broken: PublicPackageCache = {
+    async get() {
+      throw Error("unavailable");
+    },
+    async put() {
+      throw Error("unavailable");
+    },
+  };
+  const fs = new BuildFileSystem(
+    files(),
+    "worker",
+    (async () => new Response(tar)) as typeof fetch,
+    undefined,
+    {},
+    broken,
+  );
+  await fs.resolve("example", "src/main.ts");
+  assert.equal(fs.cacheStats.errors, 2);
+  let reads = 0,
+    writes = 0;
+  const cache: PublicPackageCache = {
+    async get() {
+      reads++;
+      return null;
+    },
+    async put() {
+      writes++;
+    },
+  };
+  const bad = new BuildFileSystem(
+    files(),
+    "worker",
+    (async () => new Response("tampered")) as typeof fetch,
+    undefined,
+    {},
+    cache,
+  );
+  await assert.rejects(bad.resolve("example", "src/main.ts"), /integrity/);
+  assert.equal(writes, 0);
+  const privateURL = "https://git.1s.hk/api/packages/private/pkg.tgz";
+  const privateFS = new BuildFileSystem(
+    files({ "node_modules/example": { ...entry, resolved: privateURL } }),
+    "worker",
+    (async () => {
+      throw Error("must not fetch");
+    }) as typeof fetch,
+    undefined,
+    { [privateURL]: Buffer.from(tar).toString("base64") },
+    cache,
+  );
+  await privateFS.resolve("example", "src/main.ts");
+  assert.equal(reads, 1);
+  assert.equal(writes, 0);
+  assert.equal(privateFS.cacheStats.hits, 0);
+  assert.equal(privateFS.cacheStats.downloaded_bytes, 0);
+});
+
+test("cached bytes still count toward limits and cancellation interrupts cached body reads", async () => {
+  const cache: PublicPackageCache = {
+    async get() {
+      return new Response(tar);
+    },
+    async put() {},
+  };
+  const fs = new BuildFileSystem(
+    files(),
+    "worker",
+    (async () => new Response(tar)) as typeof fetch,
+    undefined,
+    {},
+    cache,
+  );
+  fs.compressed = 4 * 1024 * 1024;
+  await assert.rejects(fs.resolve("example", "src/main.ts"), /compressed/);
+  let canceled = false,
+    downloads = 0;
+  const controller = new AbortController();
+  const blocked: PublicPackageCache = {
+    async get() {
+      return new Response(
+        new ReadableStream({
+          cancel() {
+            canceled = true;
+          },
+        }),
+      );
+    },
+    async put() {},
+  };
+  const active = new BuildFileSystem(
+    files(),
+    "worker",
+    (async () => {
+      downloads++;
+      return new Response(tar);
+    }) as typeof fetch,
+    controller.signal,
+    {},
+    blocked,
+  );
+  const pending = active.resolve("example", "src/main.ts");
+  await new Promise((r) => setTimeout(r, 20));
+  controller.abort();
+  await assert.rejects(pending, /abort/i);
+  assert.equal(canceled, true);
+  assert.equal(downloads, 0);
+});
+
+test("R2 cache identity, expiry and bounded unavailable operations protect reusable public content", async () => {
+  assert.notEqual(
+    await packageCacheKey(entry.resolved, entry.integrity),
+    await packageCacheKey(entry.resolved, "sha512-" + "A".repeat(86) + "=="),
+  );
+  await assert.rejects(
+    packageCacheKey("https://private.invalid/pkg.tgz", entry.integrity),
+  );
+  let now = 1000,
+    stored: any,
+    canceled = 0;
+  const bucket = {
+    async put(key: string, bytes: Uint8Array, options: any) {
+      stored = { key, bytes, ...options };
+    },
+    async get() {
+      return stored
+        ? {
+            ...stored,
+            size: stored.bytes.length,
+            body: new ReadableStream({
+              start(c) {
+                c.enqueue(stored.bytes);
+              },
+              cancel() {
+                canceled++;
+              },
+            }),
+          }
+        : null;
+    },
+  } as unknown as R2Bucket;
+  const cache = new R2PublicPackageCache(bucket, () => now);
+  assert.equal(await cache.get(entry.resolved, entry.integrity), null);
+  await cache.put(entry.resolved, entry.integrity, tar);
+  const hit = await cache.get(entry.resolved, entry.integrity);
+  assert.ok(hit);
+  await hit.body!.cancel();
+  now += NPM_CACHE_TTL;
+  assert.equal(await cache.get(entry.resolved, entry.integrity), null);
+  assert.equal(canceled, 2);
+  const unavailable = new R2PublicPackageCache(
+    {
+      get() {
+        return new Promise(() => {});
+      },
+      put() {
+        return new Promise(() => {});
+      },
+    } as unknown as R2Bucket,
+    Date.now,
+    10,
+  );
+  await assert.rejects(
+    unavailable.get(entry.resolved, entry.integrity),
+    /timeout/,
+  );
+  await assert.rejects(
+    unavailable.put(entry.resolved, entry.integrity, tar),
+    /timeout/,
+  );
 });
