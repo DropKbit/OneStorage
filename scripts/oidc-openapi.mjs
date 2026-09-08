@@ -9,6 +9,13 @@ export function addOIDCPaths(paths) {
     additionalProperties: false,
     required: ["name", "issuer", "client_id", "allowed_hosts"],
     properties: {
+      protocol: {
+        type: "string",
+        enum: ["oidc", "github", "gitlab"],
+        default: "oidc",
+        description:
+          "Immutable. GitHub requires github.com and client_secret_post; GitLab supports POST secret or public PKCE.",
+      },
       name: { type: "string", maxLength: 80 },
       issuer: { type: "string", format: "uri" },
       client_id: { type: "string", maxLength: 512 },
@@ -58,7 +65,7 @@ export function addOIDCPaths(paths) {
     [
       "get",
       "/api/auth/oidc/callback",
-      "Single-use state and browser-cookie binding. Verifies code, PKCE and ID Token; redirects to account, home, local MFA/registration or generic failure.",
+      "Single-use state and browser-cookie binding. Verifies code and PKCE, then OIDC ID Token or OAuth stable user ID from the pinned user API; redirects to account, home, local MFA/registration or generic failure.",
       null,
       "public",
     ],
@@ -129,7 +136,9 @@ export function addOIDCPaths(paths) {
     const op = {
       operationId: method + "_" + path.replace(/[^a-z0-9]+/g, "_"),
       summary: description.split(". ")[0],
-      description: description + " See docs/OIDC-v23.md.",
+      description:
+        description +
+        " See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
       security:
         kind === "public"
           ? []

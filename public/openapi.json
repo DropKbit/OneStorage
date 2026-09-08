@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.32.0",
+    "version": "0.33.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3255,7 +3255,7 @@
       "get": {
         "operationId": "get__api_auth_oidc_providers",
         "summary": "Enabled public identity-provider names and IDs.",
-        "description": "Enabled public identity-provider names and IDs. See docs/OIDC-v23.md.",
+        "description": "Enabled public identity-provider names and IDs. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3283,7 +3283,7 @@
       "post": {
         "operationId": "post__api_auth_oidc_id_start",
         "summary": "Matching Origin required",
-        "description": "Matching Origin required. Link requires browser session and local proof; reauth is bound to the current account. Returns authorization URL and sets ten-minute HttpOnly flow cookie. See docs/OIDC-v23.md.",
+        "description": "Matching Origin required. Link requires browser session and local proof; reauth is bound to the current account. Returns authorization URL and sets ten-minute HttpOnly flow cookie. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3350,7 +3350,7 @@
       "get": {
         "operationId": "get__api_auth_oidc_callback",
         "summary": "Single-use state and browser-cookie binding",
-        "description": "Single-use state and browser-cookie binding. Verifies code, PKCE and ID Token; redirects to account, home, local MFA/registration or generic failure. See docs/OIDC-v23.md.",
+        "description": "Single-use state and browser-cookie binding. Verifies code and PKCE, then OIDC ID Token or OAuth stable user ID from the pinned user API; redirects to account, home, local MFA/registration or generic failure. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3411,7 +3411,7 @@
       "get": {
         "operationId": "get__api_auth_oidc_pending",
         "summary": "Requires the pending flow cookie",
-        "description": "Requires the pending flow cookie. Returns stage and provider name. See docs/OIDC-v23.md.",
+        "description": "Requires the pending flow cookie. Returns stage and provider name. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3439,7 +3439,7 @@
       "post": {
         "operationId": "post__api_auth_oidc_complete",
         "summary": "Matching Origin and pending flow cookie required",
-        "description": "Matching Origin and pending flow cookie required. Complete local MFA or choose username for an ordinary passwordless account. See docs/OIDC-v23.md.",
+        "description": "Matching Origin and pending flow cookie required. Complete local MFA or choose username for an ordinary passwordless account. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3490,7 +3490,7 @@
       "get": {
         "operationId": "get__api_account_identities",
         "summary": "Browser session required",
-        "description": "Browser session required. List own linked and available identities and local-password availability. See docs/OIDC-v23.md.",
+        "description": "Browser session required. List own linked and available identities and local-password availability. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3522,7 +3522,7 @@
       "post": {
         "operationId": "post__api_account_identities_id_unlink",
         "summary": "Local proof and browser session required",
-        "description": "Local proof and browser session required. Keep one enabled login method. Revokes this provider's sessions and derived PATs for the account. See docs/OIDC-v23.md.",
+        "description": "Local proof and browser session required. Keep one enabled login method. Revokes this provider's sessions and derived PATs for the account. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3584,7 +3584,7 @@
       "get": {
         "operationId": "get__api_admin_identity_providers",
         "summary": "Administrator only",
-        "description": "Administrator only. Lists configuration without client secrets and reports callback URL. See docs/OIDC-v23.md.",
+        "description": "Administrator only. Lists configuration without client secrets and reports callback URL. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3617,7 +3617,7 @@
       "post": {
         "operationId": "post__api_admin_identity_providers",
         "summary": "Administrator with write scope",
-        "description": "Administrator with write scope. Validates discovery and approved HTTPS hosts before inserting. Maximum twenty providers. See docs/OIDC-v23.md.",
+        "description": "Administrator with write scope. Validates discovery and approved HTTPS hosts before inserting. Maximum twenty providers. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3663,6 +3663,16 @@
                   "allowed_hosts"
                 ],
                 "properties": {
+                  "protocol": {
+                    "type": "string",
+                    "enum": [
+                      "oidc",
+                      "github",
+                      "gitlab"
+                    ],
+                    "default": "oidc",
+                    "description": "Immutable. GitHub requires github.com and client_secret_post; GitLab supports POST secret or public PKCE."
+                  },
                   "name": {
                     "type": "string",
                     "maxLength": 80
@@ -3727,7 +3737,7 @@
       "put": {
         "operationId": "put__api_admin_identity_providers_id_",
         "summary": "Administrator with write scope and current revision",
-        "description": "Administrator with write scope and current revision. Issuer/client ID immutable; omitted secret retained. Revokes provider credentials and pending flows. See docs/OIDC-v23.md.",
+        "description": "Administrator with write scope and current revision. Issuer/client ID immutable; omitted secret retained. Revokes provider credentials and pending flows. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3781,6 +3791,16 @@
                   "revision"
                 ],
                 "properties": {
+                  "protocol": {
+                    "type": "string",
+                    "enum": [
+                      "oidc",
+                      "github",
+                      "gitlab"
+                    ],
+                    "default": "oidc",
+                    "description": "Immutable. GitHub requires github.com and client_secret_post; GitLab supports POST secret or public PKCE."
+                  },
                   "name": {
                     "type": "string",
                     "maxLength": 80
@@ -3843,7 +3863,7 @@
       "delete": {
         "operationId": "delete__api_admin_identity_providers_id_",
         "summary": "Administrator with write scope",
-        "description": "Administrator with write scope. Refuses deletion while linked accounts exist. See docs/OIDC-v23.md.",
+        "description": "Administrator with write scope. Refuses deletion while linked accounts exist. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []

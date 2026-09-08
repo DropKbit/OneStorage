@@ -14,7 +14,7 @@ import type { App } from "../src/types";
 const issuer = "https://identity.example.com",
   secret = "client-secret-example",
   password = "OIDC-test-password-123";
-async function setup() {
+async function setup(protocol: "oidc" | "gitlab" = "oidc") {
   const f = fixture();
   f.db
     .prepare(
@@ -36,10 +36,35 @@ async function setup() {
   let claims: Record<string, any> = {},
     authURL: URL,
     downloads = 0,
-    onDiscovery = () => {};
+    onDiscovery = () => {},
+    oauthUser: any = {
+      id: 123,
+      username: "oauth-user",
+      state: "active",
+      email: "user@example.test",
+      confirmed_at: "2020-01-01T00:00:00Z",
+    };
   const send = async (input: any, init?: RequestInit) => {
     const url = new URL(String(input));
     downloads++;
+    if (protocol === "gitlab") {
+      if (url.pathname === "/api/v4/user") {
+        onDiscovery();
+        return Response.json(oauthUser);
+      }
+      assert.equal(url.pathname, "/oauth/token");
+      const body = new URLSearchParams(init!.body as URLSearchParams);
+      assert.equal(body.get("client_secret"), secret);
+      assert.equal(
+        await pkce(body.get("code_verifier")!),
+        authURL.searchParams.get("code_challenge"),
+      );
+      return Response.json({
+        access_token: "opaque-access-token",
+        token_type: "bearer",
+        refresh_token: "discard-refresh",
+      });
+    }
     if (url.pathname.endsWith("openid-configuration")) {
       onDiscovery();
       return Response.json({
@@ -123,7 +148,10 @@ async function setup() {
     return r;
   }
   const config = {
-    name: "Test OIDC",
+    protocol,
+    auth_method:
+      protocol === "oidc" ? "client_secret_basic" : "client_secret_post",
+    name: "Test identity",
     issuer,
     client_id: "client",
     client_secret: secret,
@@ -165,6 +193,9 @@ async function setup() {
     config,
     start,
     callback,
+    setOAuthUser: (u: any) => {
+      oauthUser = { ...oauthUser, ...u };
+    },
     setClaims: (c: any) => {
       claims = c;
     },
@@ -524,6 +555,71 @@ test("OIDC registration can resume after account insertion without creating anot
   assert.equal(
     f.db.prepare("SELECT count(*) n FROM users WHERE username='ignored'").get()!
       .n,
+    0,
+  );
+});
+
+test("GitLab OAuth shares explicit linking, stable-ID login and provider revocation without storing provider tokens", async () => {
+  const f = await setup("gitlab");
+  const url = await f.start("link");
+  assert.equal(url.pathname, "/oauth/authorize");
+  assert.equal(url.searchParams.get("scope"), "read_user");
+  assert.equal(url.searchParams.has("nonce"), false);
+  await f.callback();
+  assert.equal(
+    f.db.prepare("SELECT subject FROM oidc_identities").get()!.subject,
+    "123",
+  );
+  f.setOAuthUser({ username: "renamed-user", email: "different@example.test" });
+  await f.start();
+  const logged = await f.callback();
+  const session = logged.headers
+    .getSetCookie()
+    .find((x) => x.startsWith("onestorage_session="));
+  assert.ok(session);
+  const row = f.db
+    .prepare("SELECT * FROM credentials WHERE oidc_provider_id=?")
+    .get(f.provider.id)!;
+  assert.equal(row.user_id, "o");
+  assert.ok(
+    !JSON.stringify(f.db.prepare("SELECT * FROM oidc_flows").all()).includes(
+      "opaque-access-token",
+    ),
+  );
+  await f.req(
+    "/api/admin/identity-providers/" + f.provider.id,
+    "PUT",
+    { ...f.config, revision: f.provider.revision, protocol: "oidc" },
+    true,
+    409,
+  );
+  await f.req(
+    "/api/admin/identity-providers/" + f.provider.id,
+    "PUT",
+    { ...f.config, revision: f.provider.revision, enabled: false },
+    true,
+  );
+  assert.equal(
+    f.db
+      .prepare("SELECT count(*) n FROM credentials WHERE oidc_provider_id=?")
+      .get(f.provider.id)!.n,
+    0,
+  );
+});
+test("provider changes during OAuth user lookup invalidate the one-time callback", async () => {
+  const f = await setup("gitlab");
+  await f.start("link");
+  f.setDiscoveryHook(() => {
+    f.db
+      .prepare(
+        "UPDATE oidc_providers SET enabled=0,revision=revision+1 WHERE id=?",
+      )
+      .run(f.provider.id);
+  });
+  const response = await f.callback();
+  assert.ok(response.headers.get("location")!.includes("oidc_error"));
+  assert.equal(
+    f.db.prepare("SELECT count(*) n FROM oidc_identities").get()!.n,
     0,
   );
 });

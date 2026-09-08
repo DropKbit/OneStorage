@@ -53,6 +53,7 @@ async function provider(env: Env, id: string, enabled = true) {
 function publicProvider(p: OIDCProvider) {
   return {
     id: p.id,
+    protocol: JSON.parse(p.config).protocol || "oidc",
     name: p.name,
     issuer: p.issuer,
     client_id: p.client_id,
@@ -122,7 +123,7 @@ async function issue(
       factorVersion || "",
     ),
     c.env.DB.prepare(
-      "INSERT INTO credentials(hash,id,user_id,name,kind,expires_at,oidc_provider_id,authenticated_at) SELECT ?,?,?,'OIDC browser session','session',?,?,? WHERE changes()=1 AND EXISTS(SELECT 1 FROM oidc_flows WHERE state_hash=? AND stage='issuing')",
+      "INSERT INTO credentials(hash,id,user_id,name,kind,expires_at,oidc_provider_id,authenticated_at) SELECT ?,?,?,'Federated browser session','session',?,?,? WHERE changes()=1 AND EXISTS(SELECT 1 FROM oidc_flows WHERE state_hash=? AND stage='issuing')",
     ).bind(
       await digest(token),
       id,
@@ -203,11 +204,12 @@ export function registerOIDC(app: Hono<App>, send?: typeof fetch) {
           old &&
           (input.revision !== old.revision ||
             input.issuer !== old.issuer ||
-            input.client_id !== old.client_id)
+            input.client_id !== old.client_id ||
+            input.protocol !== (JSON.parse(old.config).protocol || "oidc"))
         )
           fail(
             409,
-            "Provider revision changed; issuer and client ID are immutable",
+            "Provider revision changed; protocol, issuer and client ID are immutable",
           );
         if (
           !old &&
@@ -220,7 +222,7 @@ export function registerOIDC(app: Hono<App>, send?: typeof fetch) {
         let config;
         try {
           config =
-            input.enabled || !old
+            input.protocol !== "oidc" || input.enabled || !old
               ? await discover(input, send)
               : {
                   ...JSON.parse(old.config),
@@ -231,7 +233,7 @@ export function registerOIDC(app: Hono<App>, send?: typeof fetch) {
         } catch {
           fail(
             400,
-            "OIDC discovery failed; verify issuer, approved hosts and client authentication method",
+            "Identity provider configuration failed; verify protocol, issuer, approved hosts and client authentication method",
           );
         }
         const secret = input.client_secret

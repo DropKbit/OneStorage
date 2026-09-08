@@ -1,4 +1,4 @@
-import { identityPanel, bindIdentity } from "./oidc.js?v=d111df485dceede5";
+import { identityPanel, bindIdentity } from "./oidc.js?v=3413673d20418475";
 let hasPassword = true;
 const passwordInput = () =>
   hasPassword

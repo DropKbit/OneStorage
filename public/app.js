@@ -1,8 +1,8 @@
 const globalSearch = () => import("./search.js?v=da1099b414f06039");
 const deployTokens = () => import("./deploy-tokens.js?v=3624ebb344aa8e94");
 const packages = () => import("./packages.js?v=940a14d638488fa5");
-const account = () => import("./account.js?v=6ffc55e60c26a3a9");
-const oidc = () => import("./oidc.js?v=d111df485dceede5");
+const account = () => import("./account.js?v=78a530138d3ce5b3");
+const oidc = () => import("./oidc.js?v=3413673d20418475");
 const collaboration = () => import("./collaboration.js?v=e564a672794f8bb0");
 const platform = () => import("./manage.js?v=3f4cfee2f85c57c9");
 import {

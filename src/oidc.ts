@@ -1,10 +1,12 @@
 import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
 import { z } from "zod";
-import { boundedBody } from "./security";
-import { webhookURL } from "./webhooks";
+import { endpoint, identityJSON as json } from "./identity-http";
+export { endpoint } from "./identity-http";
+import { oauthConfig, authorizeOAuth, exchangeOAuth } from "./oauth";
 
 export const providerInput = z
   .object({
+    protocol: z.enum(["oidc", "github", "gitlab"]).default("oidc"),
     name: z.string().trim().min(1).max(80),
     issuer: z.string().url().max(1000),
     client_id: z.string().min(1).max(512),
@@ -35,7 +37,9 @@ export const providerInput = z
     revision: z.number().int().positive().optional(),
   })
   .strict();
+export type ProviderInput = z.infer<typeof providerInput>;
 export interface OIDCConfig {
+  protocol?: "oidc";
   auth_method: "client_secret_basic" | "client_secret_post" | "none";
   allowed_hosts: string[];
   email_domains: string[];
@@ -54,25 +58,11 @@ export interface OIDCProvider {
   registration: number;
   revision: number;
 }
-export function endpoint(url: string, hosts: string[]) {
-  const result = webhookURL(url, hosts.join(","));
-  if (new URL(result).search)
-    throw Error("OIDC endpoints cannot contain query parameters");
-  return result;
-}
-async function json(response: Response) {
-  if (!response.ok) {
-    await response.body?.cancel();
-    throw Error("OIDC provider request failed");
-  }
-  return JSON.parse(
-    new TextDecoder().decode(await boundedBody(response, 65536)),
-  );
-}
 export async function discover(
   input: z.infer<typeof providerInput>,
   send: typeof fetch = globalThis.fetch.bind(globalThis),
-): Promise<OIDCConfig> {
+) {
+  if (input.protocol !== "oidc") return oauthConfig(input);
   const issuer = input.issuer,
     canonical = endpoint(issuer, input.allowed_hosts);
   if (canonical !== issuer && canonical !== issuer + "/")
@@ -102,6 +92,7 @@ export async function discover(
   )
     throw Error("Unsupported OIDC client authentication method");
   return {
+    protocol: "oidc" as const,
     auth_method: input.auth_method,
     allowed_hosts: input.allowed_hosts,
     email_domains: input.email_domains,
@@ -130,6 +121,8 @@ export function authorize(
   challenge: string,
   redirect: string,
 ) {
+  if ((JSON.parse(p.config).protocol || "oidc") !== "oidc")
+    return authorizeOAuth(p, state, challenge, redirect);
   const cfg = JSON.parse(p.config) as OIDCConfig;
   const u = new URL(endpoint(cfg.authorization_endpoint, cfg.allowed_hosts));
   for (const [key, value] of Object.entries({
@@ -154,6 +147,8 @@ export async function exchange(
   redirect: string,
   send: typeof fetch = globalThis.fetch.bind(globalThis),
 ) {
+  if ((JSON.parse(p.config).protocol || "oidc") !== "oidc")
+    return exchangeOAuth(p, secret, code, verifier, redirect, send);
   const cfg = JSON.parse(p.config) as OIDCConfig;
   const form = new URLSearchParams({
     grant_type: "authorization_code",
