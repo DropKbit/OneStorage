@@ -22,6 +22,8 @@
 
 ## API、部署与验收
 
+本地及生产的结果见 [验收记录](VERIFICATION-v24.md)。
+
 - `GET/POST /api/workspaces/:slug/ci/variables`：所有者列出元数据或创建定义。
 - `PUT/DELETE .../:variable`：携带当前 `revision`；更新省略 `value` 保留旧值。
 - `POST .../:variable/take-ownership`：携带版本，接管并暂停。
