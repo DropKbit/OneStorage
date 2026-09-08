@@ -7,7 +7,7 @@ export function addSearchPaths(paths) {
       summary:
         "Search accessible collaboration content or indexed default-branch code",
       description:
-        "Literal substring search; ASCII case-insensitive, other Unicode exact. Live D1 permissions and credentials; anonymous public search, session/PAT supported; delegated JWT/deploy tokens denied. No implicit administrator access. type=all includes project/issue/merge/wiki only, without comments or Wiki history. type=code uses ordinary D1 trigram postings and an asynchronously published immutable default-branch snapshot (migration 0026); results include SHA, line, time and stale flag plus visible-project coverage. No full body returned, no per-project Git RPC or fixed project cap. Code needs 3 Unicode codepoints, no regex/history/other branches. Cursor pagination is a live view, not an export snapshot. Collaboration content still uses SQL substring scans.",
+        "Literal substring search; ASCII case-insensitive, other Unicode exact. Live D1 permissions and credentials; anonymous public search, session/PAT supported; delegated JWT/deploy tokens denied. No implicit administrator access. type=all includes project/issue/merge/wiki only, without comments or Wiki history. type=code uses ordinary D1 trigram postings and an asynchronously published immutable default-branch snapshot (migrations 0026/0027; unchanged blobs reuse repository-scoped content postings); results include SHA, line, time and stale flag plus visible-project coverage. No full body returned, no per-project Git RPC or fixed project cap. Code needs 3 Unicode codepoints, no regex/history/other branches. Cursor pagination is a live view, not an export snapshot. Collaboration content still uses SQL substring scans.",
       security: [{}, { sessionCookie: [] }, { bearerAuth: [] }],
       parameters: [
         [
@@ -167,7 +167,7 @@ export function addSearchPaths(paths) {
       responses: {
         200: {
           description:
-            "Status, indexed_sha/branch/time, build counters, published coverage, stale and safe retry error. Missing state returns queued.",
+            "Status, indexed_sha/branch/time, build counters, published coverage, stale and safe retry error. Coverage index_version=2 includes reused_files, created_contents and written_postings for the published build. Logical postings still count each file; written_postings counts only newly inserted content grams. Missing state returns queued.",
         },
         403: { description: "Read permission required" },
         404: { description: "Project not visible" },
