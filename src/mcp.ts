@@ -168,7 +168,7 @@ export function registerMCP(app: Hono<App>) {
   app.get("/api/spec", (c) =>
     c.json({
       name: "OneStorage",
-      version: "0.3.0",
+      version: "0.4.0",
       mcp: "/mcp",
       tools: mcpTools,
       limits: {
@@ -237,7 +237,7 @@ export function registerMCP(app: Hono<App>) {
           ? request.params.protocolVersion
           : "2025-11-25",
         capabilities: { tools: { listChanged: false }, resources: {} },
-        serverInfo: { name: "OneStorage", version: "0.3.0" },
+        serverInfo: { name: "OneStorage", version: "0.4.0" },
         instructions: guide,
       });
     if (request.method === "ping") return result({});

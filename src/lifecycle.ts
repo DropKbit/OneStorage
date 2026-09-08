@@ -230,7 +230,7 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
   )
     .bind("deleted_" + id, id)
     .run();
-  for (const prefix of [`repos/${id}/`, `lfs/${id}/`]) {
+  for (const prefix of [`repos/${id}/`, `lfs/${id}/`, `ci/${id}/`]) {
     const page = await env.OBJECTS.list({ prefix, limit: 100 });
     if (page.objects.length) {
       await env.OBJECTS.delete(page.objects.map((o) => o.key));

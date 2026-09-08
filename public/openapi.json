@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3196,6 +3196,1742 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/workspaces": {
+      "get": {
+        "operationId": "list_workspaces",
+        "summary": "list workspaces",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_workspace",
+        "summary": "create workspace",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{slug}": {
+      "get": {
+        "operationId": "get_workspace",
+        "summary": "get workspace",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_workspace",
+        "summary": "update workspace",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "delete_workspace",
+        "summary": "delete workspace",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{slug}/members": {
+      "get": {
+        "operationId": "list_workspace_members",
+        "summary": "list workspace members",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "put": {
+        "operationId": "set_workspace_member",
+        "summary": "set workspace member",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/workspaces/{slug}/members/{username}": {
+      "delete": {
+        "operationId": "remove_workspace_member",
+        "summary": "remove workspace member",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/overview": {
+      "get": {
+        "operationId": "admin_overview",
+        "summary": "admin overview",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "admin_users",
+        "summary": "admin users",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}": {
+      "patch": {
+        "operationId": "admin_update_user",
+        "summary": "admin update user",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces": {
+      "get": {
+        "operationId": "admin_workspaces",
+        "summary": "admin workspaces",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/{id}/owner": {
+      "put": {
+        "operationId": "admin_recover_workspace",
+        "summary": "admin recover workspace",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/repositories": {
+      "get": {
+        "operationId": "admin_repositories",
+        "summary": "admin repositories",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/repositories/{id}": {
+      "patch": {
+        "operationId": "admin_update_repository",
+        "summary": "admin update repository",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "admin_delete_repository",
+        "summary": "admin delete repository",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/admin/audit": {
+      "get": {
+        "operationId": "admin_audit",
+        "summary": "admin audit",
+        "tags": [
+          "Administration"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/config": {
+      "get": {
+        "operationId": "ci_config",
+        "summary": "ci config",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "put": {
+        "operationId": "ci_save_config",
+        "summary": "ci save config",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runs": {
+      "get": {
+        "operationId": "ci_list_runs",
+        "summary": "ci list runs",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "post": {
+        "operationId": "ci_run",
+        "summary": "ci run",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runs/{id}": {
+      "get": {
+        "operationId": "ci_get_run",
+        "summary": "ci get run",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runs/{id}/cancel": {
+      "post": {
+        "operationId": "ci_cancel",
+        "summary": "ci cancel",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runs/{id}/retry": {
+      "post": {
+        "operationId": "ci_retry",
+        "summary": "ci retry",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runs/{id}/artifacts/{artifact}": {
+      "get": {
+        "operationId": "ci_download_artifact",
+        "summary": "ci download artifact",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "artifact",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runners": {
+      "get": {
+        "operationId": "ci_runners",
+        "summary": "ci runners",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "post": {
+        "operationId": "ci_register_runner",
+        "summary": "ci register runner",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/runners/{runner}": {
+      "delete": {
+        "operationId": "ci_revoke_runner",
+        "summary": "ci revoke runner",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/claim": {
+      "post": {
+        "operationId": "runner_claim",
+        "summary": "runner claim",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/heartbeat": {
+      "post": {
+        "operationId": "runner_heartbeat",
+        "summary": "runner heartbeat",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/source": {
+      "get": {
+        "operationId": "runner_source",
+        "summary": "runner source",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/logs": {
+      "post": {
+        "operationId": "runner_logs",
+        "summary": "runner logs",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/artifacts/{name}": {
+      "put": {
+        "operationId": "runner_artifact",
+        "summary": "runner artifact",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/complete": {
+      "post": {
+        "operationId": "runner_complete",
+        "summary": "runner complete",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
           }
         }
       }

@@ -9,6 +9,7 @@ export interface Env {
   BOOTSTRAP_SECRET: string;
   CREDENTIAL_ENCRYPTION_KEY?: string;
   SYNC_ALLOWED_HOSTS?: string;
+  CI_ALLOWED_HOSTS?: string;
 }
 export interface User {
   id: string;
@@ -18,6 +19,7 @@ export interface User {
 export interface Repo {
   id: string;
   owner_id: string;
+  workspace_id?: string | null;
   namespace: string;
   name: string;
   description: string;

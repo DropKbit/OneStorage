@@ -1,3 +1,6 @@
+import { registerCIRoutes } from "./ci";
+import { repositoryRole, roleRank } from "./access";
+import { registerWorkspaceRoutes, workspaceAccess } from "./workspaces";
 import { base64, unbase64 } from "./git/signatures";
 import { registerMCP } from "./mcp";
 import { githubLFS } from "./lfs-sync";
@@ -121,27 +124,14 @@ async function repoAccess(
     );
   }
   const user = c.get("user");
-  const owner = user?.id === r.owner_id;
-  const member =
-    user && !owner
-      ? await c.env.DB.prepare(
-          "SELECT role FROM members WHERE repo_id=? AND user_id=?",
-        )
-          .bind(r.id, user.id)
-          .first<{ role: string }>()
-      : null;
-  c.set("repoRole", owner ? "owner" : member?.role || "guest");
-  if (level === "read" && (r.visibility === "public" || owner || member))
+  const role = await repositoryRole(c.env, r, user);
+  c.set("repoRole", role);
+  if (level === "read" && (r.visibility === "public" || roleRank[role] >= 1))
     return r;
   if (!user) fail(401, "Authentication required");
   if (level === "read") fail(404, "Repository not found");
   if (c.get("scope") === "read") fail(403, "Read-only token");
-  if (
-    owner ||
-    member?.role === "maintainer" ||
-    (level === "write" && member?.role === "developer")
-  )
-    return r;
+  if (roleRank[role] >= (level === "maintain" ? 3 : 2)) return r;
   fail(403, "Insufficient repository permissions");
 }
 async function engine(
@@ -249,6 +239,9 @@ app.use("*", async (c, next) => {
 const staticPaths = new Set([
   "/app.js",
   "/forge.js",
+  "/manage.js",
+  "/highlight.js",
+  "/THIRD_PARTY_LICENSES.txt",
   "/style.css",
   "/favicon.svg",
   "/openapi.json",
@@ -295,6 +288,7 @@ app.use("*", async (c, next) => {
   const mutating = !["GET", "HEAD", "OPTIONS"].includes(c.req.method);
   if (mutating && origin && origin !== c.env.APP_ORIGIN)
     fail(403, "Cross-origin request rejected");
+  if (/^\/api\/runner(?:\/|$)/.test(c.req.path)) return next();
   c.set("user", null);
   c.set("scope", "read");
   c.set("kind", null);
@@ -328,7 +322,7 @@ app.use("*", async (c, next) => {
   } else if (token) {
     const hash = await digest(token);
     const row = await c.env.DB.prepare(
-      "SELECT u.id,u.username,u.admin,c.scope,c.kind FROM credentials c JOIN users u ON u.id=c.user_id WHERE c.hash=? AND c.expires_at>?",
+      "SELECT u.id,u.username,u.admin,c.scope,c.kind FROM credentials c JOIN users u ON u.id=c.user_id WHERE u.disabled=0 AND c.hash=? AND c.expires_at>?",
     )
       .bind(hash, Date.now())
       .first<User & { scope: "read" | "write"; kind: "pat" | "session" }>();
@@ -355,9 +349,10 @@ app.use("*", async (c, next) => {
   await next();
 });
 registerIdentityRoutes(app);
+registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.3.1", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.4.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -430,13 +425,14 @@ app.post("/api/login", async (c) => {
     fail(429, "Too many sign-in attempts; retry in ten minutes");
   const user = await c.env.DB.prepare("SELECT * FROM users WHERE username=?")
     .bind(b.username.toLowerCase())
-    .first<User & { password: string }>();
+    .first<User & { password: string; disabled: number }>();
   const valid = await verifyPassword(
     b.password,
     user?.password ||
       "pbkdf2:100000:00000000000000000000000000000000:0000000000000000000000000000000000000000000000000000000000000000",
   );
-  if (!user || !valid) fail(401, "Invalid username or password");
+  if (!user || user.disabled || !valid)
+    fail(401, "Invalid username or password");
   const token = randomToken(),
     hash = await digest(token);
   await c.env.DB.prepare(
@@ -565,6 +561,7 @@ app.get("/api/repos", async (c) => {
   const delegation = c.get("delegation");
   requireScope(delegation, "org:read");
   const u = c.get("user");
+  const namespaceFilter = c.req.query("namespace") || "";
   const search = (c.req.query("q") || "").slice(0, 100),
     limit = z.coerce
       .number()
@@ -586,6 +583,7 @@ app.get("/api/repos", async (c) => {
       );
       if (
         cursor.q !== search ||
+        (cursor.namespace || "") !== namespaceFilter ||
         cursor.user !== (u?.id || "") ||
         !Number.isSafeInteger(cursor.offset) ||
         cursor.offset < 0 ||
@@ -597,10 +595,20 @@ app.get("/api/repos", async (c) => {
       fail(400, "Invalid repository cursor");
     }
   }
-  const query = `SELECT DISTINCT r.* FROM repositories r LEFT JOIN members m ON m.repo_id=r.id AND m.user_id=? WHERE r.deleted_at IS NULL AND ${delegation ? "r.owner_id=?" : "(r.visibility='public' OR r.owner_id=? OR m.user_id IS NOT NULL)"} AND (r.name LIKE ? ESCAPE '\\' OR r.description LIKE ? ESCAPE '\\') ORDER BY r.created_at DESC,r.id LIMIT ? OFFSET ?`;
+  const query = `SELECT DISTINCT r.* FROM repositories r LEFT JOIN members m ON m.repo_id=r.id AND m.user_id=? LEFT JOIN workspace_members wm ON wm.workspace_id=r.workspace_id AND wm.user_id=? WHERE r.deleted_at IS NULL AND ${delegation ? "((r.workspace_id IS NULL AND r.owner_id=?) OR m.user_id IS NOT NULL OR wm.user_id IS NOT NULL)" : "(r.visibility='public' OR (r.workspace_id IS NULL AND r.owner_id=?) OR m.user_id IS NOT NULL OR wm.user_id IS NOT NULL)"} AND (?='' OR r.namespace=?) AND (r.name LIKE ? ESCAPE '\\' OR r.description LIKE ? ESCAPE '\\') ORDER BY r.created_at DESC,r.id LIMIT ? OFFSET ?`;
   const pattern = "%" + search.replace(/[\\%_]/g, "\\$&") + "%";
   const result = await c.env.DB.prepare(query)
-    .bind(u?.id || "", u?.id || "", pattern, pattern, limit + 1, offset)
+    .bind(
+      u?.id || "",
+      u?.id || "",
+      u?.id || "",
+      namespaceFilter,
+      namespaceFilter,
+      pattern,
+      pattern,
+      limit + 1,
+      offset,
+    )
     .all();
   const has_more = result.results.length > limit;
   return c.json({
@@ -612,6 +620,7 @@ app.get("/api/repos", async (c) => {
           new TextEncoder().encode(
             JSON.stringify({
               q: search,
+              namespace: namespaceFilter,
               user: u?.id || "",
               offset: offset + limit,
             }),
@@ -625,6 +634,7 @@ app.post("/api/repos", async (c) => {
   const b = await input(
     c,
     z.object({
+      namespace: slug.optional(),
       name: repoName.optional(),
       id: repoName.optional(),
       base_repo: z
@@ -642,18 +652,26 @@ app.post("/api/repos", async (c) => {
       default_branch: branch.optional(),
     }),
   );
+  const namespace = b.namespace || u.username;
+  const workspace =
+    namespace === u.username ? null : await workspaceAccess(c, namespace, 2);
   const id = crypto.randomUUID();
   b.name = b.name || b.id || id;
-  requireScope(c.get("delegation"), "repo:write", `${u.username}/${b.name}`);
+  requireScope(c.get("delegation"), "repo:write", `${namespace}/${b.name}`);
   let source: Repo | null = null;
   if (b.base_repo && "id" in b.base_repo) {
     const key = b.base_repo.id;
     source = await c.env.DB.prepare(
-      "SELECT * FROM repositories WHERE owner_id=? AND deleted_at IS NULL AND (id=? OR name=? OR namespace||'/'||name=?)",
+      "SELECT * FROM repositories WHERE deleted_at IS NULL AND (id=? OR namespace||'/'||name=? OR (namespace=? AND name=?))",
     )
-      .bind(u.id, key, key, key)
+      .bind(key, key, namespace, key)
       .first<Repo>();
-    if (!source) fail(404, "Fork source not found in your namespace");
+    if (
+      !source ||
+      (source.visibility !== "public" &&
+        roleRank[await repositoryRole(c.env, source, u)] < 1)
+    )
+      fail(404, "Fork source not found");
     requireScope(c.get("delegation"), "git:read");
     if (source.sync_status === "initializing")
       fail(409, "Source is initializing");
@@ -676,12 +694,12 @@ app.post("/api/repos", async (c) => {
     "main";
   try {
     await c.env.DB.prepare(
-      "INSERT INTO repositories(id,owner_id,namespace,name,description,visibility,default_branch,fork_source,sync_status,base_repo) VALUES(?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO repositories(id,owner_id,namespace,name,description,visibility,default_branch,fork_source,sync_status,base_repo,workspace_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
     )
       .bind(
         id,
         u.id,
-        u.username,
+        namespace,
         b.name,
         b.description,
         b.visibility,
@@ -689,6 +707,7 @@ app.post("/api/repos", async (c) => {
         source?.id || null,
         source ? "initializing" : "idle",
         upstream ? JSON.stringify(upstream) : null,
+        workspace?.id || null,
       )
       .run();
   } catch {
@@ -698,7 +717,7 @@ app.post("/api/repos", async (c) => {
     const target = {
       id,
       owner_id: u.id,
-      namespace: u.username,
+      namespace,
       name: b.name,
       description: b.description,
       visibility: b.visibility,
@@ -725,9 +744,9 @@ app.post("/api/repos", async (c) => {
   return c.json(
     {
       id,
-      namespace: u.username,
+      namespace,
       ...b,
-      clone_url: `${c.env.APP_ORIGIN}/${u.username}/${encodeURIComponent(b.name)}.git`,
+      clone_url: `${c.env.APP_ORIGIN}/${namespace}/${encodeURIComponent(b.name)}.git`,
     },
     201,
   );
@@ -774,15 +793,8 @@ app.get("/api/repo-url/:id", async (c) => {
     .first<Repo>();
   if (!r) fail(404, "Repository not found");
   requireScope(c.get("delegation"), "git:read", r.namespace + "/" + r.name);
-  const user = c.get("user");
-  const member = user
-    ? await c.env.DB.prepare(
-        "SELECT role FROM members WHERE repo_id=? AND user_id=?",
-      )
-        .bind(r.id, user.id)
-        .first()
-    : null;
-  if (r.visibility !== "public" && r.owner_id !== user?.id && !member)
+  const role = await repositoryRole(c.env, r, c.get("user"));
+  if (r.visibility !== "public" && roleRank[role] < 1)
     fail(404, "Repository not found");
   return c.json({
     id: r.id,
@@ -793,6 +805,7 @@ app.get("/api/repo-url/:id", async (c) => {
     import_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}+import.git`,
   });
 });
+registerCIRoutes(app, { access: repoAccess, audit });
 registerForgeRoutes(app, { access: repoAccess, engine, audit });
 registerSyncRoutes(app, { access: repoAccess, engine, audit });
 for (const operation of [
@@ -841,6 +854,15 @@ app.post("/api/repos/:namespace/:repo/commit", async (c) => {
 app.get("/api/repos/:namespace/:repo/members", async (c) => {
   const r = await repoAccess(c);
   return c.json({
+    inherited_members: r.workspace_id
+      ? (
+          await c.env.DB.prepare(
+            "SELECT u.username,m.role FROM workspace_members m JOIN users u ON u.id=m.user_id WHERE m.workspace_id=? ORDER BY u.username",
+          )
+            .bind(r.workspace_id)
+            .all()
+        ).results
+      : [],
     members: (
       await c.env.DB.prepare(
         "SELECT u.username,m.role FROM members m JOIN users u ON u.id=m.user_id WHERE repo_id=? ORDER BY u.username",
@@ -863,7 +885,8 @@ app.put("/api/repos/:namespace/:repo/members", async (c) => {
     .bind(b.username)
     .first<{ id: string }>();
   if (!u) fail(404, "User not found");
-  if (u.id === r.owner_id) fail(400, "Owner permissions are fixed");
+  if (!r.workspace_id && u.id === r.owner_id)
+    fail(400, "Owner permissions are fixed");
   await c.env.DB.prepare(
     "INSERT INTO members(repo_id,user_id,role) VALUES(?,?,?) ON CONFLICT(repo_id,user_id) DO UPDATE SET role=excluded.role",
   )
@@ -1177,17 +1200,9 @@ app.all("/:namespace/:git/*", async (c, next) => {
     writing ? "git:write" : "git:read",
     `${r.namespace}/${r.name}`,
   );
-  const member = u
-    ? await c.env.DB.prepare(
-        "SELECT role FROM members WHERE repo_id=? AND user_id=?",
-      )
-        .bind(r.id, u.id)
-        .first<{ role: string }>()
-    : null;
-  const owner = u?.id === r.owner_id,
-    read = r.visibility === "public" || owner || !!member,
-    write =
-      owner || member?.role === "developer" || member?.role === "maintainer";
+  const role = await repositoryRole(c.env, r, u),
+    read = r.visibility === "public" || roleRank[role] >= 1,
+    write = roleRank[role] >= 2;
   if (!read)
     fail(u ? 404 : 401, "Repository not found or authentication required");
   if (writing && (!write || c.get("scope") !== "write"))

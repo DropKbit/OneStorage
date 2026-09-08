@@ -1,3 +1,4 @@
+import "./highlight.mjs";
 // Content-version the public entry points. HTML revalidates; versioned assets can stay cached.
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -8,6 +9,13 @@ async function update(path, content) {
 }
 const forge = hash(await readFile("public/forge.js"));
 let app = await readFile("public/app.js", "utf8");
+for (const name of ["manage", "highlight"]) {
+  const version = hash(await readFile(`public/${name}.js`));
+  app = app.replace(
+    new RegExp(`(["'\"])(\\.\\/${name}\\.js)(?:\\?v=[a-f0-9]+)?\\1`, "g"),
+    (_, quote, path) => `${quote}${path}?v=${version}${quote}`,
+  );
+}
 app = app.replace(
   /from "\.\/forge\.js(?:\?v=[a-f0-9]+)?"/,
   `from "./forge.js?v=${forge}"`,

@@ -14,6 +14,7 @@ function fixture() {
     "0002_webhooks.sql",
     "0003_delivery_lease.sql",
     "0004_forge_features.sql",
+    "0005_workspaces_ci.sql",
   ])
     db.exec(
       readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8"),

@@ -1,0 +1,18 @@
+ALTER TABLE users ADD COLUMN disabled INTEGER NOT NULL DEFAULT 0 CHECK(disabled IN (0,1));
+CREATE TABLE workspaces (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE COLLATE NOCASE, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE workspace_members (workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id), role TEXT NOT NULL CHECK(role IN ('reader','developer','maintainer','owner')), PRIMARY KEY(workspace_id,user_id));
+CREATE INDEX workspace_members_user ON workspace_members(user_id);
+ALTER TABLE repositories ADD COLUMN workspace_id TEXT REFERENCES workspaces(id);
+CREATE INDEX repos_workspace ON repositories(workspace_id);
+CREATE TRIGGER workspace_slug_available BEFORE INSERT ON workspaces WHEN EXISTS(SELECT 1 FROM users WHERE username=NEW.slug) BEGIN SELECT RAISE(ABORT,'Namespace unavailable'); END;
+CREATE TRIGGER user_namespace_available BEFORE INSERT ON users WHEN EXISTS(SELECT 1 FROM workspaces WHERE slug=NEW.username) BEGIN SELECT RAISE(ABORT,'Namespace unavailable'); END;
+CREATE TRIGGER workspace_last_owner_update BEFORE UPDATE OF role ON workspace_members WHEN OLD.role='owner' AND NEW.role!='owner' AND (SELECT COUNT(*) FROM workspace_members WHERE workspace_id=OLD.workspace_id AND role='owner')<=1 BEGIN SELECT RAISE(ABORT,'Workspace needs an owner'); END;
+CREATE TRIGGER workspace_last_owner_delete BEFORE DELETE ON workspace_members WHEN OLD.role='owner' AND EXISTS(SELECT 1 FROM workspaces WHERE id=OLD.workspace_id) AND (SELECT COUNT(*) FROM workspace_members WHERE workspace_id=OLD.workspace_id AND role='owner')<=1 BEGIN SELECT RAISE(ABORT,'Workspace needs an owner'); END;
+CREATE TRIGGER last_active_admin BEFORE UPDATE OF admin,disabled ON users WHEN OLD.admin=1 AND OLD.disabled=0 AND (NEW.admin=0 OR NEW.disabled=1) AND (SELECT COUNT(*) FROM users WHERE admin=1 AND disabled=0)<=1 BEGIN SELECT RAISE(ABORT,'Instance needs an active administrator'); END;
+CREATE TABLE ci_pipelines (repo_id TEXT PRIMARY KEY REFERENCES repositories(id) ON DELETE CASCADE, config TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE ci_runs (id TEXT PRIMARY KEY, repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, event_id TEXT UNIQUE, ref TEXT NOT NULL, sha TEXT NOT NULL, config TEXT NOT NULL, trigger TEXT NOT NULL, actor_id TEXT REFERENCES users(id), status TEXT NOT NULL CHECK(status IN ('queued','running','succeeded','failed','canceled')), runner_id TEXT, lease_hash TEXT, lease_until INTEGER, error TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), started_at TEXT, finished_at TEXT);
+CREATE INDEX ci_runs_repo ON ci_runs(repo_id,created_at);
+CREATE INDEX ci_runs_status ON ci_runs(status,lease_until);
+CREATE TABLE ci_logs (run_id TEXT NOT NULL REFERENCES ci_runs(id) ON DELETE CASCADE, seq INTEGER NOT NULL, content TEXT NOT NULL, PRIMARY KEY(run_id,seq));
+CREATE TABLE ci_artifacts (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES ci_runs(id) ON DELETE CASCADE, name TEXT NOT NULL, size INTEGER NOT NULL, object_key TEXT NOT NULL, UNIQUE(run_id,name));
+CREATE TABLE ci_runners (id TEXT PRIMARY KEY, repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, name TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, last_seen INTEGER, created_at TEXT NOT NULL DEFAULT (datetime('now')));

@@ -80,7 +80,7 @@ export async function verifyDelegation(
     )
       fail(401, "Invalid JWT identity");
     const candidates = await env.DB.prepare(
-      "SELECT k.id,k.public_key,k.algorithm,u.id AS user_id,u.username FROM api_keys k JOIN users u ON u.id=k.user_id WHERE u.username=? AND (? IS NULL OR k.id=?) LIMIT 20",
+      "SELECT k.id,k.public_key,k.algorithm,u.id AS user_id,u.username FROM api_keys k JOIN users u ON u.id=k.user_id WHERE u.disabled=0 AND u.username=? AND (? IS NULL OR k.id=?) LIMIT 20",
     )
       .bind(claims.iss, header.kid || null, header.kid || null)
       .all<{

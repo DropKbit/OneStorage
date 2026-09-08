@@ -5,9 +5,19 @@ export const slug = z
   .regex(/^[a-z0-9][a-z0-9_-]{0,47}$/)
   .refine(
     (s) =>
-      !["api", "assets", "auth", "admin", "health", "new", "settings"].includes(
-        s,
-      ),
+      ![
+        "api",
+        "assets",
+        "auth",
+        "admin",
+        "health",
+        "new",
+        "settings",
+        "spaces",
+        "login",
+        "mcp",
+        "webhooks",
+      ].includes(s),
     "Reserved name",
   );
 export const repoName = z

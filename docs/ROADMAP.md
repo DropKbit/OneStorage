@@ -31,3 +31,7 @@ v0.2 只有 PAT/会话鉴权、heads/tags、基本读写、快进合并、文本
 ## 参考
 
 [官方文档](https://code.storage/docs/)、[鉴权](https://code.storage/docs/getting-started/authentication)、[引用策略](https://code.storage/docs/guides/ref-policies)、[命名空间](https://code.storage/docs/guides/ephemeral-branches)、[签名](https://code.storage/docs/guides/commit-signing)、[同步](https://code.storage/docs/guides/generic-sync)、[OpenAPI](https://code.storage/docs/openapi.json)。
+
+## v0.4 平台扩展目标
+
+用户已指定：代码高亮、通用构建与 Cloudflare 部署、多空间、权限分配、管理员后台。验收范围、权限矩阵、Runner 配置和当前边界见 [平台说明](PLATFORM-v04.md)。功能开发、权限/协议回归与生产迁移已完成，线上核心验收通过；测试证据和 Runner 部署前提见 [v0.4 验证记录](VERIFICATION-v04.md)。
