@@ -16,6 +16,8 @@ interface Variable {
   refs: string;
   revision: number;
   available?: number;
+  scope_rank: number;
+  scope_id: string;
 }
 interface Bound {
   run_id: string;
@@ -28,12 +30,14 @@ interface Bound {
 }
 export const variableContext = (repo: string, id: string) =>
   "ci-variable:" + repo + ":" + id;
+export const workspaceVariableContext = (workspace: string, id: string) =>
+  "ci-workspace-variable:" + workspace + ":" + id;
 const bindingContext = (run: string, key: string) =>
   "ci-run-variable:" + run + ":" + key;
 export const variableLive = `EXISTS(SELECT 1 FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.id=? AND c.status='running' AND c.lease_hash=? AND c.lease_until>? AND r.deleted_at IS NULL AND r.archived_at IS NULL)`;
 export async function assertVariablesActive(env: Env, run: CIRun) {
   const current = await env.DB.prepare(
-    `SELECT id FROM ci_runs WHERE id=? AND ${variableLive} AND NOT EXISTS(SELECT 1 FROM ci_run_variables b WHERE b.run_id=ci_runs.id AND NOT EXISTS(SELECT 1 FROM ci_authorized_variables v WHERE v.id=b.variable_id AND v.revision=b.revision AND (v.protected=0 OR EXISTS(SELECT 1 FROM branch_protections p WHERE p.repo_id=ci_runs.repo_id AND p.branch=ci_runs.ref AND p.require_mr=1))))`,
+    `SELECT id FROM ci_runs WHERE id=? AND ${variableLive} AND NOT EXISTS(SELECT 1 FROM ci_run_variables b WHERE b.run_id=ci_runs.id AND NOT EXISTS(SELECT 1 FROM ci_authorized_variables v WHERE v.id=b.variable_id AND v.repo_id=ci_runs.repo_id AND v.revision=b.revision AND (v.protected=0 OR EXISTS(SELECT 1 FROM branch_protections p WHERE p.repo_id=ci_runs.repo_id AND p.branch=ci_runs.ref AND p.require_mr=1))))`,
   )
     .bind(run.id, run.id, run.lease_hash, Date.now())
     .first();
@@ -58,7 +62,7 @@ export async function loadRunVariables(env: Env, run: CIRun) {
       config.environment || config.deploy?.environment || "default";
     const rows = (
       await env.DB.prepare(
-        `SELECT v.*,EXISTS(SELECT 1 FROM ci_authorized_variables a WHERE a.id=v.id) AS available FROM ci_variables v WHERE repo_id=? AND key IN(SELECT value FROM json_each(?)) AND environment IN('*',?) ORDER BY CASE WHEN environment=? THEN 0 ELSE 1 END`,
+        `SELECT v.*,EXISTS(SELECT 1 FROM ci_authorized_variables a WHERE a.id=v.id AND a.repo_id=v.repo_id) AS available FROM ci_variable_definitions v WHERE repo_id=? AND key IN(SELECT value FROM json_each(?)) AND environment IN('*',?) ORDER BY scope_rank,CASE WHEN environment=? THEN 0 ELSE 1 END`,
       )
         .bind(run.repo_id, JSON.stringify(keys), environment, environment)
         .all<Variable>()
@@ -116,7 +120,9 @@ export async function loadRunVariables(env: Env, run: CIRun) {
     for (const v of selected) {
       const value = await unseal<string>(
         env,
-        variableContext(run.repo_id, v.id),
+        v.scope_rank === 1
+          ? workspaceVariableContext(v.scope_id, v.id)
+          : variableContext(run.repo_id, v.id),
         v.encrypted,
       );
       bytes += new TextEncoder().encode(value).length;
@@ -124,7 +130,7 @@ export async function loadRunVariables(env: Env, run: CIRun) {
       const encrypted = await seal(env, bindingContext(run.id, v.key), value);
       statements.push(
         env.DB.prepare(
-          `INSERT OR IGNORE INTO ci_run_variables(run_id,variable_id,key,revision,encrypted,secret,protected) SELECT ?,?,?,?,?,?,? WHERE ${variableLive} AND EXISTS(SELECT 1 FROM ci_authorized_variables v WHERE v.id=? AND v.revision=? AND (v.protected=0 OR EXISTS(SELECT 1 FROM branch_protections p WHERE p.repo_id=v.repo_id AND p.branch=? AND p.require_mr=1)))`,
+          `INSERT OR IGNORE INTO ci_run_variables(run_id,variable_id,key,revision,encrypted,secret,protected) SELECT ?,?,?,?,?,?,? WHERE ${variableLive} AND EXISTS(SELECT 1 FROM ci_authorized_variables v WHERE v.id=? AND v.repo_id=? AND v.revision=? AND v.id=(SELECT d.id FROM ci_variable_definitions d WHERE d.repo_id=v.repo_id AND d.key=v.key AND d.environment IN('*',?) ORDER BY d.scope_rank,CASE WHEN d.environment=? THEN 0 ELSE 1 END LIMIT 1) AND (v.protected=0 OR EXISTS(SELECT 1 FROM branch_protections p WHERE p.repo_id=v.repo_id AND p.branch=? AND p.require_mr=1)))`,
         ).bind(
           run.id,
           v.id,
@@ -137,7 +143,10 @@ export async function loadRunVariables(env: Env, run: CIRun) {
           run.lease_hash,
           Date.now(),
           v.id,
+          run.repo_id,
           v.revision,
+          environment,
+          environment,
           run.ref,
         ),
       );

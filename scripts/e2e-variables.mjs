@@ -10,16 +10,23 @@ if (remote && process.env.ALLOW_REMOTE_ACCEPTANCE !== "1")
 const token = process.env.ONESTORAGE_TOKEN_FILE
   ? (await readFile(process.env.ONESTORAGE_TOKEN_FILE, "utf8")).trim()
   : "";
+const workspaceVariables = process.env.ONESTORAGE_WORKSPACE_VARIABLES === "1";
 let cookie = "",
   requests = 0,
   checks = 0,
   createdSpace = false,
   repo,
   fork,
+  sibling,
   runner,
   dir;
-const name = "variables_v20_" + crypto.randomUUID().slice(0, 8),
-  ap = `/api/repos/${name}/project`;
+const name =
+    (workspaceVariables ? "variables_v24_" : "variables_v20_") +
+    crypto.randomUUID().slice(0, 8),
+  ap = `/api/repos/${name}/project`,
+  variablesAPI = workspaceVariables
+    ? `/api/workspaces/${name}/ci/variables`
+    : ap + "/ci/variables";
 async function api(path, method = "GET", body, expected = 200, extra = {}) {
   const response = await fetch(origin + path, {
     method,
@@ -52,9 +59,10 @@ const check = (condition, message) => {
 async function waitRun(
   id,
   predicate = (run) => ["succeeded", "failed", "canceled"].includes(run.status),
+  path = ap,
 ) {
   for (let n = 0; n < 180; n++) {
-    const run = await api(ap + "/ci/runs/" + id);
+    const run = await api(path + "/ci/runs/" + id);
     if (predicate(run)) return run;
     await new Promise((r) => setTimeout(r, 1000));
   }
@@ -154,6 +162,7 @@ try {
   );
   await commit({
     "ci.js": `export default async ({variables:v})=>{if(v.LABEL!=="production"||!v.API_TOKEN)throw Error("variables missing");console.log("console:",v.API_TOKEN);return {logs:[v.API_TOKEN,encodeURIComponent(v.API_TOKEN),btoa(unescape(encodeURIComponent(v.API_TOKEN)))],artifacts:{"proof.txt":"environment-selected; secret-present"}};}`,
+    "scope.js": `export default async ({variables:v})=>({logs:["selected:"+v.LABEL],artifacts:{"scope.txt":v.LABEL}})`,
     "error.js": `export default async ({variables:v})=>{throw Error("failure: "+v.API_TOKEN)}`,
     "invalid.js": `export default async ()=>42`,
     "external.cjs": `const v=process.env.API_TOKEN;if(!v||process.env.LABEL!=="production")throw Error("variables missing");const b=Buffer.from(v);process.stdout.write(b.subarray(0,b.length-3));setTimeout(()=>{process.stdout.write(b.subarray(b.length-3));process.stdout.write("\\n"+encodeURIComponent(v)+"\\n"+b.toString("base64"));require("node:fs").writeFileSync("proof.txt","external-variables-verified")},80);`,
@@ -167,7 +176,7 @@ try {
   await commit({ "feature.txt": "MR variable check" }, ap, "feature");
   await api(ap + "/protections", "PUT", { branch: "main", require_mr: true });
   let variable = await api(
-    ap + "/ci/variables",
+    variablesAPI,
     "POST",
     { ...spec, value: secret },
     201,
@@ -179,7 +188,7 @@ try {
     "Create returns metadata only",
   );
   await api(
-    ap + "/ci/variables",
+    variablesAPI,
     "POST",
     {
       key: "LABEL",
@@ -191,7 +200,7 @@ try {
     201,
   );
   await api(
-    ap + "/ci/variables",
+    variablesAPI,
     "POST",
     {
       key: "LABEL",
@@ -203,7 +212,7 @@ try {
     },
     201,
   );
-  const listed = await api(ap + "/ci/variables");
+  const listed = await api(variablesAPI);
   check(
     listed.variables.every((v) => !("value" in v) && !("encrypted" in v)),
     "List is write-only for plain and secret values",
@@ -211,13 +220,85 @@ try {
   const cloudRun = await done((await start(config())).id);
   masked(cloudRun);
   check(cloudRun.artifacts.length === 1, "Worker produced proof artifact");
+
+  if (workspaceVariables) {
+    const inherited = await api(ap + "/ci/variables");
+    check(
+      inherited.inherited.length === 3 && inherited.variables.length === 0,
+      "Project lists inherited metadata separately",
+    );
+    check(
+      inherited.inherited.every((v) => !("value" in v) && !("encrypted" in v)),
+      "Inherited metadata is write-only",
+    );
+    const overrideSpec = {
+      key: "LABEL",
+      environment: "*",
+      refs: ["*"],
+      secret: false,
+      protected: false,
+      enabled: true,
+    };
+    let override = await api(
+      ap + "/ci/variables",
+      "POST",
+      { ...overrideSpec, value: "project-choice" },
+      201,
+    );
+    let selected = await done((await start(config("scope.js"))).id);
+    check(
+      selected.logs.some((l) => l.content.includes("selected:project-choice")),
+      "Project general value overrides workspace exact environment",
+    );
+    override = await api(ap + "/ci/variables/" + override.id, "PUT", {
+      ...overrideSpec,
+      enabled: false,
+      revision: override.revision,
+    });
+    const denied = await waitRun((await start(config("scope.js"))).id);
+    check(
+      denied.status === "failed" && denied.error.includes("unavailable"),
+      "Paused project override blocks space fallback",
+    );
+    await api(ap + "/ci/variables/" + override.id, "DELETE", {
+      revision: override.revision,
+    });
+    selected = await done((await start(config("scope.js"))).id);
+    check(
+      selected.logs.some((l) => l.content.includes("selected:production")),
+      "Deleting project override restores space environment",
+    );
+    sibling = await api(
+      "/api/repos",
+      "POST",
+      { namespace: name, name: "sibling", visibility: "private" },
+      201,
+    );
+    const sp = "/api/repos/" + name + "/sibling";
+    await commit(
+      {
+        "ci.js":
+          'export default async ({variables:v})=>{if(v.LABEL!=="production"||!v.API_TOKEN)throw Error("missing inherited inputs");return {logs:["sibling inheritance verified"]}}',
+      },
+      sp,
+    );
+    await api(sp + "/protections", "PUT", { branch: "main", require_mr: true });
+    await api(sp + "/ci/config", "PUT", { config: config(), enabled: false });
+    const sr = await api(sp + "/ci/runs", "POST", { ref: "main" }, 201);
+    const completed = await waitRun(sr.id, undefined, sp);
+    check(
+      completed.status === "succeeded",
+      "Sibling project consumes the same space definition",
+    );
+  }
+
   await api(
-    ap + "/ci/variables",
+    variablesAPI,
     "POST",
     { ...spec, environment: "*", value: "fallback-" + crypto.randomUUID() },
     201,
   );
-  variable = await api(ap + "/ci/variables/" + variable.id, "PUT", {
+  variable = await api(variablesAPI + "/" + variable.id, "PUT", {
     ...spec,
     revision: variable.revision,
     enabled: false,
@@ -227,7 +308,7 @@ try {
     paused.status === "failed" && paused.error.includes("unavailable"),
     "Paused environment does not fall back to another credential",
   );
-  variable = await api(ap + "/ci/variables/" + variable.id, "PUT", {
+  variable = await api(variablesAPI + "/" + variable.id, "PUT", {
     ...spec,
     revision: variable.revision,
     enabled: true,
@@ -338,7 +419,7 @@ try {
     leaseHeaders,
   );
   masked(await api(ap + "/ci/runs/" + hold.id));
-  variable = await api(ap + "/ci/variables/" + variable.id, "PUT", {
+  variable = await api(variablesAPI + "/" + variable.id, "PUT", {
     ...spec,
     revision: variable.revision,
     value: "rotated-" + crypto.randomUUID(),
@@ -361,17 +442,12 @@ try {
     409,
     leaseHeaders,
   );
-  await api(ap + "/ci/variables/" + variable.id, "DELETE", {
+  await api(variablesAPI + "/" + variable.id, "DELETE", {
     revision: variable.revision,
   });
   masked(await api(ap + "/ci/runs/" + hold.id));
   masked(await api(ap + "/ci/runs/" + cloudRun.id));
-  await api(
-    ap + "/ci/variables",
-    "POST",
-    { ...spec, value: secret, refs: ["*"] },
-    201,
-  );
+  await api(variablesAPI, "POST", { ...spec, value: secret, refs: ["*"] }, 201);
   await api(ap + "/ci/config", "PUT", {
     config: {
       name: "MR secret test",
@@ -413,6 +489,7 @@ try {
       checks,
       requests,
       workspace: name,
+      scope: workspaceVariables ? "workspace" : "project",
       worker: cloudRun.id,
       external: externalRun.id,
       rotation: hold.id,
@@ -426,6 +503,7 @@ try {
 } finally {
   if (dir) await rm(dir, { recursive: true, force: true });
   if (runner && repo) await api(ap + "/ci/runners/" + runner.id, "DELETE");
+  if (sibling) await api("/api/admin/repositories/" + sibling.id, "DELETE");
   if (fork) await api("/api/admin/repositories/" + fork.id, "DELETE");
   if (repo) await api("/api/admin/repositories/" + repo.id, "DELETE");
   if (createdSpace) {

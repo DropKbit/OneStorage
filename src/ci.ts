@@ -1,3 +1,4 @@
+import { registerWorkspaceVariableRoutes } from "./workspace-ci-variable-routes";
 import { registerCacheRoutes } from "./ci-cache-routes";
 import { executeBuild } from "./ci-build";
 import { cloudCacheInputs, saveCloudCaches } from "./ci-cache";
@@ -460,6 +461,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
   };
   registerScheduleRoutes(app, { ...h, access });
   registerVariableRoutes(app, { access });
+  registerWorkspaceVariableRoutes(app);
   const getRun = async (
     c: Context<App>,
     level: "read" | "write" | "maintain" = "read",

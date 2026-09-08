@@ -62,6 +62,20 @@ export function registerVariableRoutes(
     ).results;
     return c.json({
       variables: rows.map(metadata),
+      inherited: repo.workspace_id
+        ? (
+            await c.env.DB.prepare(
+              `SELECT ${publicFields
+                .split(",")
+                .map((f) => "v." + f)
+                .join(
+                  ",",
+                )},w.slug AS workspace,EXISTS(SELECT 1 FROM ci_authorized_workspace_variables a WHERE a.id=v.id) AS available FROM ci_workspace_variables v JOIN workspaces w ON w.id=v.workspace_id WHERE v.workspace_id=? ORDER BY v.key,v.environment`,
+            )
+              .bind(repo.workspace_id)
+              .all<any>()
+          ).results.map(metadata)
+        : [],
     });
   });
   app.post(base, async (c) => {

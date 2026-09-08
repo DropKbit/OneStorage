@@ -6,6 +6,10 @@ const { chromium } = await import(
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787";
 if (!["localhost", "127.0.0.1"].includes(new URL(origin).hostname))
   throw Error("Workflow browser acceptance is local-only");
+const workspaceVariables = process.env.ONESTORAGE_WORKSPACE_VARIABLES === "1";
+const fixtureHeaders = {
+  "cf-connecting-ip": "192.0.2." + (1 + Math.floor(Math.random() * 254)),
+};
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.CHROME_EXECUTABLE
@@ -15,6 +19,7 @@ const browser = await chromium.launch({
 const context = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
     timezoneId: "America/New_York",
+    extraHTTPHeaders: fixtureHeaders,
   }),
   page = await context.newPage();
 page.setDefaultTimeout(15000);
@@ -24,7 +29,12 @@ const suffix = crypto.randomUUID().slice(0, 8),
   space = "variable_ui_" + suffix,
   ap = "/repos/" + space + "/project",
   base = "/" + space + "/project",
-  folder = ".data/v20-variable-ui";
+  folder = workspaceVariables
+    ? ".data/v24-variable-ui"
+    : ".data/v20-variable-ui",
+  variablesAPI = workspaceVariables
+    ? "/workspaces/" + space + "/ci/variables"
+    : ap + "/ci/variables";
 let checks = 0,
   repo,
   user,
@@ -79,7 +89,12 @@ try {
     { namespace: space, name: "project", visibility: "private" },
     201,
   );
-  await page.goto(origin + base + "/ci");
+  if (workspaceVariables) {
+    await page.goto(origin + "/spaces/" + space);
+    await page
+      .getByRole("link", { name: "CI 变量与密钥", exact: true })
+      .click();
+  } else await page.goto(origin + base + "/ci");
   const form = page.locator("#variable-config"),
     panel = page.locator('[aria-label="CI 变量与密钥"]');
   await form.waitFor();
@@ -87,7 +102,7 @@ try {
   await form.locator("input[name=key]").fill("API_TOKEN");
   await form.locator("input[name=value]").fill(secret);
   const created = await action(
-    ap + "/ci/variables",
+    variablesAPI,
     "#variable-config button[type=submit]",
     201,
   );
@@ -105,7 +120,7 @@ try {
   checks++;
   await form.locator("input[name=environment]").fill("production");
   await action(
-    ap + "/ci/variables/" + created.id,
+    variablesAPI + "/" + created.id,
     "#variable-config button[type=submit]",
   );
   await page
@@ -114,7 +129,7 @@ try {
   assert.match(await panel.innerText(), /production/);
   checks++;
   await action(
-    ap + "/ci/variables/" + created.id,
+    variablesAPI + "/" + created.id,
     `[data-action=variable-toggle][data-id="${created.id}"]`,
   );
   await page
@@ -123,14 +138,14 @@ try {
   assert.match(await panel.innerText(), /已暂停/);
   checks++;
   await action(
-    ap + "/ci/variables/" + created.id + "/take-ownership",
+    variablesAPI + "/" + created.id + "/take-ownership",
     `[data-action=variable-own][data-id="${created.id}"]`,
   );
   await page
     .locator(`[data-action=variable-toggle][data-id="${created.id}"]`)
     .waitFor();
   await action(
-    ap + "/ci/variables/" + created.id,
+    variablesAPI + "/" + created.id,
     `[data-action=variable-toggle][data-id="${created.id}"]`,
   );
   await page
@@ -156,7 +171,7 @@ try {
     username: user.username,
     role: "reader",
   });
-  reader = await browser.newContext();
+  reader = await browser.newContext({ extraHTTPHeaders: fixtureHeaders });
   await api(
     "/login",
     "POST",
@@ -175,28 +190,61 @@ try {
     0,
   );
   checks++;
-  await api(ap + "/ci/variables", "GET", undefined, 403, reader);
+  await api(variablesAPI, "GET", undefined, 403, reader);
   checks++;
   await api(
-    ap + "/ci/variables",
+    variablesAPI,
     "POST",
     { key: "DENIED", value: "denied-input" },
     403,
     reader,
   );
   checks++;
+
+  if (workspaceVariables) {
+    await api("/workspaces/" + space + "/members", "PUT", {
+      username: user.username,
+      role: "maintainer",
+    });
+    await api(variablesAPI, "GET", undefined, 403, reader);
+    checks++;
+    const inherited = await api(
+      ap + "/ci/variables",
+      "GET",
+      undefined,
+      200,
+      reader,
+    );
+    assert.equal(inherited.inherited.length, 1);
+    assert.equal(inherited.variables.length, 0);
+    checks++;
+    await readPage.reload();
+    await readPage.locator('[data-inherited-variable="API_TOKEN"]').waitFor();
+    assert.equal(
+      await readPage
+        .locator('[data-inherited-variable="API_TOKEN"] button')
+        .count(),
+      0,
+    );
+    checks++;
+    await readPage.screenshot({
+      path: folder + "/project-inheritance.png",
+      fullPage: true,
+    });
+  }
   await action(
-    ap + "/ci/variables/" + created.id,
+    variablesAPI + "/" + created.id,
     `[data-action=variable-delete][data-id="${created.id}"]`,
   );
   await page.locator("#variable-config").waitFor();
-  assert.equal((await api(ap + "/ci/variables")).variables.length, 0);
+  assert.equal((await api(variablesAPI)).variables.length, 0);
   checks++;
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify({
       checks,
       workspace: space,
+      scope: workspaceVariables ? "workspace" : "project",
       variables:
         "create/edit/pause/takeover/resume/delete, reader API denial, desktop/mobile",
       screenshots: folder,

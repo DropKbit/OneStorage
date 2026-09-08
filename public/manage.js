@@ -1,5 +1,5 @@
 import { cachePanel } from "./ci-cache.js?v=d41209b9f61b7c10";
-import { variablePanel } from "./ci-variables.js?v=87a17124df3d17b2";
+import { variablePanel } from "./ci-variables.js?v=2e1784b28b74ac30";
 const roleNames = {
   reader: "只读",
   developer: "开发者",
@@ -60,7 +60,7 @@ export async function spacesPage(h, slug) {
   const owner = w.role === "owner",
     maintain = ["owner", "maintainer"].includes(w.role);
   layout(
-    `<div class="titlebar"><div><h1>${esc(w.name)}</h1><p class="muted">${esc(w.slug)} · ${esc(w.description)}</p></div><a data-link href="/?namespace=${esc(w.slug)}" class="btn">空间项目 →</a></div><div class="panel"><div class="panelhead"><strong>空间成员</strong><span>权限继承到空间中的所有仓库</span></div>${members.map((m) => `<div class="token-row"><strong>${esc(m.username)}${m.disabled ? " · 已停用" : ""}</strong><div class="actionbar"><span class="pill">${roleNames[m.role]}</span>${owner ? button("移除", "remove", esc(m.username), true) : ""}</div></div>`).join("")}</div>${owner ? `<div class="panel"><form class="form" id="space-member"><h2>添加或更新成员</h2>${field("用户名", "username")}${roleSelect(true)}<button class="btn primary" type="submit">保存权限</button></form></div>` : ""}${maintain ? `<div class="panel"><form class="form" id="space-settings"><h2>空间设置</h2>${field("空间名称", "name", "text", w.name)}${textarea("描述", "description", w.description)}<button class="btn" type="submit">保存空间</button></form></div>` : ""}`,
+    `<div class="titlebar"><div><h1>${esc(w.name)}</h1><p class="muted">${esc(w.slug)} · ${esc(w.description)}</p></div><div class="actionbar">${owner ? `<a data-link href="/spaces/${esc(w.slug)}/ci/variables" class="btn">CI 变量与密钥</a>` : ""}<a data-link href="/?namespace=${esc(w.slug)}" class="btn">空间项目 →</a></div></div><div class="panel"><div class="panelhead"><strong>空间成员</strong><span>权限继承到空间中的所有仓库</span></div>${members.map((m) => `<div class="token-row"><strong>${esc(m.username)}${m.disabled ? " · 已停用" : ""}</strong><div class="actionbar"><span class="pill">${roleNames[m.role]}</span>${owner ? button("移除", "remove", esc(m.username), true) : ""}</div></div>`).join("")}</div>${owner ? `<div class="panel"><form class="form" id="space-member"><h2>添加或更新成员</h2>${field("用户名", "username")}${roleSelect(true)}<button class="btn primary" type="submit">保存权限</button></form></div>` : ""}${maintain ? `<div class="panel"><form class="form" id="space-settings"><h2>空间设置</h2>${field("空间名称", "name", "text", w.name)}${textarea("描述", "description", w.description)}<button class="btn" type="submit">保存空间</button></form></div>` : ""}`,
     "空间管理",
     "spaces",
   );
@@ -222,15 +222,21 @@ export async function ciPage(r, base, ap, h, runId) {
       }, 5000);
     return;
   }
-  const [saved, { runs }, { schedules }, runnerData, { variables }, cacheData] =
-    await Promise.all([
-      api(root + "/config"),
-      api(root + "/runs"),
-      api(root + "/schedules"),
-      maintain ? api(root + "/runners") : Promise.resolve({ runners: [] }),
-      maintain ? api(root + "/variables") : Promise.resolve({ variables: [] }),
-      api(root + "/caches"),
-    ]);
+  const [
+    saved,
+    { runs },
+    { schedules },
+    runnerData,
+    { variables, inherited = [] },
+    cacheData,
+  ] = await Promise.all([
+    api(root + "/config"),
+    api(root + "/runs"),
+    api(root + "/schedules"),
+    maintain ? api(root + "/runners") : Promise.resolve({ runners: [] }),
+    maintain ? api(root + "/variables") : Promise.resolve({ variables: [] }),
+    api(root + "/caches"),
+  ]);
   if (!h.current()) return;
   const sample = {
     name: "Build and deploy",
@@ -313,7 +319,9 @@ export async function ciPage(r, base, ap, h, runId) {
   };
   const config = saved.config || cloudSample;
   let editingSchedule = null;
-  const variableUI = variablePanel(root, variables, r.default_branch, h);
+  const variableUI = variablePanel(root, variables, r.default_branch, h, {
+    inherited,
+  });
   const schedulePanel = `<section class="panel" aria-label="定时流水线"><div class="panelhead"><strong>定时流水线</strong></div><div class="detail-body"><p class="muted">Cloudflare 每五分钟检查一次。延迟或停机期间错过的时间合并为一次运行。计划不受推送自动触发开关影响。</p>${schedules.map((s) => `<div class="token-row"><div><strong>${esc(s.name)}</strong> <span class="pill">${s.enabled ? "已启用" : "已暂停"}</span><p><code>${esc(s.cron)}</code> · ${esc(s.timezone)} · ${esc(s.ref)}</p><p class="muted">所有者 ${esc(s.owner)} · ${s.enabled ? "下次计划：" + esc(new Date(s.next_run_at).toLocaleString(undefined, { timeZone: s.timezone })) : "恢复后重新计算下次时间"}</p>${s.last_error ? `<p class="error">${esc(s.last_error)}</p>` : ""}${s.last_run_id ? `<a data-link href="${base}/ci/${s.last_run_id}">最近运行</a>` : ""}</div>${maintain ? `<div class="actionbar">${button("编辑", "schedule-edit", s.id)}${button(s.enabled ? "暂停" : "启用", "schedule-toggle", s.id)}${button("接管", "schedule-own", s.id)}${button("删除", "schedule-delete", s.id, true)}</div>` : ""}</div>`).join("") || '<p class="empty">暂无定时流水线</p>'}</div>${maintain ? `<form class="form" id="schedule-config"><h3 id="schedule-form-title">新建计划</h3>${field("名称", "name")}${field("分支", "ref", "text", r.default_branch)}${field("Cron（分 时 日 月 星期）", "cron", "text", "0 9 * * 1-5")}${field("IANA 时区", "timezone", "text", Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC")}<p class="hint">例如工作日 09:00：0 9 * * 1-5。星期 0/7 表示周日。每次运行固定分支当时的代码和配置。修改、暂停、接管或删除计划会取消其未完成运行。</p><label class="check"><input type="checkbox" name="enabled" checked> 启用计划</label><div class="actionbar"><button class="btn primary" type="submit">保存计划</button>${button("清空编辑", "schedule-reset")}</div></form>` : ""}</section>`;
   repoLayout(
     r,
@@ -449,4 +457,20 @@ export async function ciPage(r, base, ap, h, runId) {
         );
     }
   });
+}
+
+export async function workspaceVariablesPage(h, slug) {
+  const root = "/workspaces/" + encodeURIComponent(slug),
+    [w, data] = await Promise.all([h.api(root), h.api(root + "/ci/variables")]);
+  if (!h.current()) return;
+  const ui = variablePanel(root + "/ci", data.variables, "main", h, {
+    workspace: true,
+  });
+  h.layout(
+    `<div class="titlebar"><div><h1>空间 CI 变量与密钥</h1><p class="muted">${h.esc(w.name)} · 项目可继承这些变量，值提交后不再显示。</p></div><a data-link class="btn" href="/spaces/${h.esc(w.slug)}">返回空间</a></div>${ui.html}`,
+    "空间 CI 变量",
+    "spaces",
+  );
+  ui.bind();
+  actions(h, (a, id) => ui.action(a, id));
 }

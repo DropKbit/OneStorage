@@ -336,4 +336,23 @@ export function addPlatformPaths(paths) {
       operation.description +=
         " For workflow jobs, both the deployment job and the parent workflow must have succeeded.";
   }
+  for (const suffix of [
+    "/variables",
+    "/variables/{variable}",
+    "/variables/{variable}/take-ownership",
+  ]) {
+    const operations = structuredClone(paths[base + suffix]);
+    for (const operation of Object.values(operations)) {
+      operation.operationId = "workspace_" + operation.operationId;
+      operation.summary = "Workspace " + operation.summary;
+      operation.description =
+        "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.";
+      operation.parameters = (operation.parameters || [])
+        .filter((p) => p.name !== "repo")
+        .map((p) => (p.name === "namespace" ? { ...p, name: "slug" } : p));
+    }
+    paths["/api/workspaces/{slug}/ci" + suffix] = operations;
+  }
+  paths[base + "/variables"].get.description +=
+    " Response includes inherited workspace metadata separately in inherited; variables remains the project definitions. See docs/CI-WORKSPACE-VARIABLES-v24.md.";
 }

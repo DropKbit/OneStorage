@@ -46,6 +46,8 @@ npx wrangler secret put CREDENTIAL_ENCRYPTION_KEY
 
 ## 更新和 v0.1 迁移
 
+v0.24 升级先应用 `0019_workspace_ci_variables.sql`，再发布主 Worker；无需部署其他 Worker。原项目变量及运行快照保持兼容，共享值使用原加密密钥和独立空间作用域。详见 [空间变量](CI-WORKSPACE-VARIABLES-v24.md)。
+
 v0.23 升级先应用 `0018_oidc.sql`，再发布主 Worker；应用网关和编译 Worker 无需随本次升级重新部署。现有密码与会话保持兼容，必须保留 `CREDENTIAL_ENCRYPTION_KEY`。管理员在 `/admin/identity` 配置自己的 OIDC 应用，回调为 APP_ORIGIN 加 `/api/auth/oidc/callback`；详见 [统一登录与迁移](OIDC-v23.md)。测试用提供方不作为默认生产登录方式保留。
 
 保持 Worker 名、DO 类名、migration 历史、D1 UUID 和仓库 UUID 映射稳定。先备份并在独立环境验证，再应用新的编号 SQL migration 和部署。当前配置首次部署即为 v0.2，不存在旧远程 Container 类。若你曾独立部署旧版，须保留已应用的 DO migration 记录，并制定旧 Container 类的退役 migration；不能直接重写历史。

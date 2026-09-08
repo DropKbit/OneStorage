@@ -1,6 +1,6 @@
 {
   "name": "onestorage",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "private": true,
   "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
   "license": "AGPL-3.0-only",
@@ -61,7 +61,9 @@
     "deploy:build": "wrangler deploy --config wrangler.build.jsonc",
     "test:builds": "node scripts/e2e-builds.mjs",
     "build:compiler": "wrangler deploy --dry-run --config wrangler.build.jsonc --outdir dist/compiler",
-    "test:oidc": "node scripts/e2e-oidc.mjs"
+    "test:oidc": "node scripts/e2e-oidc.mjs",
+    "test:workspace-variables": "ONESTORAGE_WORKSPACE_VARIABLES=1 node scripts/e2e-variables.mjs",
+    "test:workspace-variable-ui": "ONESTORAGE_WORKSPACE_VARIABLES=1 node scripts/e2e-variable-ui.mjs"
   },
   "dependencies": {
     "cron-parser": "5.10.0",

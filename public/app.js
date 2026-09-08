@@ -1,7 +1,7 @@
 const account = () => import("./account.js?v=d9bd32b82f5426d8");
 const oidc = () => import("./oidc.js?v=d111df485dceede5");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
-const platform = () => import("./manage.js?v=f4a2f3a52ef91939");
+const platform = () => import("./manage.js?v=317ff09f744f0827");
 import {
   keyPage,
   forgePage,
@@ -905,6 +905,13 @@ async function render() {
     if (path === "/admin/users") {
       if (!user?.admin) throw Error("需要管理员权限");
       await (await platform()).adminConsole(helpers, user);
+      return;
+    }
+    if (/^\/spaces\/[^/]+\/ci\/variables$/.test(path)) {
+      if (!user) return go("/login");
+      await (
+        await platform()
+      ).workspaceVariablesPage(helpers, path.split("/")[2]);
       return;
     }
     if (path === "/spaces" || path.startsWith("/spaces/")) {
