@@ -108,7 +108,7 @@ const lock = {
   },
 };
 const source = (version) =>
-  `import {label} from '${verifyTS ? "@app/label.js" : "./label"}'; const title: string = label + '${version}'; export default {fetch(){const v = <h1>{title}</h1>; return Response.json({type: v.type, text: v.props.children})}}`;
+  `import {label} from '${verifyTS ? "@app/project_node_modules/label.js" : "./label"}'; const title: string = label + '${version}'; export default {fetch(){const v = <h1>{title}</h1>; return Response.json({type: v.type, text: v.props.children})}}`;
 const build = {
   runner: "worker",
   timeout_seconds: 110,
@@ -181,6 +181,9 @@ try {
     ? {
         "tsconfig.json":
           '// JSONC configuration\n{"extends":"./config/base", "compilerOptions":{"strict":true,},}',
+        "src/project_node_modules/label.ts":
+          "export { label } from '@app/constants.js';",
+        "src/constants.ts": "export const label: string = 'Cloud npm ';",
         "config/base.json": JSON.stringify({
           compilerOptions: {
             baseUrl: "..",

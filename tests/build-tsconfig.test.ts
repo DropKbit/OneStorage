@@ -67,6 +67,10 @@ test("alias exact matches, longest prefixes, ordered targets and baseUrl resolve
   );
   assert.equal(await fs.resolve("@/app/value.js", "src/main.ts"), "exact.ts");
   assert.equal(await fs.resolve("local", "src/main.ts"), "local.ts");
+  assert.equal(
+    await fs.resolve("local", "src/my_node_modules/main.ts"),
+    "local.ts",
+  );
   assert.equal(await fs.resolve("preact", "src/main.ts"), "preact.ts");
   await assert.rejects(
     fs.resolve("preact", "node_modules/vendor/index.js"),

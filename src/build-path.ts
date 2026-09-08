@@ -10,3 +10,6 @@ export function normalizePath(value: string) {
   }
   return parts.join("/");
 }
+
+export const isDependencyPath = (path: string) =>
+  path.split("/").includes("node_modules");

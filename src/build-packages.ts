@@ -1,4 +1,4 @@
-import { normalizePath } from "./build-path";
+import { normalizePath, isDependencyPath } from "./build-path";
 import { tsconfigCandidates } from "./build-aliases";
 import type { BuildTSConfig } from "./build-tsconfig";
 import { Inflate } from "pako";
@@ -367,7 +367,7 @@ export class BuildFileSystem {
     return task;
   }
   private file(path: string): string | null {
-    if (!path.includes("node_modules/") && /\.(?:js|jsx|mjs|cjs)$/.test(path)) {
+    if (!isDependencyPath(path) && /\.(?:js|jsx|mjs|cjs)$/.test(path)) {
       const candidates = path.endsWith(".mjs")
         ? [path.slice(0, -4) + ".mts"]
         : path.endsWith(".cjs")
@@ -417,7 +417,7 @@ export class BuildFileSystem {
       !/[:\\\x00-\x1f]/.test(specifier) &&
       !specifier.startsWith("/") &&
       !specifier.split("/").some((p) => p === "." || p === ".." || !p) &&
-      !importer.includes("node_modules/")
+      !isDependencyPath(importer)
     ) {
       for (const candidate of tsconfigCandidates(this.config, specifier)) {
         const found = this.file(candidate);
