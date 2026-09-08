@@ -10,7 +10,7 @@ const statements = new WeakMap<
   { native: D1PreparedStatement; read: boolean }
 >();
 export const unguardDatabase = (db: D1Database) => originals.get(db) || db;
-/** Keep the namespace authorization snapshot valid through the D1 write transaction. */
+/** Keep the namespace authorization snapshot valid through each D1 read snapshot or write transaction. */
 export function projectDatabase(
   db: D1Database,
   repoId: string,
@@ -58,22 +58,34 @@ export function projectDatabase(
       throw error;
     }
   };
+  const readBatch = async <T>(
+    input: D1PreparedStatement[],
+  ): Promise<D1Result<T>[]> => {
+    const result = await native.batch([
+      native
+        .prepare(
+          "SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM json_each(?) j WHERE NOT EXISTS(SELECT 1 FROM repositories r WHERE r.id=json_extract(j.value,'$.id') AND r.lifecycle_revision=json_extract(j.value,'$.revision') AND r.deleted_at IS NULL)) THEN 1 ELSE 0 END AS authorized",
+        )
+        .bind(JSON.stringify(required)),
+      ...input.map((s) => statements.get(s)?.native || s),
+    ]);
+    if ((result[0].results[0] as { authorized: number }).authorized !== 1)
+      fail(409, "Project moved or lifecycle changed; reload before reading");
+    return result.slice(1) as D1Result<T>[];
+  };
   const wrap = (
     query: string,
     prepared: D1PreparedStatement,
   ): D1PreparedStatement => {
-    // Only literal SELECTs bypass the write barrier; WITH/PRAGMA/unknown commands are guarded.
+    // SELECTs check the authorization snapshot in a read-only batch; other commands use the write transaction guard.
     const read = /^\s*SELECT\b/i.test(query);
-    const run = async <T>() => (await guard<T>([prepared]))[0];
+    const run = async <T>() =>
+      (await (read ? readBatch<T>([prepared]) : guard<T>([prepared])))[0];
     const result = {
       bind: (...values: unknown[]) => wrap(query, prepared.bind(...values)),
-      run: <T>() => (read ? prepared.run<T>() : run<T>()),
-      all: <T>() => (read ? prepared.all<T>() : run<T>()),
+      run: <T>() => run<T>(),
+      all: <T>() => run<T>(),
       first: async <T>(column?: string) => {
-        if (read)
-          return column === undefined
-            ? prepared.first<T>()
-            : prepared.first<T>(column);
         const rows = (await run<Record<string, unknown>>()).results;
         if (!rows.length) return null;
         if (column === undefined) return rows[0] as T;
@@ -91,7 +103,7 @@ export function projectDatabase(
     prepare: (query: string) => wrap(query, native.prepare(query)),
     batch: <T>(input: D1PreparedStatement[]) =>
       input.every((s) => statements.get(s)?.read)
-        ? native.batch<T>(input.map((s) => statements.get(s)!.native))
+        ? readBatch<T>(input)
         : guard<T>(input),
     exec: async () => {
       throw Error(

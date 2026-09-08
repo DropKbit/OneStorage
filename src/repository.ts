@@ -1,3 +1,4 @@
+import { checkProjectVersion, withProjectTransition } from "./project-version";
 import { transferProject } from "./project-transfer";
 import {
   assertRepositoryWritable,
@@ -136,6 +137,7 @@ export class Repository extends DurableObject<Env> {
     const id = request.headers.get("x-repo-id") || "";
     if (!/^[0-9a-f-]{36}$/.test(id)) fail(400, "Invalid repository");
     if (await this.ctx.storage.get("deleted")) fail(404, "Repository deleted");
+    await checkProjectVersion(this.env, this.ctx.storage, id, request);
     const defaultBranch = branch.parse(
       (await this.ctx.storage.get<string>("default-branch")) ||
         request.headers.get("x-default-branch") ||
@@ -144,7 +146,7 @@ export class Repository extends DurableObject<Env> {
     const url = new URL(request.url),
       store = new ObjectStore(id, this.env.OBJECTS, this.objectCache);
     // Public API access was checked against fresh D1 metadata by the outer Worker.
-    // Reads need only durable refs/tombstone; mutation/sync hooks load authoritative metadata.
+    // Reads use durable refs/tombstone and the recoverable version cache; mutations also load authoritative metadata.
     const metadata =
       ["GET", "HEAD"].includes(request.method) &&
       url.searchParams.get("service") !== "git-receive-pack"
@@ -193,24 +195,28 @@ export class Repository extends DurableObject<Env> {
         if (!body.namespace || !body.name)
           fail(400, "Destination namespace and name required");
         return Response.json(
-          await transferProject(
-            this.env,
-            metadata,
-            body.actor_id,
-            body.namespace,
-            body.name,
-            body.revision,
+          await withProjectTransition(this.env, this.ctx.storage, id, () =>
+            transferProject(
+              this.env,
+              metadata,
+              body.actor_id,
+              body.namespace!,
+              body.name!,
+              body.revision,
+            ),
           ),
         );
       }
       if (body.archived === undefined) fail(400, "Archived state required");
       return Response.json(
-        await changeProjectState(
-          this.env,
-          id,
-          body.actor_id,
-          body.archived,
-          body.revision,
+        await withProjectTransition(this.env, this.ctx.storage, id, () =>
+          changeProjectState(
+            this.env,
+            id,
+            body.actor_id,
+            body.archived!,
+            body.revision,
+          ),
         ),
       );
     }

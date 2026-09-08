@@ -39,7 +39,23 @@ async function fixture() {
           return { results: db.prepare(sql).all(...values) };
         },
         async run() {
-          return { meta: db.prepare(sql).run(...values) };
+          const statement = db.prepare(sql);
+          if (!statement.columns().length)
+            return {
+              success: true,
+              results: [],
+              meta: statement.run(...values),
+            };
+          const results = statement.all(...values);
+          return {
+            success: true,
+            results,
+            meta: {
+              changes: /^\s*SELECT/i.test(sql)
+                ? 0
+                : db.prepare("SELECT changes() AS n").get()!.n,
+            },
+          };
         },
       };
     },

@@ -306,3 +306,38 @@ test("renaming within the same namespace preserves integrations, running leases 
     "repo.rename",
   );
 });
+
+test("read snapshots reject data from a later namespace without writing guard rows", async () => {
+  const f = setup(),
+    db = projectDatabase(f.env.DB, "r", 0);
+  const changes = () => f.db.prepare("SELECT total_changes() AS n").get()!.n;
+  const before = changes();
+  assert.equal(
+    (await db.prepare("SELECT title FROM issues WHERE id=1").first<any>())
+      .title,
+    "Preserved",
+  );
+  await db.batch([
+    db.prepare("SELECT title FROM issues WHERE id=1"),
+    db.prepare("SELECT id FROM merge_requests WHERE repo_id='r'"),
+  ]);
+  assert.equal(changes(), before);
+  await transferProject(f.env, f.current(), "o", "target", "new", 0);
+  f.db
+    .prepare("UPDATE issues SET title='New namespace private data' WHERE id=1")
+    .run();
+  await assert.rejects(
+    db.prepare("SELECT title FROM issues WHERE id=1").first(),
+    /reload before reading/,
+  );
+  await assert.rejects(
+    db.batch([db.prepare("SELECT title FROM issues WHERE id=1")]),
+    /reload before reading/,
+  );
+  const fresh = projectDatabase(f.env.DB, "r", 1);
+  assert.equal(
+    (await fresh.prepare("SELECT title FROM issues WHERE id=1").first<any>())
+      .title,
+    "New namespace private data",
+  );
+});

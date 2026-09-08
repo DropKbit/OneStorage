@@ -19,12 +19,12 @@ API：`POST /api/repos/{namespace}/{repo}/transfer`，正文 `{ "namespace": "te
 
 授权使用目标的当前空间角色与 JWT 路径限制；失去权限的原空间成员不能利用别名读取或推送。未授权请求不返回私人目标 Location。历史路径不能被另一个仓库抢占；项目可转回自己的历史路径。删除项目并完成 GC 后清理别名。
 
-## 写入一致性
+## 读写一致性
 
 转移由仓库 Durable Object 串行队列排序。D1 同一事务复查源/目标所有权、目标名称冲突、版本、连接处理、项目归属与审计，任一失败均回滚。
 
-仓库路由取得授权快照后，使用仅限当前请求的 D1 包装器；写语句与 lifecycle_revision 检查在一个 batch 事务执行，包含 `RETURNING` 和已有业务 batch。普通 SELECT 不新增写事务。后台 Webhook outbox 调度使用原始绑定，避免把某个请求的项目版本绑定到其他项目的投递。新仓库写路由必须通过 repoAccess 获取此快照；不要用共享环境对象存放请求状态。
+仓库路由取得授权快照后，使用仅限当前请求的 D1 包装器；写语句与 lifecycle_revision 检查在一个 batch 事务执行，包含 `RETURNING` 和已有业务 batch。普通 SELECT 与版本检查放在同一个只读 batch 快照中，不新增写事务；转移前授权的请求不能在转移后查询新空间的数据。后台 Webhook outbox 调度使用原始绑定，避免把某个请求的项目版本绑定到其他项目的投递。新仓库写路由必须通过 repoAccess 获取此快照；不要用共享环境对象存放请求状态。
 
-Git/LFS 和其他经 DO 处理的请求携带版本，在进入串行队列后对照当前元数据；旧空间授权的排队写入不能在转移后继续执行。上游任务也携带版本，迟到结果不能重新激活已取消的同步。
+Git/LFS 和其他经 DO 处理的请求携带版本，在进入串行队列后检查持久版本缓存，包括 GET/HEAD。转移或归档前先持久化失效标记，D1 完成后更新版本；提交后缓存写入失败时，后续请求必须先从 D1 恢复版本，恢复失败则拒绝读取。旧空间授权的排队读写不能在转移后继续执行，正常缓存命中不增加 D1 查询。上游任务也携带版本，迟到结果不能重新激活已取消的同步。
 
 D1 batch 与返回行行为依据 [D1 事务批处理](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch) 及 [prepared statements](https://developers.cloudflare.com/d1/worker-api/prepared-statements/)；协议、角色隔离、原子回滚及原生 Git 行为同时由项目自身验收覆盖。
