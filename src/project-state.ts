@@ -6,7 +6,7 @@ export function archivedApiWrite(method: string, operation: string) {
   if (["lifecycle", "transfer", "star", "watch"].includes(operation))
     return false;
   if (operation === "" && method === "DELETE") return false;
-  if (/^members(?:\/|$)/.test(operation)) return false;
+  if (/^(members|deploy-tokens)(?:\/|$)/.test(operation)) return false;
   if (/^ci\/runners\//.test(operation) && method === "DELETE") return false;
   if (method === "POST" && ["grep", "archive"].includes(operation))
     return false;

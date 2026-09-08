@@ -1,3 +1,9 @@
+import { registerDeployTokenRoutes } from "./deploy-token-routes";
+import {
+  assertDeployAccess,
+  deployRequestAllowed,
+  resolveDeployToken,
+} from "./deploy-tokens";
 import { registerPackageRoutes } from "./package-routes";
 import { repositoryAt } from "./project-transfer";
 import { projectDatabase } from "./project-db";
@@ -121,6 +127,18 @@ async function repoAccess(
   const located = await repositoryAt(c.env, namespace || "", name || "");
   if (!located) fail(404, "Repository not found");
   const { repo: r, moved } = located;
+  const deploy = c.get("deploy");
+  if (deploy)
+    await assertDeployAccess(
+      c.env,
+      r,
+      deploy,
+      level === "maintain"
+        ? "delete_package_registry"
+        : level === "write"
+          ? "write_package_registry"
+          : "read_package_registry",
+    );
   const delegated = c.get("delegation");
   if (delegated) {
     const operation = c.req.path.split("/").slice(5).join("/");
@@ -139,7 +157,13 @@ async function repoAccess(
     );
   }
   const user = c.get("user");
-  const role = await repositoryRole(c.env, r, user);
+  const role = deploy
+    ? level === "maintain"
+      ? "maintainer"
+      : level === "write"
+        ? "developer"
+        : "reader"
+    : await repositoryRole(c.env, r, user);
   c.set("repoRole", role);
   if (moved) {
     if (r.visibility !== "public" && roleRank[role] < 1)
@@ -177,7 +201,7 @@ async function repoAccess(
     };
     return r;
   }
-  if (!user) fail(401, "Authentication required");
+  if (!user && !deploy) fail(401, "Authentication required");
   if (level === "read") fail(404, "Repository not found");
   if (c.get("scope") === "read") fail(403, "Read-only token");
   if (roleRank[role] >= (level === "maintain" ? 3 : 2)) {
@@ -204,13 +228,27 @@ async function engine(
   const headers = new Headers(options.headers);
   headers.delete("x-write-policy");
   headers.delete("x-namespace");
+  headers.delete("x-deploy-token");
+  const deploy = c.get("deploy");
+  if (deploy)
+    headers.set(
+      "x-deploy-token",
+      JSON.stringify({
+        id: deploy.id,
+        hash: deploy.hash,
+        revision: deploy.revision,
+      }),
+    );
   headers.set("x-repo-id", repo.id);
   headers.set("x-lifecycle-revision", String(repo.lifecycle_revision || 0));
   headers.set("x-default-branch", repo.default_branch);
   headers.set("x-repo-owner-id", repo.owner_id);
   headers.set(
     "x-actor",
-    c.get("delegation")?.subject || c.get("user")?.username || "",
+    deploy?.username ||
+      c.get("delegation")?.subject ||
+      c.get("user")?.username ||
+      "",
   );
   const delegation = c.get("delegation");
   if (delegation)
@@ -301,6 +339,7 @@ app.use("*", async (c, next) => {
     c.header("Cache-Control", "no-store");
 });
 const staticPaths = new Set([
+  "/deploy-tokens.js",
   "/packages.js",
   "/app.js",
   "/forge.js",
@@ -367,11 +406,12 @@ app.use("*", async (c, next) => {
   c.set("kind", null);
   c.set("credential", null);
   const authorization = c.req.header("authorization");
-  let token: string | undefined;
+  let token: string | undefined, basicUsername: string | undefined;
   if (authorization?.startsWith("Bearer ")) token = authorization.slice(7);
   else if (authorization?.startsWith("Basic ")) {
     try {
       const basic = atob(authorization.slice(6));
+      basicUsername = basic.slice(0, basic.indexOf(":"));
       token = basic.slice(basic.indexOf(":") + 1);
     } catch {
       fail(401, "Invalid credentials");
@@ -381,7 +421,34 @@ app.use("*", async (c, next) => {
     ? getCookie(c, "onestorage_session")
     : undefined;
   token ||= cookie;
-  if (token?.split(".").length === 3 && authorization) {
+  if (token?.startsWith("odt_") && authorization) {
+    const deploy = await resolveDeployToken(c.env, token, basicUsername);
+    c.set("deploy", deploy);
+    c.set("kind", "deploy");
+    c.set("credential", deploy.hash);
+    c.set(
+      "scope",
+      deploy.scopes.some(
+        (s) =>
+          s === "write_package_registry" || s === "delete_package_registry",
+      )
+        ? "write"
+        : "read",
+    );
+    if (!deployRequestAllowed(c.req.path))
+      fail(
+        403,
+        "Deploy tokens are limited to Git reads and scoped package operations",
+      );
+    if (!deploy.last_used_at || deploy.last_used_at < Date.now() - 3600000)
+      c.executionCtx.waitUntil(
+        c.env.DB.prepare(
+          "UPDATE deploy_tokens SET last_used_at=? WHERE id=? AND hash=? AND revision=? AND revoked_at IS NULL",
+        )
+          .bind(Date.now(), deploy.id, deploy.hash, deploy.revision)
+          .run(),
+      );
+  } else if (token?.split(".").length === 3 && authorization) {
     const delegation = await verifyDelegation(c.env, token);
     c.set("delegation", delegation);
     c.set("user", delegation.user);
@@ -427,7 +494,7 @@ registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.25.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.26.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -968,6 +1035,7 @@ app.get("/api/repo-url/:id", async (c) => {
     import_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}+import.git`,
   });
 });
+registerDeployTokenRoutes(app, { access: repoAccess });
 registerPackageRoutes(app, { access: repoAccess });
 registerCIRoutes(app, { access: repoAccess, audit });
 registerIssueWorkflows(app, { access: repoAccess });
@@ -1283,7 +1351,12 @@ app.all("/:namespace/:git/*", async (c, next) => {
     writing ? "git:write" : "git:read",
     `${r.namespace}/${r.name}`,
   );
-  const role = await repositoryRole(c.env, r, u),
+  const deploy = c.get("deploy");
+  if (deploy) {
+    if (writing) fail(403, "Deploy tokens cannot write Git or LFS");
+    await assertDeployAccess(c.env, r, deploy, "read_repository");
+  }
+  const role = deploy ? "reader" : await repositoryRole(c.env, r, u),
     read = r.visibility === "public" || roleRank[role] >= 1,
     write = roleRank[role] >= 2;
   if (!read)
@@ -1323,7 +1396,7 @@ app.all("/:namespace/:git/*", async (c, next) => {
       }
       objects.push({
         ...object,
-        authenticated: !!u,
+        authenticated: !!u || !!deploy,
         ...(batch.operation === "download" && !exists && !githubLFS(r)
           ? { error: { code: 404, message: "Object not found" } }
           : batch.operation === "upload" &&
@@ -1333,6 +1406,7 @@ app.all("/:namespace/:git/*", async (c, next) => {
             : { actions: { [batch.operation]: { href, header } } }),
       });
     }
+    if (deploy) await assertDeployAccess(c.env, r, deploy, "read_repository");
     return c.json({ transfer: "basic", objects });
   }
   const lfs = suffix.match(/^info\/lfs\/objects\/([0-9a-f]{64})$/);

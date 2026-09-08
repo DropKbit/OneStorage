@@ -1,4 +1,5 @@
 import { addPackagePaths } from "./package-openapi.mjs";
+import { addDeployTokenPaths } from "./deploy-token-openapi.mjs";
 import { addOIDCPaths } from "./oidc-openapi.mjs";
 import { addLifecyclePaths } from "./lifecycle-openapi.mjs";
 import { addIssuePaths } from "./issue-openapi.mjs";
@@ -281,6 +282,7 @@ for (const feature of parity.features) {
 }
 addOIDCPaths(paths);
 addPackagePaths(paths);
+addDeployTokenPaths(paths);
 addPlatformPaths(paths);
 addAccountPaths(paths);
 addReviewPaths(paths);
@@ -303,6 +305,12 @@ await writeFile(
       paths,
       components: {
         securitySchemes: {
+          deployToken: {
+            type: "http",
+            scheme: "bearer",
+            description:
+              "Project/workspace deploy token, only on explicitly supported package and Git read protocols. Basic uses its exact generated/custom username and secret as password. Independent read_repository/read_package_registry/write_package_registry/delete_package_registry scopes; never a user or general API credential.",
+          },
           sessionCookie: {
             type: "apiKey",
             in: "cookie",

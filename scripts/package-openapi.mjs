@@ -107,9 +107,10 @@ export function addPackagePaths(paths) {
       tags: ["Packages"],
       summary,
       description:
-        "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
       parameters,
       security: [
+        { deployToken: [] },
         { bearerAuth: [] },
         { sessionCookie: [] },
         ...(["get", "head"].includes(method) && !suffix.endsWith("whoami")

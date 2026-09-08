@@ -1,3 +1,4 @@
+import { assertDeployGitRequest } from "./deploy-tokens";
 import { RequestGate } from "./git/request-gate";
 import {
   acquireSnapshot,
@@ -59,11 +60,26 @@ export class Repository extends DurableObject<Env> {
   private objectIndex?: GitObjectIndex;
   async fetch(request: Request): Promise<Response> {
     try {
-      return await this.gate.run(
+      const response = await this.gate.run(
         shareableOperation(request),
-        (ready) => this.handle(request, ready),
-        snapshotRead(request) ? () => this.handleSnapshot(request) : undefined,
+        async (ready) => {
+          await assertDeployGitRequest(this.env, request);
+          return this.handle(request, ready);
+        },
+        snapshotRead(request)
+          ? async () => {
+              await assertDeployGitRequest(this.env, request);
+              return this.handleSnapshot(request);
+            }
+          : undefined,
       );
+      try {
+        await assertDeployGitRequest(this.env, request);
+      } catch (e) {
+        await response.body?.cancel();
+        throw e;
+      }
+      return response;
     } catch (e) {
       if (e instanceof HTTPException)
         return Response.json({ error: e.message }, { status: e.status });

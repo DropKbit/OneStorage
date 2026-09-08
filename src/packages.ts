@@ -1,3 +1,8 @@
+import {
+  deployAccessSQL,
+  deployAccessArgs,
+  type DeployToken,
+} from "./deploy-tokens";
 import type { Env, Repo } from "./types";
 import { fail } from "./security";
 import { unguardDatabase } from "./project-db";
@@ -15,18 +20,26 @@ export interface PackageActor {
   id: string;
   credential: string;
   revision: number;
+  deploy?: DeployToken;
 }
 const roles = (maintain = false) =>
   maintain ? "'maintainer','owner'" : "'developer','maintainer','owner'";
-export const packageAuthority = (maintain = false) =>
-  `EXISTS(SELECT 1 FROM repositories r JOIN users u ON u.id=? JOIN credentials c ON c.user_id=u.id WHERE r.id=? AND r.lifecycle_revision=? AND r.deleted_at IS NULL AND r.archived_at IS NULL AND u.disabled=0 AND c.hash=? AND c.scope='write' AND c.kind IN('session','pat') AND c.expires_at>? AND ((r.workspace_id IS NULL AND r.owner_id=u.id) OR EXISTS(SELECT 1 FROM members m WHERE m.repo_id=r.id AND m.user_id=u.id AND m.role IN(${roles(maintain)})) OR EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=r.workspace_id AND m.user_id=u.id AND m.role IN(${roles(maintain)}))))`;
-export const packageAuthorityArgs = (repo: Repo, actor: PackageActor) => [
-  actor.id,
-  repo.id,
-  actor.revision,
-  actor.credential,
-  Date.now(),
-];
+export const packageAuthority = (maintain = false, actor?: PackageActor) =>
+  actor?.deploy
+    ? deployAccessSQL(true)
+    : `EXISTS(SELECT 1 FROM repositories r JOIN users u ON u.id=? JOIN credentials c ON c.user_id=u.id WHERE r.id=? AND r.lifecycle_revision=? AND r.deleted_at IS NULL AND r.archived_at IS NULL AND u.disabled=0 AND c.hash=? AND c.scope='write' AND c.kind IN('session','pat') AND c.expires_at>? AND ((r.workspace_id IS NULL AND r.owner_id=u.id) OR EXISTS(SELECT 1 FROM members m WHERE m.repo_id=r.id AND m.user_id=u.id AND m.role IN(${roles(maintain)})) OR EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=r.workspace_id AND m.user_id=u.id AND m.role IN(${roles(maintain)}))))`;
+export const packageAuthorityArgs = (
+  repo: Repo,
+  actor: PackageActor,
+  maintain = false,
+) =>
+  actor.deploy
+    ? deployAccessArgs(
+        { ...repo, lifecycle_revision: actor.revision },
+        actor.deploy,
+        maintain ? "delete_package_registry" : "write_package_registry",
+      )
+    : [actor.id, repo.id, actor.revision, actor.credential, Date.now()];
 export async function packageMutation(
   env: Env,
   repo: Repo,
@@ -42,15 +55,28 @@ export async function packageMutation(
     return await db.batch([
       db
         .prepare(
-          `INSERT INTO mutation_guards(id,accepted) SELECT ?,CASE WHEN ${packageAuthority(maintain)} THEN 1 ELSE 0 END`,
+          `INSERT INTO mutation_guards(id,accepted) SELECT ?,CASE WHEN ${packageAuthority(maintain, actor)} THEN 1 ELSE 0 END`,
         )
-        .bind(guard, ...packageAuthorityArgs(repo, actor)),
+        .bind(guard, ...packageAuthorityArgs(repo, actor, maintain)),
       ...statements,
       db
         .prepare(
           "INSERT INTO audit(repo_id,actor_id,action,detail) VALUES(?,?,?,?)",
         )
-        .bind(repo.id, actor.id, action, JSON.stringify(detail)),
+        .bind(
+          repo.id,
+          actor.deploy ? null : actor.id,
+          action,
+          JSON.stringify(
+            actor.deploy
+              ? {
+                  deploy_token_id: actor.deploy.id,
+                  deploy_token_username: actor.deploy.username,
+                  detail,
+                }
+              : detail,
+          ),
+        ),
       db.prepare("DELETE FROM mutation_guards WHERE id=?").bind(guard),
     ]);
   } catch (e) {
@@ -94,7 +120,7 @@ export async function publishPackage(
     fail(413, "Package metadata exceeds 64 KiB");
   const reserved = await db
     .prepare(
-      `INSERT INTO package_uploads(id,repo_id,kind,name,version,filename,object_key,size,state,created_at,expires_at) SELECT ?,?,?,?,?,?,?,?,'uploading',?,? WHERE ${packageAuthority()} AND NOT EXISTS(SELECT 1 FROM package_versions v LEFT JOIN package_files f ON f.version_id=v.id WHERE v.repo_id=? AND v.kind=? AND v.name=? AND v.version=? AND (v.deleted_at IS NOT NULL OR ?='npm' OR f.filename=?)) AND (SELECT count(*) FROM package_files f JOIN package_versions v ON v.id=f.version_id WHERE v.repo_id=? AND f.deleted_at IS NULL)+(SELECT count(*) FROM package_uploads WHERE repo_id=? AND state='uploading')<? AND COALESCE((SELECT SUM(f.size) FROM package_files f JOIN package_versions v ON v.id=f.version_id WHERE v.repo_id=? AND f.deleted_at IS NULL),0)+COALESCE((SELECT SUM(size) FROM package_uploads WHERE repo_id=? AND state='uploading'),0)+?<=?`,
+      `INSERT INTO package_uploads(id,repo_id,kind,name,version,filename,object_key,size,state,created_at,expires_at) SELECT ?,?,?,?,?,?,?,?,'uploading',?,? WHERE ${packageAuthority(false, actor)} AND NOT EXISTS(SELECT 1 FROM package_versions v LEFT JOIN package_files f ON f.version_id=v.id WHERE v.repo_id=? AND v.kind=? AND v.name=? AND v.version=? AND (v.deleted_at IS NOT NULL OR ?='npm' OR f.filename=?)) AND (SELECT count(*) FROM package_files f JOIN package_versions v ON v.id=f.version_id WHERE v.repo_id=? AND f.deleted_at IS NULL)+(SELECT count(*) FROM package_uploads WHERE repo_id=? AND state='uploading')<? AND COALESCE((SELECT SUM(f.size) FROM package_files f JOIN package_versions v ON v.id=f.version_id WHERE v.repo_id=? AND f.deleted_at IS NULL),0)+COALESCE((SELECT SUM(size) FROM package_uploads WHERE repo_id=? AND state='uploading'),0)+?<=?`,
     )
     .bind(
       id,
@@ -165,7 +191,7 @@ export async function publishPackage(
           ),
         db
           .prepare(
-            "INSERT OR IGNORE INTO package_versions(id,repo_id,kind,name,version,metadata,publisher_id,created_at) VALUES(?,?,?,?,?,?,?,?)",
+            "INSERT OR IGNORE INTO package_versions(id,repo_id,kind,name,version,metadata,publisher_id,created_at,deploy_token_id,publisher_label) VALUES(?,?,?,?,?,?,?,?,?,?)",
           )
           .bind(
             versionId,
@@ -176,6 +202,8 @@ export async function publishPackage(
             metadata,
             actor.id,
             now,
+            actor.deploy?.id || null,
+            actor.deploy ? "Deploy token: " + actor.deploy.username : null,
           ),
         db
           .prepare(

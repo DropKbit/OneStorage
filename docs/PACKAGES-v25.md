@@ -113,3 +113,7 @@ curl --fail "$PACKAGE_URL" \
 Cloudflare 隔离 Worker 的 TypeScript/npm 构建目前仍只从 npm 官方 registry 按锁文件获取依赖；OneStorage 私有 registry 的原生云构建依赖接入是后续目标。此次验证的是真实包服务及 npm 客户端，不能据此声称 Maven、PyPI、容器镜像仓库、完整 npmjs 或完整 GitLab API 已实现。
 
 参考：[npm publish](https://docs.npmjs.com/cli/commands/npm-publish/)、[GitLab npm registry](https://docs.gitlab.com/user/packages/npm_registry/)、[Cloudflare R2 Workers API](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/)、[Workers 内存边界](https://developers.cloudflare.com/workers/platform/limits/)。
+
+## v0.26 部署凭据
+
+除会话/PAT 外，包仓库现支持项目与空间部署令牌，独立选择读取、发布和撤回权限。它不是用户身份，不能调用一般管理 API；同空间重命名保持有效，跨空间转移撤销项目令牌。客户端与完整约束见 [部署令牌](DEPLOY-TOKENS-v26.md)。

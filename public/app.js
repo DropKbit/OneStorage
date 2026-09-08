@@ -1,8 +1,9 @@
+const deployTokens = () => import("./deploy-tokens.js?v=3624ebb344aa8e94");
 const packages = () => import("./packages.js?v=940a14d638488fa5");
 const account = () => import("./account.js?v=d9bd32b82f5426d8");
 const oidc = () => import("./oidc.js?v=d111df485dceede5");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
-const platform = () => import("./manage.js?v=317ff09f744f0827");
+const platform = () => import("./manage.js?v=485e40b48dc4921c");
 import {
   keyPage,
   forgePage,
@@ -717,7 +718,7 @@ async function settingsPage(r, base, ap, version) {
   repoLayout(
     r,
     "settings",
-    `<div class="stack">${r.role === "owner" ? `<div class="panel"><form class="form" id="project-lifecycle"><h2>${r.archived_at ? "恢复项目" : "归档项目"}</h2><p class="muted">归档后可继续 clone、下载和读取历史；停止写入及新流水线，取消正在执行的任务。已发布应用保留最后版本。恢复后，已取消任务需要手动重试。</p><button type="submit" class="btn">${r.archived_at ? "取消归档" : "归档为只读"}</button></form></div>` : ""}${r.role === "owner" ? `<details class="panel"><summary class="panelhead">转移或重命名项目</summary><form class="form" id="project-transfer">${field("目标空间", "namespace", "text", r.namespace, "填写你的个人空间或你拥有的团队空间名称。")}${field("目标项目名", "name", "text", r.name)}<p class="muted">保留代码、Issues、MR、Wiki 与历史产物；显式项目成员保留，团队继承权限重新计算。跨空间转移会取消 CI 与同步，撤销 Runner、Git 连接及 Webhook，暂停自动流水线并关闭应用公开访问；目标空间需要重新配置后启用。同空间重命名保留连接、运行与发布状态。</p><label><input type="checkbox" required name="acknowledge">我已了解连接与发布状态的变更</label><button class="btn" type="submit">转移项目</button></form></details>` : ""}<div class="panel"><form class="form" id="repo-settings"><h2>项目设置</h2>${textarea("项目描述", "description", r.description)}${field("默认分支", "default_branch", "text", r.default_branch)}<div class="field"><label for="visibility">可见性</label><select name="visibility" id="visibility"><option value="private" ${r.visibility === "private" ? "selected" : ""}>私有 · 仅成员可访问</option><option value="public" ${r.visibility === "public" ? "selected" : ""}>公开 · 所有人可读取</option></select></div><button class="btn primary" type="submit">保存设置</button></form></div><div class="panel"><div class="panelhead"><strong>Webhook</strong><span class="muted">${webhooks.length} / 10</span></div>${webhooks.map((h) => `<div class="token-row"><span>${esc(h.url)}</span><button class="btn small danger" data-hook="${h.id}">移除</button></div>`).join("")}<form class="form" id="webhook"><p class="muted">接收地址须为管理员已允许的 HTTPS 主机。签名密钥仅在创建时显示一次。</p>${field("接收地址", "url", "url")}<button class="btn primary" type="submit">添加 Webhook</button><div id="hook-result"></div></form></div><div class="panel"><div class="panelhead"><strong>最近投递</strong></div>${deliveries.length ? deliveries.map((d) => `<div class="token-row"><code>${esc(d.id.slice(0, 8))}</code><span class="pill">${esc(d.state)}</span><span class="muted">${d.attempts} 次尝试 · HTTP ${d.last_status || "—"}</span></div>`).join("") : '<div class="empty"><p>暂无投递记录。</p></div>'}</div><div class="panel"><div class="panelhead"><strong>审计记录</strong><span class="muted">最近 100 条</span></div>${events.map((e) => `<div class="token-row"><div><strong>${esc(e.action)}</strong><p class="muted">${esc(e.actor || "system")} · ${esc(e.detail)}</p></div><span class="muted">${date(e.created_at)}</span></div>`).join("")}</div></div>`,
+    `<p><a data-link href="${base}/deploy-tokens" class="btn">部署令牌</a></p><div class="stack">${r.role === "owner" ? `<div class="panel"><form class="form" id="project-lifecycle"><h2>${r.archived_at ? "恢复项目" : "归档项目"}</h2><p class="muted">归档后可继续 clone、下载和读取历史；停止写入及新流水线，取消正在执行的任务。已发布应用保留最后版本。恢复后，已取消任务需要手动重试。</p><button type="submit" class="btn">${r.archived_at ? "取消归档" : "归档为只读"}</button></form></div>` : ""}${r.role === "owner" ? `<details class="panel"><summary class="panelhead">转移或重命名项目</summary><form class="form" id="project-transfer">${field("目标空间", "namespace", "text", r.namespace, "填写你的个人空间或你拥有的团队空间名称。")}${field("目标项目名", "name", "text", r.name)}<p class="muted">保留代码、Issues、MR、Wiki 与历史产物；显式项目成员保留，团队继承权限重新计算。跨空间转移会取消 CI 与同步，撤销 Runner、Git 连接及 Webhook，暂停自动流水线并关闭应用公开访问；目标空间需要重新配置后启用。同空间重命名保留连接、运行与发布状态。</p><label><input type="checkbox" required name="acknowledge">我已了解连接与发布状态的变更</label><button class="btn" type="submit">转移项目</button></form></details>` : ""}<div class="panel"><form class="form" id="repo-settings"><h2>项目设置</h2>${textarea("项目描述", "description", r.description)}${field("默认分支", "default_branch", "text", r.default_branch)}<div class="field"><label for="visibility">可见性</label><select name="visibility" id="visibility"><option value="private" ${r.visibility === "private" ? "selected" : ""}>私有 · 仅成员可访问</option><option value="public" ${r.visibility === "public" ? "selected" : ""}>公开 · 所有人可读取</option></select></div><button class="btn primary" type="submit">保存设置</button></form></div><div class="panel"><div class="panelhead"><strong>Webhook</strong><span class="muted">${webhooks.length} / 10</span></div>${webhooks.map((h) => `<div class="token-row"><span>${esc(h.url)}</span><button class="btn small danger" data-hook="${h.id}">移除</button></div>`).join("")}<form class="form" id="webhook"><p class="muted">接收地址须为管理员已允许的 HTTPS 主机。签名密钥仅在创建时显示一次。</p>${field("接收地址", "url", "url")}<button class="btn primary" type="submit">添加 Webhook</button><div id="hook-result"></div></form></div><div class="panel"><div class="panelhead"><strong>最近投递</strong></div>${deliveries.length ? deliveries.map((d) => `<div class="token-row"><code>${esc(d.id.slice(0, 8))}</code><span class="pill">${esc(d.state)}</span><span class="muted">${d.attempts} 次尝试 · HTTP ${d.last_status || "—"}</span></div>`).join("") : '<div class="empty"><p>暂无投递记录。</p></div>'}</div><div class="panel"><div class="panelhead"><strong>审计记录</strong><span class="muted">最近 100 条</span></div>${events.map((e) => `<div class="token-row"><div><strong>${esc(e.action)}</strong><p class="muted">${esc(e.actor || "system")} · ${esc(e.detail)}</p></div><span class="muted">${date(e.created_at)}</span></div>`).join("")}</div></div>`,
   );
   bindForm("#project-transfer", async (data) => {
     const result = await api(ap + "/transfer", {
@@ -834,6 +835,8 @@ async function render() {
     merges: "合并请求",
     members: "成员",
     settings: "设置",
+    "deploy-tokens": "部署令牌",
+    packages: "包仓库",
     search: "搜索",
   };
   const segment = path.split("/").filter(Boolean).at(-1),
@@ -909,6 +912,13 @@ async function render() {
       await (await platform()).adminConsole(helpers, user);
       return;
     }
+    if (/^\/spaces\/[^/]+\/deploy-tokens$/.test(path)) {
+      if (!user) return go("/login");
+      await (
+        await deployTokens()
+      ).deployTokensPage(helpers, { workspace: path.split("/")[2] });
+      return;
+    }
     if (/^\/spaces\/[^/]+\/ci\/variables$/.test(path)) {
       if (!user) return go("/login");
       await (
@@ -974,6 +984,8 @@ async function render() {
         await (await collaboration()).issuePlanning(r, ap, helpers, issue);
     } else if (tab === "merges") await mergesPage(r, base, ap, sub, version);
     else if (tab === "members") await membersPage(r, base, ap, version);
+    else if (tab === "deploy-tokens")
+      await (await deployTokens()).deployTokensPage(helpers, { r, base, ap });
     else if (tab === "settings") await settingsPage(r, base, ap, version);
     else throw Error("页面不存在");
     if (version === routeVersion)

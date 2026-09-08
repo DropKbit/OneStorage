@@ -1,3 +1,4 @@
+import { assertDeployAccess } from "./deploy-tokens";
 import type { Context, Hono } from "hono";
 import { z } from "zod";
 import type { App, Repo } from "./types";
@@ -15,14 +16,20 @@ import {
 } from "./package-schema";
 import { parseNpmPublish } from "./npm-package";
 const record = z.record(z.string(), z.unknown());
-const actor = (c: Context<App>, r: Repo): PackageActor => ({
-  id: c.get("user")?.id || fail(401, "Sign in required"),
-  credential:
-    c.get("credential") ||
-    fail(401, "Session or personal access token required"),
-  revision: r.lifecycle_revision || 0,
-});
+const actor = (c: Context<App>, r: Repo): PackageActor => {
+  const deploy = c.get("deploy");
+  return {
+    id:
+      deploy?.created_by || c.get("user")?.id || fail(401, "Sign in required"),
+    credential: c.get("credential") || fail(401, "Package credential required"),
+    revision: r.lifecycle_revision || 0,
+    deploy,
+  };
+};
 async function readAuthority(c: Context<App>, r: Repo) {
+  const deploy = c.get("deploy");
+  if (deploy)
+    return assertDeployAccess(c.env, r, deploy, "read_package_registry");
   const user = c.get("user"),
     credential = c.get("credential");
   const allowed = await unguardDatabase(c.env.DB)
@@ -235,7 +242,7 @@ export function registerPackageRoutes(
         .max(100000)
         .parse(c.req.query("offset") || 0);
     const rows = await c.env.DB.prepare(
-      "SELECT v.id,v.kind,v.name,v.version,v.created_at,u.username publisher,COUNT(f.id) files,COALESCE(SUM(f.size),0) size FROM package_versions v LEFT JOIN package_files f ON f.version_id=v.id AND f.deleted_at IS NULL JOIN users u ON u.id=v.publisher_id WHERE v.repo_id=? AND v.deleted_at IS NULL GROUP BY v.id ORDER BY v.created_at DESC,v.id DESC LIMIT 51 OFFSET ?",
+      "SELECT v.id,v.kind,v.name,v.version,v.created_at,COALESCE(v.publisher_label,u.username) publisher,COUNT(f.id) files,COALESCE(SUM(f.size),0) size FROM package_versions v LEFT JOIN package_files f ON f.version_id=v.id AND f.deleted_at IS NULL JOIN users u ON u.id=v.publisher_id WHERE v.repo_id=? AND v.deleted_at IS NULL GROUP BY v.id ORDER BY v.created_at DESC,v.id DESC LIMIT 51 OFFSET ?",
     )
       .bind(r.id, offset)
       .all();
@@ -380,7 +387,10 @@ export function registerPackageRoutes(
     const r = await access(c);
     await readAuthority(c, r);
     return c.json({
-      username: c.get("user")?.username || fail(401, "Sign in required"),
+      username:
+        c.get("deploy")?.username ||
+        c.get("user")?.username ||
+        fail(401, "Sign in required"),
     });
   });
   const tagBase = npm + "/-/package/:name/dist-tags";

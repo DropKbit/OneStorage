@@ -195,3 +195,7 @@ GitHub App: browser-session-only GET/PUT/DELETE `/api/integrations/github`; PUT 
 ## MCP
 
 POST `/mcp` implements stateless Streamable HTTP JSON-RPC (protocol versions 2025-03-26, 2025-06-18, 2025-11-25). Configure `Authorization: Bearer <PAT or JWT>` in your MCP client. Supports initialize, ping, tools/list, tools/call and resources/list/read. GET returns 405: no SSE session is required. Every tool delegates through the same scope/role checks as REST. `/llms.txt` links agent instructions and the OpenAPI document. Never place a token in a URL or checked-in MCP config.
+
+## 项目与空间部署令牌（v0.26）
+
+独立于用户的部署凭据仅可用于授权范围内的 Git/LFS 读取和包操作。管理 API、四项权限、到期/轮换/撤销和跨空间转移规则见 [部署令牌](DEPLOY-TOKENS-v26.md)。

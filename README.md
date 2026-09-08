@@ -1,5 +1,7 @@
 # OneStorage
 
+v0.26 增加项目/空间部署令牌：独立 Git 只读、包读取/发布/撤回权限，支持轮换、到期与撤销，跨空间转移自动收回范围，见 [部署令牌](docs/DEPLOY-TOKENS-v26.md)。
+
 v0.24 增加空间级 CI 变量与密钥继承、项目覆盖、只读继承展示和跨项目撤销，空间所有者可集中管理团队构建配置，见 [空间变量](docs/CI-WORKSPACE-VARIABLES-v24.md)。
 
 v0.23 增加管理员配置的 OIDC 统一登录、账户关联、无密码账户注册、本地双因素校验及提供方会话/PAT 撤销，见 [统一登录](docs/OIDC-v23.md)。身份验证和状态管理运行在 Workers 与 D1，实际提供方由管理员配置。
@@ -22,7 +24,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.25.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.26.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 
@@ -113,7 +115,7 @@ v0.12 使用仓库 DO 的持久化对象闭包索引和流式 pack；已验证�
 
 三方合并对多 merge-base 的 criss-cross 历史返回明确冲突；重命名检测保守且有限额。Blame 支持行/正则/函数范围及移动/复制块，但不复现全部 Git 语言驱动。公共 GitHub 是手动单向同步；通用上游不支持 LFS，GitHub App 的 LFS 限 16 MiB。私有 GitHub App 需要操作者提供真实安装信息，验证记录区分模拟提供方测试与实际联网测试。
 
-没有 SSH 传输、SHA-256 Git 仓库、shallow/partial clone、组织/SSO、CI Runner 或完整 GitLab API。SSH **提交签名**与 SSH **传输**是不同能力，前者已实现。
+没有 SSH 传输、SHA-256 Git 仓库、shallow/partial clone 或完整 GitLab API。多工作空间、OIDC 统一登录、原生 JS/WASM CI 和可选外部 Runner 已提供，支持范围见对应文档。SSH **提交签名**与 SSH **传输**是不同能力，前者已实现。
 
 ## 文档
 

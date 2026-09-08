@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.25.0",
+    "version": "0.26.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3890,7 +3890,7 @@
           "Packages"
         ],
         "summary": "List active package versions (50 per page), next_offset, usage and limits. Query offset defaults to zero.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -3920,6 +3920,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -3962,7 +3965,7 @@
           "Packages"
         ],
         "summary": "Read immutable package version metadata, file digests and npm tags.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -3990,6 +3993,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4030,7 +4036,7 @@
           "Packages"
         ],
         "summary": "Maintainer: retire a version and all files. Names/versions cannot be reused; asynchronous R2 cleanup.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4058,6 +4064,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4096,7 +4105,7 @@
           "Packages"
         ],
         "summary": "Developer: stream an immutable 1 B..64 MiB file. Content-Length and X-Package-SHA256 required.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4160,6 +4169,9 @@
         ],
         "security": [
           {
+            "deployToken": []
+          },
+          {
             "bearerAuth": []
           },
           {
@@ -4209,7 +4221,7 @@
           "Packages"
         ],
         "summary": "Download generic file. Single Range, ETag, SHA-256; visibility follows current repository.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4269,6 +4281,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4318,7 +4333,7 @@
           "Packages"
         ],
         "summary": "Generic file length and digest without body.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4378,6 +4393,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4429,7 +4447,7 @@
           "Packages"
         ],
         "summary": "Developer: native npm publish JSON; one version and one gzip tarball. Encoded scoped name; 16 MiB tarball / 24 MiB JSON.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4457,6 +4475,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4507,7 +4528,7 @@
           "Packages"
         ],
         "summary": "npm packument with versions, rewritten tarball URLs, SRI, dist-tags and revision.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4535,6 +4556,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4577,7 +4601,7 @@
           "Packages"
         ],
         "summary": "Download npm tarball; supports Range and ETag.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4629,6 +4653,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4678,7 +4705,7 @@
           "Packages"
         ],
         "summary": "npm tarball length and digest without body.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4730,6 +4757,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4781,7 +4811,7 @@
           "Packages"
         ],
         "summary": "npm registry connectivity check with project access.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4801,6 +4831,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4843,7 +4876,7 @@
           "Packages"
         ],
         "summary": "Current authenticated package registry username.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4863,6 +4896,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4904,7 +4940,7 @@
           "Packages"
         ],
         "summary": "npm tag-to-version mapping.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -4932,6 +4968,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -4974,7 +5013,7 @@
           "Packages"
         ],
         "summary": "Developer: assign tag to a live version; request body is a JSON version string.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -5010,6 +5049,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -5056,7 +5098,7 @@
           "Packages"
         ],
         "summary": "Developer: remove npm distribution tag.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -5092,6 +5134,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -5130,7 +5175,7 @@
           "Packages"
         ],
         "summary": "Maintainer: native npm unpublish partial document. Removes versions only, exact current _rev required.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -5166,6 +5211,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -5213,7 +5261,7 @@
           "Packages"
         ],
         "summary": "Maintainer: unpublish whole npm package, exact current _rev required.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -5249,6 +5297,9 @@
           }
         ],
         "security": [
+          {
+            "deployToken": []
+          },
           {
             "bearerAuth": []
           },
@@ -5287,7 +5338,7 @@
           "Packages"
         ],
         "summary": "Maintainer: libnpmpublish cleanup acknowledgment for a tarball already retired by metadata update.",
-        "description": "Cloudflare Workers/R2/D1 package registry. Browser session or PAT only; delegated Git JWTs rejected. Private project membership required; public project reads may be anonymous. Archived projects are read-only.",
+        "description": "Cloudflare Workers/R2/D1 package registry. Browser session, PAT or scoped project/workspace deploy token; delegated Git JWTs rejected. User credentials require current membership; deploy tokens require the exact current project/workspace scope. Public reads may be anonymous. Archived projects are read-only. Deploy scopes: read_package_registry for reads; write_package_registry for publish and dist-tag changes (including tag deletion); delete_package_registry for version retirement and npm unpublish. Native npm may also need read scope for metadata requests.",
         "parameters": [
           {
             "name": "namespace",
@@ -5332,6 +5383,9 @@
         ],
         "security": [
           {
+            "deployToken": []
+          },
+          {
             "bearerAuth": []
           },
           {
@@ -5359,6 +5413,667 @@
           },
           "413": {
             "description": "Package limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/deploy-tokens": {
+      "get": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "List deployment credentials without secret or hash; 50 per page.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "tokens (metadata only), next_offset, available_scopes and limit"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "Create a scoped deploy token; plaintext returned once.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Token metadata and one-time plaintext token"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "username": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._+-]{0,79}$"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "read_repository",
+                        "read_package_registry",
+                        "write_package_registry",
+                        "delete_package_registry"
+                      ]
+                    }
+                  },
+                  "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "default": 90
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "name",
+                  "scopes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/deploy-tokens/{id}/rotate": {
+      "post": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "Rotate a live or expired token; old secret immediately invalid; revoked tokens cannot be renewed.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token metadata and one-time plaintext token"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "default": 90
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/deploy-tokens/{id}": {
+      "delete": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "Permanently revoke the exact observed token revision.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked token metadata"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{slug}/deploy-tokens": {
+      "get": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "List deployment credentials without secret or hash; 50 per page.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "tokens (metadata only), next_offset, available_scopes and limit"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "Create a scoped deploy token; plaintext returned once.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Token metadata and one-time plaintext token"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "username": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._+-]{0,79}$"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "read_repository",
+                        "read_package_registry",
+                        "write_package_registry",
+                        "delete_package_registry"
+                      ]
+                    }
+                  },
+                  "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "default": 90
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "name",
+                  "scopes"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{slug}/deploy-tokens/{id}/rotate": {
+      "post": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "Rotate a live or expired token; old secret immediately invalid; revoked tokens cannot be renewed.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token metadata and one-time plaintext token"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "days": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365,
+                    "default": 90
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{slug}/deploy-tokens/{id}": {
+      "delete": {
+        "tags": [
+          "Deploy tokens"
+        ],
+        "summary": "Permanently revoke the exact observed token revision.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked token metadata"
+          },
+          "400": {
+            "description": "Invalid scopes, lifetime or request schema"
+          },
+          "401": {
+            "description": "User authentication or MFA required"
+          },
+          "403": {
+            "description": "Insufficient manager role, write scope or MFA"
+          },
+          "404": {
+            "description": "Project/workspace unavailable"
+          },
+          "409": {
+            "description": "Stale revision, revoked token, quota or current manager authorization changed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "revision"
+                ],
+                "additionalProperties": false
+              }
+            }
           }
         }
       }
@@ -13228,6 +13943,11 @@
   },
   "components": {
     "securitySchemes": {
+      "deployToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Project/workspace deploy token, only on explicitly supported package and Git read protocols. Basic uses its exact generated/custom username and secret as password. Independent read_repository/read_package_registry/write_package_registry/delete_package_registry scopes; never a user or general API credential."
+      },
       "sessionCookie": {
         "type": "apiKey",
         "in": "cookie",

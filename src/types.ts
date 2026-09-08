@@ -44,7 +44,8 @@ export type App = {
     user: User | null;
     repoRole: string;
     scope: "read" | "write";
-    kind: "pat" | "session" | "jwt" | null;
+    kind: "pat" | "session" | "jwt" | "deploy" | null;
+    deploy?: import("./deploy-tokens").DeployToken;
     delegation?: import("./delegation").Delegation;
     credential: string | null;
   };
