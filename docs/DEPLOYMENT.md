@@ -51,11 +51,17 @@ npx wrangler secret put CREDENTIAL_ENCRYPTION_KEY
 
 ## 关于一键部署
 
-[Cloudflare 官方 Deploy 按钮](https://developers.cloudflare.com/workers/platform/deploy-buttons/) 目前只接受 `github.com` / `gitlab.com` 的公开仓库，不接受 `git.1s.hk` 等自托管 Git 地址，也不原生同时部署多个 Worker。
+[Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FDropKbit%2FOneStorage%2Ftree%2Fdeploy) 使用 [GitHub 的 deploy 分支](https://github.com/DropKbit/OneStorage/tree/deploy)。它包含完整源码和独立部署配置，不使用现有 `git.1s.hk` 的域名、数据库 ID 或凭据。
 
-接入前需要公开镜像仓库，以及针对主服务、编译服务、应用网关的部署编排：共享本实例的 D1 / R2，连接 `BUILDER` 与 `APPS_ORIGIN`，应用 D1 migrations，并配置 `BOOTSTRAP_SECRET` 和 `CREDENTIAL_ENCRYPTION_KEY`。仅把本仓库 URL 拼进官方按钮不能完成这些步骤。
+Cloudflare 的部署表单创建新的 D1、两个 R2 桶和 Queue，并把实际资源写入配置。首次部署保留 `APP_ORIGIN` / `APPS_ORIGIN` 为空，Worker 名使用 2–50 个小写字母、数字或连字符，且以字母开头、以字母或数字结尾。选择名称时，为衍生的 `<名称>-build` 和 `<名称>-apps` 也预留空闲名称；不要复用现有实例的资源。
 
-当前可用方式为上面的源码部署流程。准备公开镜像和部署编排后，再发布经过实际新实例验收的 Deploy 链接。
+填写两个独立的随机值：`BOOTSTRAP_SECRET` 使用 `openssl rand -hex 32` 生成；`CREDENTIAL_ENCRYPTION_KEY` 使用 `openssl rand -base64 32` 生成。前者用于网页首次初始化，后者用于加密凭据，必须妥善保管且升级时保持不变。
+
+构建命令为 `npm run build`，部署命令为 `npm run deploy`。模板中的部署脚本先应用所有 D1 migrations，再发布私有编译 Worker 和独立应用网关，最后发布主 Worker。主服务共享 DB / OBJECTS，编译服务仅获得 NPM_CACHE；`BUILDER` 和应用地址由脚本自动连接。编译与网关部署会移除主 Worker 专用的 CI 名称/标识，避免把三个服务覆盖到同一个 Worker 上。
+
+该流程在 Cloudflare 官方单 Worker 按钮之上增加部署编排。构建使用的 Cloudflare API token 需要本账户 Workers Scripts、D1、R2、Queues 的对应管理权限；若平台生成的 token 权限不足，在 Workers Builds 中选择具有这些权限的部署 token 后重试。首次使用需启用相关服务与额度，费用按实际资源使用计费。失败不会删除已有数据；修复配置后重新部署即可，自动清理未完成实例需另行操作。
+
+GitHub `main` 与自托管仓库保存常规源码；`deploy` 是配置经过转换的发布分支。维护者在独立 checkout 中运行 `node scripts/prepare-deploy.mjs <checkout目录>` 更新模板，不能直接在现有实例目录覆盖配置。官方入口要求及限制见 [Cloudflare 文档](https://developers.cloudflare.com/workers/platform/deploy-buttons/)。
 
 ## 更新和 v0.1 迁移
 

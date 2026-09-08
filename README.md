@@ -4,7 +4,9 @@
 
 像使用 GitLab / Gogs 一样托管代码、管理团队和审阅变更。Git 服务由 JavaScript 在 Workers 中实现，数据保存在你自己的 Cloudflare 账号中，无需服务器、Docker 或容器。
 
-[在线体验](https://git.1s.hk) · [源码仓库](https://git.1s.hk/1shk/nb) · [部署指南](docs/DEPLOYMENT.md) · [版本记录](docs/CHANGELOG.md)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FDropKbit%2FOneStorage%2Ftree%2Fdeploy)
+
+[在线体验](https://git.1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [自托管仓库](https://git.1s.hk/1shk/nb) · [部署指南](docs/DEPLOYMENT.md) · [版本记录](docs/CHANGELOG.md)
 
 ## 能做什么
 
@@ -32,9 +34,13 @@
 
 ## 部署到 Cloudflare
 
-准备 Cloudflare 账号，启用 Workers、D1、R2 和 Queues，按 [部署指南](docs/DEPLOYMENT.md#从源码部署新的实例) 创建资源、配置密钥并部署三个 Worker。支持先使用 `workers.dev`，之后绑定自己的域名。
+点击上方 **Deploy to Cloudflare**，从 `deploy` 模板分支创建自己的实例：
 
-Cloudflare 官方 Deploy 按钮需要 GitHub.com / GitLab.com 的公开镜像，并且不原生同时部署多个 Worker。当前源码托管于 `git.1s.hk`；[一键部署接入要求](docs/DEPLOYMENT.md#关于一键部署) 说明了所需准备。
+1. 连接 GitHub 与 Cloudflare，选择项目名及新建的 D1、R2、Queue 资源。
+2. 填写初始化密钥 `BOOTSTRAP_SECRET` 和凭据加密密钥 `CREDENTIAL_ENCRYPTION_KEY`，其余地址保持默认。
+3. 部署完成后打开主 Worker 的地址，使用初始化密钥创建管理员。
+
+模板自动迁移数据库，依次部署编译服务、应用网关和主服务，并连接共享存储与服务地址。需要相应 Cloudflare 服务额度及部署权限；详见 [部署说明](docs/DEPLOYMENT.md#关于一键部署)。已有实例升级请保留原有资源和加密密钥。
 
 ## 本地体验
 

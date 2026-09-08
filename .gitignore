@@ -5,6 +5,7 @@ node_modules/
 !.env.example
 dist/
 .data/
+.onestorage-*.generated.json
 *.log
 .DS_Store
 coverage/

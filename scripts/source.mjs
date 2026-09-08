@@ -18,6 +18,11 @@ const files = [
   "CONTRIBUTING.md",
   ".gitignore",
 ];
+try {
+  if ((await lstat(".env.example")).isFile()) files.push(".env.example");
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
+}
 async function collect(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {
     if (
