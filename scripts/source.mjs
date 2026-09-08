@@ -10,6 +10,7 @@ const files = [
   "tsconfig.json",
   "wrangler.jsonc",
   "wrangler.local.jsonc",
+  "wrangler.apps.jsonc",
   "README.md",
   "LICENSE",
   "SECURITY.md",

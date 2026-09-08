@@ -1,3 +1,4 @@
+import { protectRefs, reviewGate } from "./review";
 import { ObjectCache } from "./git/object-cache";
 import { upstreamClient, pullRepository, scheduleSync } from "./sync";
 import { forgeEvent, dispatchEvent, ForgeEvent } from "./events";
@@ -151,6 +152,7 @@ export class Repository extends DurableObject<Env> {
       request.headers.get("x-write-policy") || '{"rules":[]}',
     );
     let forwarded = false;
+    let reviewedMerge: any = null;
     const publication: RefStorage = {
       get: <T>(key: string) => this.ctx.storage.get<T>(key),
       put: async (key, value) => {
@@ -158,6 +160,10 @@ export class Repository extends DurableObject<Env> {
         const next = value as Refs;
         const before = (await this.ctx.storage.get<Refs>("refs.v2")) || {};
         const values: Record<string, unknown> = { "refs.v2": next };
+        if (reviewedMerge)
+          values["merge-result:" + reviewedMerge.id] = {
+            sha: next["refs/heads/" + reviewedMerge.target],
+          };
         for (const ref of new Set([
           ...Object.keys(before),
           ...Object.keys(next),
@@ -186,6 +192,15 @@ export class Repository extends DurableObject<Env> {
       defaultBranch,
       {
         beforePublish: async (before, after, ephemeral) => {
+          if (!ephemeral && metadata)
+            await protectRefs(
+              this.env,
+              metadata,
+              store,
+              before,
+              after,
+              reviewedMerge,
+            );
           if (!metadata?.base_repo || ephemeral) return after;
           const config = JSON.parse(metadata.base_repo);
           if (config.provider === "github" && config.mode === "public")
@@ -212,6 +227,54 @@ export class Repository extends DurableObject<Env> {
     const ephemeral = request.headers.get("x-namespace") === "ephemeral",
       repo = select(ephemeral),
       path = url.pathname;
+    if (path === "/review-merge" && request.method === "POST") {
+      const body = JSON.parse(text(await boundedBody(request, 8192)));
+      const mr = await this.env.DB.prepare(
+        "SELECT * FROM merge_requests WHERE id=? AND repo_id=?",
+      )
+        .bind(body.id, id)
+        .first<any>();
+      if (!mr || !metadata) fail(404, "Merge request not found");
+      const previous = await this.ctx.storage.get<{ sha: string }>(
+        "merge-result:" + mr.id,
+      );
+      if (previous || mr.state === "merged") {
+        const result = previous || { sha: mr.merged_sha };
+        await this.env.DB.prepare(
+          "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
+        )
+          .bind(result.sha, mr.id, id)
+          .run();
+        return Response.json(result);
+      }
+      if (mr.state !== "open") fail(409, "Merge request closed");
+      if (
+        refs["refs/heads/" + mr.source] !== mr.source_sha ||
+        refs["refs/heads/" + mr.target] !== mr.target_sha
+      )
+        fail(409, "Branches moved; refresh the merge request and review again");
+      const gate = await reviewGate(this.env, metadata, mr);
+      if (!gate.allowed) fail(409, gate.reasons.join("; "));
+      reviewedMerge = mr;
+      const result = await repo.mergeBranches({
+        source_ref: mr.source_sha,
+        target_branch: mr.target,
+        expected_target_sha: mr.target_sha,
+        strategy: body.strategy || "ff_prefer",
+        squash: !!body.squash,
+        commit_message: "Merge !" + mr.id + ": " + mr.title,
+        author: {
+          name: request.headers.get("x-actor") || "OneStorage",
+          email: "merge@onestorage.invalid",
+        },
+      });
+      await this.env.DB.prepare(
+        "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
+      )
+        .bind(result.sha, mr.id, id)
+        .run();
+      return Response.json(result);
+    }
     const life = await lifecycle(request, repo, this.env, this.ctx.storage);
     if (life) return life;
     if (metadata?.sync_status === "initializing")
@@ -222,6 +285,8 @@ export class Repository extends DurableObject<Env> {
       return repo.rawFile(request, q.ref || "HEAD", q.path || "");
     if (request.method === "GET") {
       switch (path) {
+        case "/resolve":
+          return Response.json({ sha: await repo.resolve(q.ref || "HEAD") });
         case "/file":
           return repo.rawFile(request, q.ref || "HEAD", q.path || "");
         case "/files":

@@ -1,4 +1,5 @@
-const platform = () => import("./manage.js?v=76d5a8cc5657a2df");
+const collaboration = () => import("./collaboration.js?v=e62da110230df4c0");
+const platform = () => import("./manage.js?v=7bf783bc42bd4ec0");
 import {
   keyPage,
   forgePage,
@@ -220,7 +221,7 @@ window.addEventListener("popstate", render);
 const link = (path, label, cls = "") =>
   `<a data-link href="${esc(path === "/" && user && selectedSpace ? "/?namespace=" + encodeURIComponent(selectedSpace) : path)}" class="${cls}">${label}</a>`;
 function layout(content, crumb = "项目", active = "repos") {
-  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || (booting ? "工作空间" : "公开空间"))}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div>${user ? '<div class="space-switch"><label for="workspace-select">当前空间</label><select id="workspace-select" aria-label="切换工作空间"></select></div>' : ""}<div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user ? link("/spaces", icon("users") + "工作空间", `navlink ${active === "spaces" ? "active" : ""}`) : ""}${user?.admin ? link("/admin/users", icon("users") + "管理员后台", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.4.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
+  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || (booting ? "工作空间" : "公开空间"))}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div>${user ? '<div class="space-switch"><label for="workspace-select">当前空间</label><select id="workspace-select" aria-label="切换工作空间"></select></div>' : ""}<div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user ? link("/spaces", icon("users") + "工作空间", `navlink ${active === "spaces" ? "active" : ""}`) : ""}${user ? link("/notifications", icon("repo") + "通知", "navlink") : ""}${user?.admin ? link("/admin/users", icon("users") + "管理员后台", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.5.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
   updateWorkspaceControl();
   document.querySelector("#logout")?.addEventListener("click", async () => {
     await api("/logout", { method: "POST" });
@@ -330,6 +331,11 @@ function repoLayout(r, tab, content, actions = "") {
       ["search", "搜索", "/search"],
       ["issues", "Issues", "/issues"],
       ["merges", "合并请求", "/merges"],
+      ["planning", "规划", "/planning"],
+      ["releases", "版本", "/releases"],
+      ["wiki", "Wiki", "/wiki"],
+      ["deployments", "应用发布", "/deployments"],
+      ["protect", "分支保护", "/protect"],
       ["members", "成员", "/members"],
       ...(["owner", "maintainer"].includes(r.role)
         ? [
@@ -711,7 +717,12 @@ async function render() {
       go,
       current: () => version === routeVersion,
       reloadSpaces,
+      user,
     };
+    if (path === "/notifications") {
+      await (await collaboration()).notificationsPage(helpers);
+      return;
+    }
     if (path === "/admin/users") {
       if (!user?.admin) throw Error("需要管理员权限");
       await (await platform()).adminConsole(helpers, user);
@@ -747,16 +758,29 @@ async function render() {
     if (!tab) await codePage(r, base, ap, version);
     else if (tab === "ci")
       await (await platform()).ciPage(r, base, ap, helpers, sub);
+    else if (
+      ["protect", "planning", "releases", "wiki", "deployments"].includes(tab)
+    )
+      await (await collaboration()).projectPage(r, base, ap, helpers, tab, sub);
+    else if (tab === "merges" && sub)
+      await (await collaboration()).reviewPage(r, base, ap, helpers, sub);
     else if (tab === "forge") await forgePage(r, base, ap, helpers);
     else if (tab === "upstream") await upstreamPage(r, base, ap, helpers);
     else if (tab === "search") await searchPage(r, base, ap, version);
     else if (tab === "edit") await editPage(r, base, ap, version);
     else if (tab === "commits") await commitsPage(r, base, ap, version);
-    else if (tab === "issues") await issuesPage(r, base, ap, sub, version);
-    else if (tab === "merges") await mergesPage(r, base, ap, sub, version);
+    else if (tab === "issues") {
+      await issuesPage(r, base, ap, sub, version);
+      if (sub && version === routeVersion)
+        await (
+          await collaboration()
+        ).issuePlanning(r, ap, helpers, await api(ap + "/issues/" + sub));
+    } else if (tab === "merges") await mergesPage(r, base, ap, sub, version);
     else if (tab === "members") await membersPage(r, base, ap, version);
     else if (tab === "settings") await settingsPage(r, base, ap, version);
     else throw Error("页面不存在");
+    if (version === routeVersion)
+      (await collaboration()).social(r, ap, helpers).catch(() => {});
   } catch (e) {
     if (version !== routeVersion) return;
     layout(

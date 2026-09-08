@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3207,7 +3207,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3244,7 +3244,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3283,7 +3283,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -3329,7 +3329,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -3375,7 +3375,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -3423,7 +3423,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -3469,7 +3469,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -3517,7 +3517,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -3573,7 +3573,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3612,7 +3612,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3651,7 +3651,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -3699,7 +3699,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3738,7 +3738,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -3786,7 +3786,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3825,7 +3825,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -3871,7 +3871,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -3919,7 +3919,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -3958,7 +3958,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4012,7 +4012,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4068,7 +4068,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4122,7 +4122,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4178,7 +4178,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4242,7 +4242,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4306,7 +4306,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4370,7 +4370,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4442,7 +4442,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4496,7 +4496,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4552,7 +4552,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -4616,7 +4616,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -4655,7 +4655,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -4711,7 +4711,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -4767,7 +4767,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -4823,7 +4823,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -4887,7 +4887,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -4906,6 +4906,1614 @@
             }
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/protections": {
+      "get": {
+        "operationId": "list_protections",
+        "summary": "list protections",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "put": {
+        "operationId": "set_protection",
+        "summary": "set protection",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "remove_protection",
+        "summary": "remove protection",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}": {
+      "get": {
+        "operationId": "get_merge_request",
+        "summary": "get merge request",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "update_merge_request",
+        "summary": "update merge request",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/reviews": {
+      "post": {
+        "operationId": "review_merge_request",
+        "summary": "review merge request",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/merge": {
+      "post": {
+        "operationId": "merge_reviewed_request",
+        "summary": "merge reviewed request",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/planning": {
+      "get": {
+        "operationId": "repository_planning",
+        "summary": "repository planning",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/labels": {
+      "post": {
+        "operationId": "create_label",
+        "summary": "create label",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/labels/{id}": {
+      "delete": {
+        "operationId": "delete_label",
+        "summary": "delete label",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/milestones": {
+      "post": {
+        "operationId": "create_milestone",
+        "summary": "create milestone",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/milestones/{id}": {
+      "patch": {
+        "operationId": "update_milestone",
+        "summary": "update milestone",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/issues/{id}/planning": {
+      "put": {
+        "operationId": "assign_issue",
+        "summary": "assign issue",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/releases": {
+      "get": {
+        "operationId": "list_releases",
+        "summary": "list releases",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_release",
+        "summary": "create release",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/releases/{id}": {
+      "delete": {
+        "operationId": "delete_release",
+        "summary": "delete release",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/deployments": {
+      "get": {
+        "operationId": "list_deployments",
+        "summary": "list deployments",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/environments/{name}": {
+      "put": {
+        "operationId": "activate_deployment",
+        "summary": "activate deployment",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/wiki": {
+      "get": {
+        "operationId": "wiki_pages",
+        "summary": "wiki pages",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/wiki/{page}": {
+      "get": {
+        "operationId": "wiki_page",
+        "summary": "wiki page",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "put": {
+        "operationId": "write_wiki",
+        "summary": "write wiki",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/social": {
+      "get": {
+        "operationId": "repository_social",
+        "summary": "repository social",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/star": {
+      "put": {
+        "operationId": "star_repository",
+        "summary": "star repository",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unstar_repository",
+        "summary": "unstar repository",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/watch": {
+      "put": {
+        "operationId": "watch_repository",
+        "summary": "watch repository",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unwatch_repository",
+        "summary": "unwatch repository",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "operationId": "list_notifications",
+        "summary": "list notifications",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/notifications/read": {
+      "post": {
+        "operationId": "read_notifications",
+        "summary": "read notifications",
+        "tags": [
+          "Workspaces"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [],
         "security": [
           {
             "bearerAuth": []

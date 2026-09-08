@@ -40,6 +40,56 @@ export const platformOperations = [
   ["put", "/api/runner/runs/{id}/artifacts/{name}", "runner_artifact"],
   ["post", "/api/runner/runs/{id}/complete", "runner_complete"],
 ];
+platformOperations.push(
+  ["get", "/api/repos/{namespace}/{repo}/protections", "list_protections"],
+  ["put", "/api/repos/{namespace}/{repo}/protections", "set_protection"],
+  ["delete", "/api/repos/{namespace}/{repo}/protections", "remove_protection"],
+  ["get", "/api/repos/{namespace}/{repo}/merges/{id}", "get_merge_request"],
+  [
+    "patch",
+    "/api/repos/{namespace}/{repo}/merges/{id}",
+    "update_merge_request",
+  ],
+  [
+    "post",
+    "/api/repos/{namespace}/{repo}/merges/{id}/reviews",
+    "review_merge_request",
+  ],
+  [
+    "post",
+    "/api/repos/{namespace}/{repo}/merges/{id}/merge",
+    "merge_reviewed_request",
+  ],
+  ["get", "/api/repos/{namespace}/{repo}/planning", "repository_planning"],
+  ["post", "/api/repos/{namespace}/{repo}/labels", "create_label"],
+  ["delete", "/api/repos/{namespace}/{repo}/labels/{id}", "delete_label"],
+  ["post", "/api/repos/{namespace}/{repo}/milestones", "create_milestone"],
+  [
+    "patch",
+    "/api/repos/{namespace}/{repo}/milestones/{id}",
+    "update_milestone",
+  ],
+  ["put", "/api/repos/{namespace}/{repo}/issues/{id}/planning", "assign_issue"],
+  ["get", "/api/repos/{namespace}/{repo}/releases", "list_releases"],
+  ["post", "/api/repos/{namespace}/{repo}/releases", "create_release"],
+  ["delete", "/api/repos/{namespace}/{repo}/releases/{id}", "delete_release"],
+  ["get", "/api/repos/{namespace}/{repo}/deployments", "list_deployments"],
+  [
+    "put",
+    "/api/repos/{namespace}/{repo}/environments/{name}",
+    "activate_deployment",
+  ],
+  ["get", "/api/repos/{namespace}/{repo}/wiki", "wiki_pages"],
+  ["get", "/api/repos/{namespace}/{repo}/wiki/{page}", "wiki_page"],
+  ["put", "/api/repos/{namespace}/{repo}/wiki/{page}", "write_wiki"],
+  ["get", "/api/repos/{namespace}/{repo}/social", "repository_social"],
+  ["put", "/api/repos/{namespace}/{repo}/star", "star_repository"],
+  ["delete", "/api/repos/{namespace}/{repo}/star", "unstar_repository"],
+  ["put", "/api/repos/{namespace}/{repo}/watch", "watch_repository"],
+  ["delete", "/api/repos/{namespace}/{repo}/watch", "unwatch_repository"],
+  ["get", "/api/notifications", "list_notifications"],
+  ["post", "/api/notifications/read", "read_notifications"],
+);
 export function addPlatformPaths(paths) {
   for (const [method, path, id] of platformOperations) {
     const parameters = [...path.matchAll(/\{([^}]+)\}/g)].map((m) => ({
@@ -68,7 +118,7 @@ export function addPlatformPaths(paths) {
               : "Workspaces",
       ],
       description:
-        "See docs/PLATFORM-v04.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
       parameters,
       security: [{ bearerAuth: [] }],
       responses: {

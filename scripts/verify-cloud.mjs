@@ -249,7 +249,7 @@ try {
     const spec = await (await fetch(origin + "/openapi.json")).json();
     assert.equal(
       Object.values(spec.paths).reduce((n, x) => n + Object.keys(x).length, 0),
-      74,
+      102,
     );
   });
   await check("real public GitHub sync through cloud Queue/R2/DO", async () => {

@@ -1,3 +1,4 @@
+import { protectRefs } from "./review";
 import type { Env, Repo } from "./types";
 import { GitClient } from "./git/client";
 import { ObjectStore, Refs, checkRefs } from "./git/objects";
@@ -117,6 +118,7 @@ export async function pullRepository(
     await store.flush();
     const before = (await storage.get<Refs>("refs.v2")) || {},
       after = mirroredRefs(before, remote.refs);
+    await protectRefs(env, metadata, store, before, after);
     const success = forgeEvent(id, "repo.sync.succeeded", {
       is_first_sync: !metadata.synced_at,
       refs: remote.refs,

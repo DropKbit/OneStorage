@@ -1,3 +1,10 @@
+import {
+  cloudStep,
+  deployConfig,
+  executeJavaScript,
+  saveCloudOutput,
+  type CloudFiles,
+} from "./cloud-ci";
 import { z } from "zod";
 import type { Hono, Context } from "hono";
 import type { App, Env, Repo } from "./types";
@@ -26,6 +33,7 @@ export const pipelineSchema = z
     steps: z
       .array(
         z.discriminatedUnion("type", [
+          cloudStep,
           z.object({
             type: z.literal("run"),
             name: z.string().min(1).max(80),
@@ -45,9 +53,19 @@ export const pipelineSchema = z
       )
       .min(1)
       .max(20),
+    deploy: deployConfig.optional(),
     artifacts: z.array(filePath).max(10).default([]),
   })
   .superRefine((p, c) => {
+    if (
+      p.runner === "external" &&
+      (p.deploy || p.steps.some((s) => s.type === "javascript"))
+    )
+      c.addIssue({
+        code: "custom",
+        message:
+          "Cloud JavaScript and hosted deployments require Worker runner",
+      });
     if (p.runner === "worker" && p.steps.some((s) => s.type === "run"))
       c.addIssue({
         code: "custom",
@@ -242,6 +260,7 @@ export async function consumeCI(env: Env, id: string) {
   const run = claimed.run,
     config = pipelineSchema.parse(JSON.parse(run.config));
   let seq = 0;
+  const artifacts: CloudFiles = Object.create(null);
   const deadline = Date.now() + Math.min(config.timeout_seconds * 1000, 110000);
   try {
     for (const step of config.steps) {
@@ -252,7 +271,23 @@ export async function consumeCI(env: Env, id: string) {
         .bind(id, run.lease_hash, Date.now())
         .first();
       if (!active) return;
-      if (step.type === "file") {
+      if (step.type === "javascript") {
+        const output = await executeJavaScript(
+          env,
+          pending,
+          run,
+          step,
+          artifacts,
+        );
+        for (let offset = 0; offset < output.length; offset += 4096)
+          await log(env, run, seq++, output.slice(offset, offset + 4096));
+        await log(
+          env,
+          run,
+          seq++,
+          "PASS isolated JavaScript " + step.entry + "\n",
+        );
+      } else if (step.type === "file") {
         const response = await repoEngine(
           env,
           pending,
@@ -289,7 +324,9 @@ export async function consumeCI(env: Env, id: string) {
       } else throw Error("Unsupported Worker step");
     }
     if (Date.now() >= deadline) throw Error("Pipeline timeout");
-    await finish(env, run, "succeeded");
+    if (Object.keys(artifacts).length || config.deploy)
+      await saveCloudOutput(env, pending, run, artifacts, config.deploy);
+    else await finish(env, run, "succeeded");
   } catch (e) {
     const error = e instanceof Error ? e.message : "Pipeline failed";
     await log(env, run, seq++, "FAIL " + error.slice(0, 1000) + "\n");
@@ -389,7 +426,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
     return c.json({
       runs: (
         await c.env.DB.prepare(
-          "SELECT * FROM ci_runs WHERE repo_id=? ORDER BY created_at DESC,id DESC LIMIT 50",
+          "SELECT * FROM ci_runs WHERE repo_id=? ORDER BY rowid DESC LIMIT 50",
         )
           .bind(repo.id)
           .all()

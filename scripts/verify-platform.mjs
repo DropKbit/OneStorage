@@ -36,7 +36,7 @@ async function req(
     ? JSON.parse(text)
     : text;
 }
-assert.equal((await req("/api/health")).version, "0.4.0");
+assert.equal((await req("/api/health")).version, JSON.parse(await readFile("package.json","utf8")).version);
 await req("/api/admin/overview");
 await req("/api/admin/overview", "GET", undefined, 401, false);
 const slug = "accept_v04_" + crypto.randomUUID().slice(0, 8),

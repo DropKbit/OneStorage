@@ -1,0 +1,23 @@
+{
+  "name": "Cloudflare native example",
+  "runner": "worker",
+  "branches": ["main"],
+  "timeout_seconds": 90,
+  "steps": [
+    {
+      "type": "javascript",
+      "entry": "examples/cloud-native/ci.js",
+      "files": [
+        "examples/cloud-native/ci.js",
+        "examples/cloud-native/index.js"
+      ],
+      "cpu_ms": 1000
+    }
+  ],
+  "deploy": {
+    "kind": "static",
+    "environment": "preview",
+    "entry": "index.html",
+    "files": ["index.html"]
+  }
+}

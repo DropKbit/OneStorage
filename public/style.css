@@ -1156,3 +1156,9 @@ button.text {
     monospace;
   min-height: 300px;
 }
+
+.prose {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}

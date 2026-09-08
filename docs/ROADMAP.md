@@ -35,3 +35,8 @@ v0.2 只有 PAT/会话鉴权、heads/tags、基本读写、快进合并、文本
 ## v0.4 平台扩展目标
 
 用户已指定：代码高亮、通用构建与 Cloudflare 部署、多空间、权限分配、管理员后台。验收范围、权限矩阵、Runner 配置和当前边界见 [平台说明](PLATFORM-v04.md)。功能开发、权限/协议回归与生产迁移已完成，线上核心验收通过；测试证据和 Runner 部署前提见 [v0.4 验证记录](VERIFICATION-v04.md)。
+
+
+## Cloudflare 原生 GitLab/Gogs 持续目标
+
+以 [v0.5 能力与差距矩阵](CLOUD-NATIVE-v05.md) 为当前状态，逐步补齐跨 Fork 审阅、身份安全、Markdown/预览、完整项目协作及原生构建。v0.5 发布不表示总目标完成。

@@ -4,12 +4,14 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  "worker_loaders": [{ "binding": "LOADER" }],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
     "run_worker_first": true,
   },
   "vars": {
+    "APPS_ORIGIN": "https://onestorage-apps.xbitfun.workers.dev",
     "APP_ORIGIN": "https://git.1s.hk",
     "WEBHOOK_ALLOWED_HOSTS": "",
   },

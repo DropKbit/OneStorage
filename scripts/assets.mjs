@@ -9,7 +9,7 @@ async function update(path, content) {
 }
 const forge = hash(await readFile("public/forge.js"));
 let app = await readFile("public/app.js", "utf8");
-for (const name of ["manage", "highlight"]) {
+for (const name of ["manage", "highlight", "collaboration"]) {
   const version = hash(await readFile(`public/${name}.js`));
   app = app.replace(
     new RegExp(`(["'\"])(\\.\\/${name}\\.js)(?:\\?v=[a-f0-9]+)?\\1`, "g"),

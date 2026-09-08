@@ -13,7 +13,7 @@ import {
 } from "./objects";
 import { pkt, FLUSH, DELIM, readPackets, band } from "./pkt";
 import { parsePack, writePack } from "./pack";
-const agent = "agent=onestorage/0.4";
+const agent = "agent=onestorage/0.5";
 const uploadCaps = `side-band-64k ofs-delta no-progress ${agent} object-format=sha1`;
 const receiveCaps = `report-status delete-refs ofs-delta atomic ${agent} object-format=sha1`;
 export function gitResponse(

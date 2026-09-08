@@ -226,11 +226,31 @@ export async function ciPage(r, base, ap, h, runId) {
     ],
     artifacts: [],
   };
-  const config = saved.config || sample;
+  const cloudSample = {
+    name: "Cloudflare JavaScript / WASM",
+    runner: "worker",
+    branches: [r.default_branch],
+    timeout_seconds: 90,
+    steps: [
+      {
+        type: "javascript",
+        entry: "ci.js",
+        files: ["ci.js", "index.js"],
+        cpu_ms: 1000,
+      },
+    ],
+    deploy: {
+      kind: "worker",
+      entry: "index.js",
+      files: ["index.js"],
+      environment: "production",
+    },
+  };
+  const config = saved.config || cloudSample;
   repoLayout(
     r,
     "ci",
-    `<div class="titlebar"><div><h2>CI/CD</h2><p class="muted">推送自动触发，按提交构建，查看日志与部署结果。</p></div>${button("刷新", "refresh")}</div>${maintain ? `<form class="toolbar" id="run-pipeline">${field("分支", "ref", "text", r.default_branch)}<button class="btn primary" type="submit">运行流水线</button></form>` : ""}<div class="panel"><div class="panelhead"><strong>最近运行</strong><span>${saved.enabled ? "自动触发已启用" : "自动触发已关闭"}</span></div>${runs.map((run) => `<div class="token-row"><div><a data-link href="${base}/ci/${run.id}"><strong>${esc(run.config.name)}</strong></a><p class="muted">${esc(run.ref)} · ${run.sha.slice(0, 8)} · ${esc(run.created_at)}</p></div><span class="pill ci-${run.status}">${statuses[run.status]}</span></div>`).join("") || '<div class="empty">配置流水线后，推送代码或手动运行。</div>'}</div>${maintain ? `<div class="panel"><form class="form" id="pipeline-config"><h2>流水线配置</h2><p class="muted">通用构建使用你管理的 Runner；Cloudflare 部署凭证由 Runner 环境提供。</p><div class="actionbar">${button("通用构建与部署模板", "template-external")}${button("Worker 检查模板", "template-worker")}</div>${textarea("JSON 配置", "config", JSON.stringify(config, null, 2), "code-input")}<label class="check"><input type="checkbox" name="enabled" ${saved.enabled ? "checked" : ""}> 推送自动触发</label><button class="btn primary" type="submit">保存配置</button></form></div><div class="panel"><div class="panelhead"><strong>仓库 Runner</strong></div>${runnerData.runners.map((r) => `<div class="token-row"><div><strong>${esc(r.name)}</strong><p class="muted">${r.last_seen ? "最近在线 " + new Date(r.last_seen).toLocaleString() : "尚未连接"}</p></div>${button("撤销", "revoke-runner", r.id, true)}</div>`).join("")}<form class="form" id="create-runner">${field("Runner 名称", "name")}<button class="btn" type="submit">注册 Runner</button></form><div id="runner-token"></div><div class="detail-body"><p>在专用主机下载源码、安装依赖后运行：</p><pre>ONESTORAGE_ORIGIN=${esc(location.origin)} \\\nONESTORAGE_RUNNER_TOKEN_FILE=/secure/runner-token \\\nONESTORAGE_JOB_ENV=CLOUDFLARE_API_TOKEN,CLOUDFLARE_ACCOUNT_ID \\\nnode scripts/runner.mjs</pre><p class="muted">令牌文件权限设为 600。仅连接你信任代码的仓库；每个 Runner 只领取本仓库任务。</p></div></div>` : ""}`,
+    `<div class="titlebar"><div><h2>CI/CD</h2><p class="muted">推送自动触发，按提交构建，查看日志与部署结果。</p></div>${button("刷新", "refresh")}</div>${maintain ? `<form class="toolbar" id="run-pipeline">${field("分支", "ref", "text", r.default_branch)}<button class="btn primary" type="submit">运行流水线</button></form>` : ""}<div class="panel"><div class="panelhead"><strong>最近运行</strong><span>${saved.enabled ? "自动触发已启用" : "自动触发已关闭"}</span></div>${runs.map((run) => `<div class="token-row"><div><a data-link href="${base}/ci/${run.id}"><strong>${esc(run.config.name)}</strong></a><p class="muted">${esc(run.ref)} · ${run.sha.slice(0, 8)} · ${esc(run.created_at)}</p></div><span class="pill ci-${run.status}">${statuses[run.status]}</span></div>`).join("") || '<div class="empty">配置流水线后，推送代码或手动运行。</div>'}</div>${maintain ? `<div class="panel"><form class="form" id="pipeline-config"><h2>流水线配置</h2><p class="muted">Cloudflare 模板在隔离 Worker 中执行仓库 ci.js，保存产物和应用版本。CI 脚本导出异步函数，失败时抛出异常；发布后在「应用发布」中激活或回滚。</p><div class="actionbar">${button("Cloudflare 云端执行模板", "template-cloud")}${button("外部 Runner 模板", "template-external")}${button("Worker 检查模板", "template-worker")}</div>${textarea("JSON 配置", "config", JSON.stringify(config, null, 2), "code-input")}<label class="check"><input type="checkbox" name="enabled" ${saved.enabled ? "checked" : ""}> 推送自动触发</label><button class="btn primary" type="submit">保存配置</button></form></div><div class="panel"><div class="panelhead"><strong>仓库 Runner</strong></div>${runnerData.runners.map((r) => `<div class="token-row"><div><strong>${esc(r.name)}</strong><p class="muted">${r.last_seen ? "最近在线 " + new Date(r.last_seen).toLocaleString() : "尚未连接"}</p></div>${button("撤销", "revoke-runner", r.id, true)}</div>`).join("")}<form class="form" id="create-runner">${field("Runner 名称", "name")}<button class="btn" type="submit">注册 Runner</button></form><div id="runner-token"></div><div class="detail-body"><p>在专用主机下载源码、安装依赖后运行：</p><pre>ONESTORAGE_ORIGIN=${esc(location.origin)} \\\nONESTORAGE_RUNNER_TOKEN_FILE=/secure/runner-token \\\nONESTORAGE_JOB_ENV=CLOUDFLARE_API_TOKEN,CLOUDFLARE_ACCOUNT_ID \\\nnode scripts/runner.mjs</pre><p class="muted">令牌文件权限设为 600。仅连接你信任代码的仓库；每个 Runner 只领取本仓库任务。</p></div></div>` : ""}`,
   );
   bindForm("#run-pipeline", async (b) => {
     const run = await api(root + "/runs", { method: "POST", body: b });
@@ -257,15 +277,19 @@ export async function ciPage(r, base, ap, h, runId) {
     if (a.startsWith("template-")) {
       document.querySelector("#pipeline-config textarea").value =
         JSON.stringify(
-          a === "template-worker"
-            ? {
-                name: "Repository checks",
-                runner: "worker",
-                branches: [r.default_branch],
-                steps: [{ type: "file", path: "package.json", format: "json" }],
-                artifacts: [],
-              }
-            : sample,
+          a === "template-cloud"
+            ? cloudSample
+            : a === "template-worker"
+              ? {
+                  name: "Repository checks",
+                  runner: "worker",
+                  branches: [r.default_branch],
+                  steps: [
+                    { type: "file", path: "package.json", format: "json" },
+                  ],
+                  artifacts: [],
+                }
+              : sample,
           null,
           2,
         );

@@ -1,3 +1,4 @@
+import { registerCollaboration } from "./collaboration";
 import { registerCIRoutes } from "./ci";
 import { repositoryRole, roleRank } from "./access";
 import { registerWorkspaceRoutes, workspaceAccess } from "./workspaces";
@@ -240,6 +241,7 @@ const staticPaths = new Set([
   "/app.js",
   "/forge.js",
   "/manage.js",
+  "/collaboration.js",
   "/highlight.js",
   "/THIRD_PARTY_LICENSES.txt",
   "/style.css",
@@ -352,7 +354,7 @@ registerIdentityRoutes(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.4.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.5.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -806,6 +808,7 @@ app.get("/api/repo-url/:id", async (c) => {
   });
 });
 registerCIRoutes(app, { access: repoAccess, audit });
+registerCollaboration(app, { access: repoAccess, engine: engineJSON, audit });
 registerForgeRoutes(app, { access: repoAccess, engine, audit });
 registerSyncRoutes(app, { access: repoAccess, engine, audit });
 for (const operation of [
@@ -942,12 +945,34 @@ app.get("/api/repos/:namespace/:repo/issues/:id", async (c) => {
   )
     .bind(c.req.param("id"))
     .all();
-  return c.json({ ...issue, comments: comments.results });
+  const labels = await c.env.DB.prepare(
+    "SELECT l.* FROM labels l JOIN issue_labels il ON il.label_id=l.id WHERE il.issue_id=?",
+  )
+    .bind(c.req.param("id"))
+    .all();
+  const assigned = await c.env.DB.prepare(
+    "SELECT u.username AS assignee,m.title AS milestone FROM issues i LEFT JOIN users u ON u.id=i.assignee_id LEFT JOIN milestones m ON m.id=i.milestone_id WHERE i.id=?",
+  )
+    .bind(c.req.param("id"))
+    .first();
+  return c.json({
+    ...issue,
+    ...assigned,
+    labels: labels.results,
+    comments: comments.results,
+  });
 });
 app.patch("/api/repos/:namespace/:repo/issues/:id", async (c) => {
   const r = await repoAccess(c),
     u = requireUser(c),
-    b = await input(c, z.object({ state: z.enum(["open", "closed"]) }));
+    b = await input(
+      c,
+      z.object({
+        state: z.enum(["open", "closed"]).optional(),
+        title: z.string().trim().min(1).max(240).optional(),
+        body: z.string().max(20000).optional(),
+      }),
+    );
   const issue = await c.env.DB.prepare(
     "SELECT author_id FROM issues WHERE id=? AND repo_id=?",
   )
@@ -955,8 +980,16 @@ app.patch("/api/repos/:namespace/:repo/issues/:id", async (c) => {
     .first<{ author_id: string }>();
   if (!issue) fail(404, "Issue not found");
   if (issue.author_id !== u.id) await repoAccess(c, "maintain");
-  await c.env.DB.prepare("UPDATE issues SET state=? WHERE id=? AND repo_id=?")
-    .bind(b.state, c.req.param("id"), r.id)
+  await c.env.DB.prepare(
+    "UPDATE issues SET state=COALESCE(?,state),title=COALESCE(?,title),body=COALESCE(?,body) WHERE id=? AND repo_id=?",
+  )
+    .bind(
+      b.state ?? null,
+      b.title ?? null,
+      b.body ?? null,
+      c.req.param("id"),
+      r.id,
+    )
     .run();
   await audit(c, "issue." + b.state, r.id, c.req.param("id"));
   return c.json({ ok: true });
@@ -1016,40 +1049,6 @@ app.post("/api/repos/:namespace/:repo/merges", async (c) => {
     .first();
   await audit(c, "merge_request.create", r.id, b.title);
   return c.json(result, 201);
-});
-app.get("/api/repos/:namespace/:repo/merges/:id", async (c) => {
-  const r = await repoAccess(c);
-  const mr = await c.env.DB.prepare(
-    "SELECT m.*,u.username AS author FROM merge_requests m JOIN users u ON u.id=m.author_id WHERE m.id=? AND repo_id=?",
-  )
-    .bind(c.req.param("id"), r.id)
-    .first<any>();
-  if (!mr) fail(404, "Merge request not found");
-  const comparison = await engineJSON(
-    c,
-    r,
-    `/compare?source=${mr.source_sha}&target=${mr.target_sha}`,
-  );
-  return c.json({ ...mr, diff: comparison.diff });
-});
-app.post("/api/repos/:namespace/:repo/merges/:id/merge", async (c) => {
-  const r = await repoAccess(c, "maintain");
-  const mr = await c.env.DB.prepare(
-    "SELECT * FROM merge_requests WHERE id=? AND repo_id=?",
-  )
-    .bind(c.req.param("id"), r.id)
-    .first<any>();
-  if (!mr) fail(404, "Merge request not found");
-  if (mr.state === "merged") return c.json({ sha: mr.merged_sha });
-  if (mr.state !== "open") fail(409, "Merge request is closed");
-  const result = await engineJSON(c, r, "/merge", mr);
-  await c.env.DB.prepare(
-    "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
-  )
-    .bind(result.sha, mr.id, r.id)
-    .run();
-  await audit(c, "merge_request.merge", r.id, String(mr.id));
-  return c.json(result);
 });
 app.get("/api/repos/:namespace/:repo/audit", async (c) => {
   const r = await repoAccess(c, "maintain");

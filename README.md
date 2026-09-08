@@ -1,12 +1,14 @@
 # OneStorage
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.4.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.5.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 
 新增 **代码高亮、多工作空间、角色权限、管理员后台与 CI/CD**。使用说明和通用 Runner / Cloudflare 部署配置见 [平台指南](docs/PLATFORM-v04.md)。
 
 页面加载与缓存改进、线上测量见 [性能记录](docs/PERFORMANCE.md)。
+
+新增 Cloudflare 原生 JS/WASM CI、应用发布/回滚、受保护分支和审阅门禁、Issue 规划、版本发布、Wiki 与通知。见 [v0.5 使用说明及持续差距](docs/CLOUD-NATIVE-v05.md)。
 
 ## 完全无容器
 

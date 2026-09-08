@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "onestorage-apps",
+  "main": "src/apps-gateway.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "worker_loaders": [
+    {
+      "binding": "LOADER",
+    },
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "onestorage",
+      "database_id": "d2e2b162-f443-4d8f-9a85-e726048ae356",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "OBJECTS",
+      "bucket_name": "onestorage-objects",
+    },
+  ],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+  },
+}

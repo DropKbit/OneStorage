@@ -1,12 +1,8 @@
 import { createMessage, readKey, readSignature, verify } from "openpgp";
 import { bytes, concat, text, sameBytes, GitObject, toHex } from "./objects";
 import { fail } from "../security";
-export function base64(data: Uint8Array) {
-  let s = "";
-  for (let i = 0; i < data.length; i += 16384)
-    s += String.fromCharCode(...data.subarray(i, i + 16384));
-  return btoa(s);
-}
+import { base64 } from "../base64";
+export { base64 } from "../base64";
 export function unbase64(value: string) {
   if (
     value.length > 24 * 1024 * 1024 ||
