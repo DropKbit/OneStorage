@@ -1,0 +1,44 @@
+{
+  "name": "onestorage",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:worker": "wrangler dev --config wrangler.local.jsonc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "node scripts/e2e.mjs",
+    "check": "npm run typecheck && npm test",
+    "build": "wrangler deploy --dry-run --outdir dist --config wrangler.local.jsonc",
+    "deploy": "wrangler deploy",
+    "db:local": "wrangler d1 migrations apply DB --local --config wrangler.local.jsonc",
+    "db:remote": "wrangler d1 migrations apply DB --remote",
+    "build:production": "wrangler deploy --dry-run --outdir dist/production",
+    "format": "prettier --write src sdk public scripts tests docs *.md *.json *.jsonc .github",
+    "source": "node scripts/source.mjs",
+    "predeploy": "npm run source",
+    "prebuild": "npm run source",
+    "prebuild:production": "npm run source"
+  },
+  "dependencies": {
+    "hono": "^4.13.7",
+    "jose": "^6.2.12",
+    "pako": "2.2.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260907.1",
+    "@types/node": "^26.5.0",
+    "@types/pako": "^2.0.4",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.129.1"
+  }
+}

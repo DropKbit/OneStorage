@@ -1,0 +1,15 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE COLLATE NOCASE, password TEXT NOT NULL, admin INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE credentials (hash TEXT PRIMARY KEY, id TEXT NOT NULL UNIQUE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('session','pat')), scope TEXT NOT NULL DEFAULT 'write' CHECK(scope IN ('read','write')), expires_at INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX credentials_user ON credentials(user_id);
+CREATE TABLE repositories (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES users(id), namespace TEXT NOT NULL COLLATE NOCASE, name TEXT NOT NULL COLLATE NOCASE, description TEXT NOT NULL DEFAULT '', visibility TEXT NOT NULL CHECK(visibility IN ('private','public')), default_branch TEXT NOT NULL DEFAULT 'main', created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(namespace,name));
+CREATE TABLE members (repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, role TEXT NOT NULL CHECK(role IN ('reader','developer','maintainer')), PRIMARY KEY(repo_id,user_id));
+CREATE TABLE issues (id INTEGER PRIMARY KEY AUTOINCREMENT, repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, author_id TEXT NOT NULL REFERENCES users(id), title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', state TEXT NOT NULL DEFAULT 'open' CHECK(state IN ('open','closed')), created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX issues_repo ON issues(repo_id,id);
+CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, issue_id INTEGER NOT NULL REFERENCES issues(id) ON DELETE CASCADE, author_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE merge_requests (id INTEGER PRIMARY KEY AUTOINCREMENT, repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, author_id TEXT NOT NULL REFERENCES users(id), title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', source TEXT NOT NULL, target TEXT NOT NULL, source_sha TEXT NOT NULL, target_sha TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'open' CHECK(state IN ('open','closed','merged')), merged_sha TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX mr_repo ON merge_requests(repo_id,id);
+CREATE TABLE audit (id INTEGER PRIMARY KEY AUTOINCREMENT, repo_id TEXT REFERENCES repositories(id) ON DELETE CASCADE, actor_id TEXT REFERENCES users(id), action TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX audit_repo ON audit(repo_id,id);
+CREATE TABLE login_limits (key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, reset_at INTEGER NOT NULL);

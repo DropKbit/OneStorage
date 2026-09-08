@@ -1,0 +1,13 @@
+# Contributing
+
+OneStorage accepts contributions under AGPL-3.0-only.
+
+1. Read `docs/ARCHITECTURE.md`, particularly R2-before-refs ordering and authorization.
+2. Install Node.js 22.13+ and npm. Native Git and tar are required for tests, not the service runtime.
+3. Run `npm ci` and `npm run dev`. There is only one local server, Wrangler on port 8787.
+4. For protocol/storage/auth changes, run `npm run check`, `npm run test:e2e` and `npm run build:production`. Use native Git as an independent compatibility oracle and add focused failure regressions.
+5. Format with `npm run format`. Describe behavior, verification and migration impact. Add numbered SQL migrations instead of editing applied ones.
+
+Do not introduce Containers, shell processes or a native Git dependency into the service runtime. Do not execute repository code/hooks, trust caller-selected storage IDs, acknowledge writes before persistence, bypass role checks or store raw passwords/tokens. Only operator-approved webhook receivers may receive events.
+
+Local E2E creates `e2e_` fixtures and refuses non-loopback hosts. Do not weaken that guard to run against a production database. Cloud acceptance must use a separate, narrowly scoped script and temporary credentials/fixtures. Keep `.data`, `.wrangler`, `.dev.vars` and all credentials out of source control.
