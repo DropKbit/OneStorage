@@ -4002,6 +4002,515 @@
         }
       }
     },
+    "/api/repos/{namespace}/{repo}/ci/variables": {
+      "get": {
+        "operationId": "ci_list_variables",
+        "summary": "ci list variables",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      },
+      "post": {
+        "operationId": "ci_create_variable",
+        "summary": "ci create variable",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Z_][A-Z0-9_]{0,79}$"
+                  },
+                  "environment": {
+                    "type": "string",
+                    "default": "*"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8192,
+                    "writeOnly": true
+                  },
+                  "secret": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "protected": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "refs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "key",
+                  "value"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/variables/{variable}": {
+      "put": {
+        "operationId": "ci_update_variable",
+        "summary": "ci update variable",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "variable",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Z_][A-Z0-9_]{0,79}$"
+                  },
+                  "environment": {
+                    "type": "string",
+                    "default": "*"
+                  },
+                  "value": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8192,
+                    "writeOnly": true
+                  },
+                  "secret": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "protected": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "refs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "key",
+                  "revision"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "ci_delete_variable",
+        "summary": "ci delete variable",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "variable",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "revision"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/ci/variables/{variable}/take-ownership": {
+      "post": {
+        "operationId": "ci_take_variable_ownership",
+        "summary": "ci take variable ownership",
+        "tags": [
+          "CI/CD"
+        ],
+        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "variable",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "revision"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/variables": {
+      "get": {
+        "operationId": "runner_variables",
+        "summary": "runner variables",
+        "tags": [
+          "Runner"
+        ],
+        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
     "/api/repos/{namespace}/{repo}/ci/schedules": {
       "get": {
         "operationId": "ci_list_schedules",

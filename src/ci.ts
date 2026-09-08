@@ -1,3 +1,5 @@
+import { registerVariableRoutes } from "./ci-variable-routes";
+import { loadRunVariables, maskRunLog, maskLogRows } from "./ci-variables";
 import { activeTick, registerScheduleRoutes } from "./ci-schedules";
 import {
   executeJavaScript,
@@ -27,6 +29,8 @@ import {
 } from "./ci-config";
 export { pipelineSchema } from "./ci-config";
 export interface CIRun {
+  source_trigger?: string;
+  trigger?: string;
   id: string;
   repo_id: string;
   ref: string;
@@ -43,6 +47,11 @@ export interface CIRun {
   config_path?: string | null;
   config_sha?: string | null;
   config_error?: string | null;
+}
+async function safeRun(env: Env, row: any) {
+  const value = publicRun(row);
+  if (value?.error) value.error = await maskRunLog(env, value.id, value.error);
+  return value;
 }
 function publicRun(row: any) {
   if (!row) return row;
@@ -62,7 +71,7 @@ export async function enqueueRun(
 ) {
   const id = crypto.randomUUID();
   const result = await env.DB.prepare(
-    `INSERT OR IGNORE INTO ci_runs(id,repo_id,event_id,ref,sha,config,trigger,actor_id,status,config_path,config_sha,error,config_error,schedule_tick_id,finished_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,CASE WHEN ? IS NOT NULL THEN datetime('now') END WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL) AND (SELECT COUNT(*) FROM ci_runs WHERE repo_id=? AND parent_id IS NULL AND status IN ('queued','running'))<20 AND (? IS NULL OR ? IN (${activeTick}))`,
+    `INSERT OR IGNORE INTO ci_runs(id,repo_id,event_id,ref,sha,config,trigger,actor_id,status,config_path,config_sha,error,config_error,schedule_tick_id,source_trigger,finished_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CASE WHEN ? IS NOT NULL THEN datetime('now') END WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL) AND (SELECT COUNT(*) FROM ci_runs WHERE repo_id=? AND parent_id IS NULL AND status IN ('queued','running'))<20 AND (? IS NULL OR ? IN (${activeTick}))`,
   )
     .bind(
       id,
@@ -79,6 +88,7 @@ export async function enqueueRun(
       origin.error || null,
       origin.error || null,
       origin.schedule_tick_id || null,
+      origin.source_trigger || trigger,
       origin.error || null,
       repo.id,
       repo.id,
@@ -255,6 +265,7 @@ export async function claimRun(
   return row ? { run: row, lease } : null;
 }
 async function log(env: Env, run: CIRun, seq: number, content: string) {
+  content = await maskRunLog(env, run.id, content);
   await env.DB.prepare(
     "INSERT OR IGNORE INTO ci_logs(run_id,seq,content) SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM ci_runs WHERE id=? AND status='running' AND lease_hash=? AND lease_until>?)",
   )
@@ -274,6 +285,7 @@ async function finish(
   status: "succeeded" | "failed",
   error: string | null = null,
 ) {
+  if (error) error = (await maskRunLog(env, run.id, error)).slice(0, 1000);
   const result = await env.DB.prepare(
     "UPDATE ci_runs SET status=?,error=?,finished_at=datetime('now'),lease_hash=NULL,lease_until=NULL WHERE id=? AND status='running' AND lease_hash=? AND lease_until>?",
   )
@@ -308,6 +320,7 @@ export async function consumeCI(env: Env, id: string) {
   const artifacts: CloudFiles = Object.create(null);
   const deadline = Date.now() + Math.min(config.timeout_seconds * 1000, 110000);
   try {
+    await loadRunVariables(env, run);
     const dependencies = await dependencyArtifacts(env, run);
     for (const step of config.steps) {
       if (Date.now() >= deadline) throw Error("Pipeline timeout");
@@ -375,7 +388,11 @@ export async function consumeCI(env: Env, id: string) {
       await saveCloudOutput(env, pending, run, artifacts, config.deploy);
     else await finish(env, run, "succeeded");
   } catch (e) {
-    const error = e instanceof Error ? e.message : "Pipeline failed";
+    const error = await maskRunLog(
+      env,
+      run.id,
+      e instanceof Error ? e.message : "Pipeline failed",
+    );
     await log(env, run, seq++, "FAIL " + error.slice(0, 1000) + "\n");
     await finish(env, run, "failed", error.slice(0, 1000));
   } finally {
@@ -427,6 +444,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
     return repo;
   };
   registerScheduleRoutes(app, { ...h, access });
+  registerVariableRoutes(app, { access });
   const getRun = async (
     c: Context<App>,
     level: "read" | "write" | "maintain" = "read",
@@ -474,13 +492,15 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
   app.get(base + "/runs", async (c) => {
     const repo = await access(c);
     return c.json({
-      runs: (
-        await c.env.DB.prepare(
-          "SELECT * FROM ci_runs WHERE repo_id=? AND parent_id IS NULL ORDER BY rowid DESC LIMIT 50",
-        )
-          .bind(repo.id)
-          .all()
-      ).results.map(publicRun),
+      runs: await Promise.all(
+        (
+          await c.env.DB.prepare(
+            "SELECT * FROM ci_runs WHERE repo_id=? AND parent_id IS NULL ORDER BY rowid DESC LIMIT 50",
+          )
+            .bind(repo.id)
+            .all()
+        ).results.map((row) => safeRun(c.env, row)),
+      ),
     });
   });
   app.post(base + "/runs", async (c) => {
@@ -518,21 +538,27 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
   app.get(base + "/runs/:id", async (c) => {
     const { run } = await getRun(c);
     return c.json({
-      ...publicRun(run),
-      jobs: (
-        await c.env.DB.prepare(
-          "SELECT * FROM ci_runs WHERE parent_id=? ORDER BY rowid",
-        )
-          .bind(run.id)
-          .all()
-      ).results.map(publicRun),
-      logs: (
-        await c.env.DB.prepare(
-          "SELECT seq,content FROM ci_logs WHERE run_id=? ORDER BY seq",
-        )
-          .bind(run.id)
-          .all()
-      ).results,
+      ...(await safeRun(c.env, run)),
+      jobs: await Promise.all(
+        (
+          await c.env.DB.prepare(
+            "SELECT * FROM ci_runs WHERE parent_id=? ORDER BY rowid",
+          )
+            .bind(run.id)
+            .all()
+        ).results.map((row) => safeRun(c.env, row)),
+      ),
+      logs: await maskLogRows(
+        c.env,
+        run.id,
+        (
+          await c.env.DB.prepare(
+            "SELECT seq,content FROM ci_logs WHERE run_id=? ORDER BY seq",
+          )
+            .bind(run.id)
+            .all<{ seq: number; content: string }>()
+        ).results,
+      ),
       artifacts: (
         await c.env.DB.prepare(
           "SELECT id,name,size FROM ci_artifacts WHERE run_id=?",
@@ -566,7 +592,11 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
       "retry",
       c.get("user")!.id,
       null,
-      { config_path: run.config_path, config_sha: run.config_sha },
+      {
+        config_path: run.config_path,
+        config_sha: run.config_sha,
+        source_trigger: run.source_trigger || run.trigger,
+      },
     );
     await h.audit(c, "ci.run.retry", repo.id, run.id);
     return c.json(result, 201);
@@ -704,6 +734,13 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
       "/archive",
       { ref: run.sha, format: "tar" },
     );
+  });
+  app.get("/api/runner/runs/:id/variables", async (c) => {
+    const { run } = await lease(c);
+    const values = await loadRunVariables(c.env, run);
+    await lease(c);
+    c.header("Cache-Control", "no-store");
+    return c.json(values);
   });
   app.get("/api/runner/runs/:id/inputs", async (c) => {
     const { run } = await lease(c);

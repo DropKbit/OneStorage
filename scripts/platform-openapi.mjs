@@ -22,6 +22,16 @@ export const platformOperations = [
   ["patch", "/api/admin/repositories/{id}", "admin_update_repository"],
   ["delete", "/api/admin/repositories/{id}", "admin_delete_repository"],
   ["get", "/api/admin/audit", "admin_audit"],
+  ["get", base + "/variables", "ci_list_variables"],
+  ["post", base + "/variables", "ci_create_variable"],
+  ["put", base + "/variables/{variable}", "ci_update_variable"],
+  ["delete", base + "/variables/{variable}", "ci_delete_variable"],
+  [
+    "post",
+    base + "/variables/{variable}/take-ownership",
+    "ci_take_variable_ownership",
+  ],
+  ["get", "/api/runner/runs/{id}/variables", "runner_variables"],
   ["get", base + "/schedules", "ci_list_schedules"],
   ["post", base + "/schedules", "ci_create_schedule"],
   ["put", base + "/schedules/{schedule}", "ci_update_schedule"],
@@ -142,6 +152,53 @@ export function addPlatformPaths(paths) {
       },
     };
     const operation = paths[path][method];
+    if (id.includes("variable")) {
+      operation.description =
+        "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.";
+      if (method !== "get") {
+        const full = id === "ci_create_variable" || id === "ci_update_variable";
+        const properties = full
+          ? {
+              key: { type: "string", pattern: "^[A-Z_][A-Z0-9_]{0,79}$" },
+              environment: { type: "string", default: "*" },
+              value: {
+                type: "string",
+                minLength: 1,
+                maxLength: 8192,
+                writeOnly: true,
+              },
+              secret: { type: "boolean", default: true },
+              protected: { type: "boolean", default: true },
+              enabled: { type: "boolean", default: true },
+              refs: {
+                type: "array",
+                minItems: 1,
+                maxItems: 20,
+                items: { type: "string" },
+              },
+              revision: { type: "integer", minimum: 0 },
+            }
+          : { revision: { type: "integer", minimum: 0 } };
+        operation.requestBody = {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                additionalProperties: false,
+                properties,
+                required:
+                  id === "ci_create_variable"
+                    ? ["key", "value"]
+                    : full
+                      ? ["key", "revision"]
+                      : ["revision"],
+              },
+            },
+          },
+        };
+      }
+    }
     if (id.includes("schedule")) {
       operation.description =
         "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.";

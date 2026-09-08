@@ -8,6 +8,14 @@ async function update(path, content) {
   if ((await readFile(path, "utf8")) !== content)
     await writeFile(path, content);
 }
+const variableVersion = hash(await readFile("public/ci-variables.js"));
+await update(
+  "public/manage.js",
+  (await readFile("public/manage.js", "utf8")).replace(
+    /from "\.\/ci-variables\.js(?:\?v=[a-f0-9]+)?"/,
+    `from "./ci-variables.js?v=${variableVersion}"`,
+  ),
+);
 const forge = hash(await readFile("public/forge.js"));
 let app = await readFile("public/app.js", "utf8");
 for (const name of [

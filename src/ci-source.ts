@@ -8,6 +8,7 @@ export interface SavedPipeline {
   source_path?: string | null;
 }
 export interface ConfigOrigin {
+  source_trigger?: string;
   schedule_tick_id?: string;
   config_path?: string | null;
   config_sha?: string | null;

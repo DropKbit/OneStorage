@@ -1,6 +1,6 @@
 const account = () => import("./account.js?v=1efd29f8c34c0b77");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
-const platform = () => import("./manage.js?v=ca58bc04e33e27a6");
+const platform = () => import("./manage.js?v=9af71cecdfc2c082");
 import {
   keyPage,
   forgePage,

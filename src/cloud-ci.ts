@@ -1,3 +1,5 @@
+import { loadRunVariables, assertVariablesActive } from "./ci-variables";
+import { redact } from "./ci-redaction";
 import { z } from "zod";
 import type { Env, Repo } from "./types";
 import type { CIRun } from "./ci";
@@ -102,9 +104,10 @@ export async function executeJavaScript(
     throw Error("JavaScript entry must be included in files");
   const files = await sourceFiles(env, repo, run.sha, step.files),
     modules = modulesFor(files);
+  const { variables, patterns } = await loadRunVariables(env, run);
   modules["__onestorage_ci.js"] =
     `import job from ${JSON.stringify("./" + step.entry)};
-export default { async fetch(request) { try { const input = await request.json(); const result = await job(input); return Response.json(result ?? {}); } catch(e) { return Response.json({error: String(e?.stack || e)}, {status: 500}); } } };`;
+export default { async fetch(request) { try { const input = await request.json(); const captured=[];for(const k of ["log","info","warn","error","debug"])console[k]=(...args)=>{if(captured.length<32)captured.push(args.map(v=>typeof v==="string"?v:JSON.stringify(v)).join(" ").slice(0,65536));}; const result = await job(input); if(!result || typeof result!=="object" || Array.isArray(result)) throw Error("Job must return an object"); return Response.json({...result,logs:[...captured,...(result?.logs||[])]}); } catch(e) { return Response.json({error: String(e?.stack || e)}, {status: 500}); } } };`;
   const worker = env.LOADER.load({
     compatibilityDate: "2026-09-01",
     mainModule: "__onestorage_ci.js",
@@ -112,6 +115,7 @@ export default { async fetch(request) { try { const input = await request.json()
     globalOutbound: null,
     limits: { cpuMs: step.cpu_ms, subRequests: 0 },
   });
+  await assertVariablesActive(env, run);
   const response = await worker.getEntrypoint().fetch(
     new Request("https://ci.invalid/run", {
       method: "POST",
@@ -122,6 +126,7 @@ export default { async fetch(request) { try { const input = await request.json()
         files,
         artifacts,
         dependencies,
+        variables,
       }),
       signal: AbortSignal.timeout(20000),
     }),
@@ -130,13 +135,35 @@ export default { async fetch(request) { try { const input = await request.json()
     await boundedBody(response, 2 * 1024 * 1024),
   );
   if (!response.ok)
-    throw Error("Isolated JavaScript failed: " + raw.slice(0, 1000));
+    throw Error(
+      "Isolated JavaScript failed: " +
+        redact(
+          (() => {
+            try {
+              const e = JSON.parse(raw);
+              return typeof e.error === "string" ? e.error : raw;
+            } catch {
+              return raw;
+            }
+          })(),
+          patterns,
+        ).slice(0, 1000),
+    );
   const result = z
     .object({
       logs: z.array(z.string().max(4096)).max(32).default([]),
       artifacts: z.record(cloudPath, z.string().max(1024 * 1024)).default({}),
     })
-    .parse(JSON.parse(raw));
+    .parse(
+      (() => {
+        const result = JSON.parse(raw);
+        if (Array.isArray(result.logs))
+          result.logs = result.logs.map((s: unknown) =>
+            typeof s === "string" ? redact(s, patterns).slice(0, 4096) : s,
+          );
+        return result;
+      })(),
+    );
   for (const [name, content] of Object.entries(result.artifacts))
     artifacts[name] = { content };
   if (

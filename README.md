@@ -1,6 +1,6 @@
 # OneStorage
 
-v0.19 增加 Cloudflare 持久定时流水线、IANA 时区与撤权取消，见 [定时 CI](docs/CI-SCHEDULES-v19.md)。
+v0.20 增加项目级加密 CI 变量与密钥、环境作用域、日志脱敏和撤权取消，见 [CI 变量](docs/CI-VARIABLES-v20.md)。
 
 v0.15 增加有界 Git 对象暂态恢复、失败阶段诊断及并发写入验收，见 [Git 可靠性](docs/GIT-RELIABILITY-v15.md)。v0.14 的版本化配置和依赖工作流见 [CI/CD](docs/CI-WORKFLOWS-v14.md)。完整 GitLab/Gogs 目标和剩余工作见 [开发路线](docs/ROADMAP.md)。
 
@@ -18,7 +18,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.19.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.20.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 

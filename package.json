@@ -1,6 +1,6 @@
 {
   "name": "onestorage",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "private": true,
   "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
   "license": "AGPL-3.0-only",
@@ -52,7 +52,9 @@
     "test:pack-cache": "ONESTORAGE_PACK_CACHE=1 node scripts/e2e-scale.mjs",
     "test:read-concurrency": "ONESTORAGE_READ_CONCURRENCY=1 node scripts/e2e-scale.mjs",
     "test:schedules": "node scripts/e2e-schedules.mjs",
-    "test:schedule-ui": "node scripts/e2e-schedule-ui.mjs"
+    "test:schedule-ui": "node scripts/e2e-schedule-ui.mjs",
+    "test:variables": "node scripts/e2e-variables.mjs",
+    "test:variable-ui": "node scripts/e2e-variable-ui.mjs"
   },
   "dependencies": {
     "cron-parser": "5.10.0",

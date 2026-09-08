@@ -1,3 +1,4 @@
+import { StringDecoder } from "node:string_decoder";
 // Run under a dedicated account on a host trusted to execute this repository's code.
 import {
   mkdtemp,
@@ -63,6 +64,9 @@ process.on("SIGTERM", () => {
   stop = true;
 });
 async function execute(run, lease) {
+  const jobSecrets = [...secretValues];
+  const redact = (s) =>
+    jobSecrets.reduce((t, v) => t.split(v).join("[REDACTED]"), s);
   const dir = await realpath(await mkdtemp(join(tmpdir(), "onestorage-ci-"))),
     work = join(dir, "work"),
     home = join(dir, "home");
@@ -89,11 +93,11 @@ async function execute(run, lease) {
     pending.catch(() => {});
   };
   // Keep the longest secret across chunk boundaries before redaction.
-  const retain = Math.max(512, ...secretValues.map((s) => s.length));
+  let retain = Math.max(512, ...jobSecrets.map((s) => s.length));
   function output(chunk, flush = false) {
     logTail += chunk;
     let safe = flush ? logTail.length : Math.max(0, logTail.length - retain);
-    for (const v of secretValues) {
+    for (const v of jobSecrets) {
       let at = logTail.indexOf(v);
       while (at >= 0) {
         if (at < safe && at + v.length > safe) safe = at;
@@ -143,6 +147,35 @@ async function execute(run, lease) {
     if (process.env[key] !== undefined && !key.startsWith("ONESTORAGE_"))
       env[key] = process.env[key];
   try {
+    if (run.config.variables?.length) {
+      const received = await (
+        await request(base + "/variables", undefined, lease)
+      ).json();
+      for (const [key, value] of Object.entries(received.variables)) {
+        if (
+          !/^[A-Z_][A-Z0-9_]{0,79}$/.test(key) ||
+          /^(ONESTORAGE_|GIT_|LD_|DYLD_|__)/.test(key) ||
+          [
+            "HOME",
+            "PATH",
+            "SHELL",
+            "ENV",
+            "BASH_ENV",
+            "IFS",
+            "CDPATH",
+            "SHELLOPTS",
+            "NODE_OPTIONS",
+            "CI",
+          ].includes(key) ||
+          typeof value !== "string"
+        )
+          throw Error("Invalid server variable");
+        env[key] = value;
+      }
+      jobSecrets.push(...received.patterns);
+      jobSecrets.sort((a, b) => b.length - a.length);
+      retain = Math.max(512, ...jobSecrets.map((s) => s.length));
+    }
     if (run.parent_id) {
       const inputRoot = join(dir, "inputs");
       await mkdir(inputRoot);
@@ -238,11 +271,14 @@ async function execute(run, lease) {
             detached: true,
             stdio: ["ignore", "pipe", "pipe"],
           });
-          child.stdout.on("data", (b) => output(b.toString()));
-          child.stderr.on("data", (b) => output(b.toString()));
+          const stdout = new StringDecoder("utf8"),
+            stderr = new StringDecoder("utf8");
+          child.stdout.on("data", (b) => output(stdout.write(b)));
+          child.stderr.on("data", (b) => output(stderr.write(b)));
           child.on("error", bad);
           child.on("exit", (code) => {
             child = null;
+            output(stdout.end() + stderr.end());
             output("", true);
             code === 0
               ? ok()

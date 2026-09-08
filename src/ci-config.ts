@@ -1,3 +1,4 @@
+import { variableKey, jobEnvironment } from "./ci-variable-schema";
 import { z } from "zod";
 import { branch } from "./security";
 import { cloudStep, deployConfig } from "./cloud-ci";
@@ -17,6 +18,12 @@ export const executionSchema = z
   .object({
     name: z.string().trim().min(1).max(80).default("Build and deploy"),
     runner: z.enum(["worker", "external"]),
+    variables: z
+      .array(variableKey)
+      .max(30)
+      .refine((v) => new Set(v).size === v.length, "Duplicate variable key")
+      .optional(),
+    environment: jobEnvironment.optional(),
     branches: z.array(branch).min(1).max(20).default(["main"]),
     timeout_seconds: z.number().int().min(10).max(3600).default(900),
     steps: z
@@ -47,6 +54,11 @@ export const executionSchema = z
   })
   .strict()
   .superRefine((p, c) => {
+    if (p.environment && p.deploy && p.environment !== p.deploy.environment)
+      c.addIssue({
+        code: "custom",
+        message: "Job and deployment environment must match",
+      });
     if (
       p.runner === "external" &&
       (p.deploy || p.steps.some((s) => s.type === "javascript"))

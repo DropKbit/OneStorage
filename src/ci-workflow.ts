@@ -41,8 +41,8 @@ export async function coordinateWorkflow(env: Env, run: CIRun) {
   for (const job of config.jobs) {
     const id = crypto.randomUUID();
     const inserted = await env.DB.prepare(
-      `INSERT OR IGNORE INTO ci_runs(id,repo_id,ref,sha,config,trigger,actor_id,status,parent_id,job_key,config_path,config_sha)
-      SELECT ?,repo_id,ref,sha,?,'workflow',actor_id,'queued',id,?,config_path,config_sha FROM ci_runs parent WHERE id=? AND status='running'
+      `INSERT OR IGNORE INTO ci_runs(id,repo_id,ref,sha,config,trigger,actor_id,status,parent_id,job_key,config_path,config_sha,source_trigger)
+      SELECT ?,repo_id,ref,sha,?,'workflow',actor_id,'queued',id,?,config_path,config_sha,source_trigger FROM ci_runs parent WHERE id=? AND status='running'
       AND EXISTS(SELECT 1 FROM repositories r WHERE r.id=parent.repo_id AND r.deleted_at IS NULL AND r.archived_at IS NULL)
       AND NOT EXISTS(SELECT 1 FROM ci_runs child WHERE child.parent_id=parent.id AND child.status IN ('failed','canceled'))
       AND NOT EXISTS(SELECT 1 FROM json_each(?) dependency WHERE NOT EXISTS(SELECT 1 FROM ci_runs child WHERE child.parent_id=parent.id AND child.job_key=dependency.value AND child.status='succeeded'))
