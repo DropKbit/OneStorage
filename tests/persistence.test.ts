@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { pullRepository, consumeSync, scheduleSync } from "../src/sync";
 import { dispatchEvent, forgeEvent } from "../src/events";
 import { collectDeleted, lifecycle } from "../src/lifecycle";
@@ -9,17 +9,9 @@ import { ObjectStore, bytes, canonical, makeObject } from "../src/git/objects";
 import { namespaceRepositories } from "../src/git/namespaces";
 function fixture() {
   const db = new DatabaseSync(":memory:");
-  for (const file of [
-    "0001_initial.sql",
-    "0002_webhooks.sql",
-    "0003_delivery_lease.sql",
-    "0004_forge_features.sql",
-    "0005_workspaces_ci.sql",
-    "0006_collaboration.sql",
-    "0007_account_security.sql",
-    "0008_fork_reviews.sql",
-    "0009_codeowners.sql",
-  ])
+  for (const file of readdirSync(
+    new URL("../migrations/", import.meta.url),
+  ).sort())
     db.exec(
       readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8"),
     );

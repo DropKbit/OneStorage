@@ -29,6 +29,8 @@ export interface Repo {
   default_branch: string;
   created_at: string;
   deleted_at?: string | null;
+  archived_at?: string | null;
+  lifecycle_revision?: number;
   base_repo?: string | null;
   fork_source?: string | null;
   sync_status?: string;

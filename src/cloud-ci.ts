@@ -110,15 +110,13 @@ export default { async fetch(request) { try { const input = await request.json()
     globalOutbound: null,
     limits: { cpuMs: step.cpu_ms, subRequests: 0 },
   });
-  const response = await worker
-    .getEntrypoint()
-    .fetch(
-      new Request("https://ci.invalid/run", {
-        method: "POST",
-        body: JSON.stringify({ sha: run.sha, ref: run.ref, files, artifacts }),
-        signal: AbortSignal.timeout(20000),
-      }),
-    );
+  const response = await worker.getEntrypoint().fetch(
+    new Request("https://ci.invalid/run", {
+      method: "POST",
+      body: JSON.stringify({ sha: run.sha, ref: run.ref, files, artifacts }),
+      signal: AbortSignal.timeout(20000),
+    }),
+  );
   const raw = new TextDecoder().decode(
     await boundedBody(response, 2 * 1024 * 1024),
   );
@@ -149,7 +147,7 @@ export async function saveCloudOutput(
   const statements: D1PreparedStatement[] = [],
     objects: string[] = [];
   const live =
-    "EXISTS(SELECT 1 FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.id=? AND c.status='running' AND c.lease_hash=? AND c.lease_until>? AND r.deleted_at IS NULL)";
+    "EXISTS(SELECT 1 FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.id=? AND c.status='running' AND c.lease_hash=? AND c.lease_until>? AND r.deleted_at IS NULL AND r.archived_at IS NULL)";
   let publishing = false;
   try {
     for (const [name, file] of Object.entries(artifacts)) {

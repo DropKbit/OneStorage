@@ -103,7 +103,7 @@ npm run deploy
 | 跨 Fork MR、行级讨论/解决、代码所有者、合并队列、自动关闭 Issue | v0.7 实现跨 Fork 和行级讨论；v0.8 增加 CODEOWNERS 与默认分支合并自动关闭 Issue；合并队列待开发 |
 | 富文本 Markdown、图片/PDF/Notebook 预览、个人资料与活动页 | v0.6 实现 Markdown、栅格图片、资料与活动；PDF/Notebook 待开发 |
 | 2FA、OAuth/OIDC、Cloudflare Access 登录、注册/找回、细粒度 deploy token | v0.6 实现 TOTP/恢复码/会话管理；其余待开发 |
-| 项目转移/归档、跨项目搜索、Issue 看板/筛选/批量操作、Wiki 迁移 | v0.9 实现项目 Issue 筛选/分页、标签看板、事务批量操作；其余仍待开发 |
+| 项目转移/归档、跨项目搜索、Issue 看板/筛选/批量操作、Wiki 迁移 | v0.9 实现项目 Issue 筛选/分页、标签看板、事务批量操作；v0.10 实现可恢复归档及写入/CI 屏障；项目转移、跨项目搜索和 Wiki 迁移待开发 |
 | 仓库流水线配置、DAG/并行任务/调度、缓存、变量/密钥、npm/TS 构建 | 仍待开发 |
 | 包仓库、镜像仓库、扫描/质量报告、完整 GitLab YAML/API 兼容 | 仍待开发，不能宣称兼容 |
 | 持久化可达索引、流式 pack、大仓库增量验证 | 当前仍有 5000 对象图、32 MiB 展开预算；更大仓库支持待实现 |

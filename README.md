@@ -1,5 +1,7 @@
 # OneStorage
 
+项目归档（v0.10）：所有者可在设置中归档/恢复，冻结 Git/LFS/协作内容与流水线写入，保留读取和已有应用。详见 [归档契约](docs/ARCHIVE-v10.md) 与 [验证记录](docs/VERIFICATION-v10.md)。
+
 v0.9 增加 Issue 筛选与分页、标签看板、批量操作和并发编辑保护，见 [Issue 工作流](docs/ISSUES-v09.md) 和 [验证记录](docs/VERIFICATION-v09.md)。
 
 v0.8 增加 CODEOWNERS 门禁、默认分支合并关闭 Issue、R2 双路并发与读取去重，见 [使用说明](docs/REVIEWS-v08.md) 和 [验收记录](docs/VERIFICATION-v08.md)。
@@ -8,7 +10,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.9.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.10.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 

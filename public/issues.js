@@ -1,5 +1,7 @@
-const writable = (r) => ["developer", "maintainer", "owner"].includes(r.role);
-const maintain = (r) => ["maintainer", "owner"].includes(r.role);
+const writable = (r) =>
+  !r.archived_at && ["developer", "maintainer", "owner"].includes(r.role);
+const maintain = (r) =>
+  !r.archived_at && ["maintainer", "owner"].includes(r.role);
 export function issueCard(i, base, esc, select = false, board) {
   return `<article class="issue-card" ${board ? `draggable="${board.writable}" data-issue-id="${i.id}" data-revision="${i.revision}" data-column="${esc(board.column)}"` : ""}>${select ? `<input type="checkbox" aria-label="选择 Issue ${i.id}" data-select-issue="${i.id}" data-revision="${i.revision}">` : ""}<div><a data-link class="subject" href="${base}/issues/${i.id}">${esc(i.title)}</a><p class="muted">#${i.id} · ${esc(i.author)} · ${i.state === "open" ? "开放" : "已关闭"}${i.assignee ? " · 指派给 " + esc(i.assignee) : ""}${i.milestone ? " · " + esc(i.milestone) : ""}</p><div class="issue-labels">${i.labels.map((l) => `<span class="pill" style="border-color:#${/^[a-f0-9]{6}$/i.test(l.color) ? l.color : "64748b"}">${esc(l.name)}</span>`).join("")}</div>${
     board?.writable
@@ -66,9 +68,10 @@ export async function issuesPage(r, base, ap, h) {
     .join(
       "",
     )}</select></label></div><details><summary>标签（同时匹配）</summary>${labelChecks("filter-label", (params.get("labels") || "").split(","))}</details><div><button class="btn primary" type="submit">筛选</button> <a data-link class="btn" href="${base}/issues${isBoard ? "?view=board&board=" + boardId : ""}">清除筛选</a></div></form>`;
-  const create = h.user
-    ? `<details class="panel"><summary class="panelhead">＋ 新建 Issue</summary><form class="form" id="new-issue">${field("标题", "title")}${textarea("描述", "body")}<button class="btn primary" type="submit">创建 Issue</button></form></details>`
-    : "";
+  const create =
+    h.user && !r.archived_at
+      ? `<details class="panel"><summary class="panelhead">＋ 新建 Issue</summary><form class="form" id="new-issue">${field("标题", "title")}${textarea("描述", "body")}<button class="btn primary" type="submit">创建 Issue</button></form></details>`
+      : "";
   const query = new URLSearchParams(params);
   query.delete("cursor");
   query.set("view", isBoard ? "list" : "board");

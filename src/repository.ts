@@ -1,4 +1,9 @@
 import {
+  assertRepositoryWritable,
+  changeProjectState,
+  archiveError,
+} from "./project-state";
+import {
   plannedIssueClosures,
   projectMerge,
   type MergeResult,
@@ -44,6 +49,8 @@ export class Repository extends DurableObject<Env> {
     } catch (e) {
       if (e instanceof HTTPException)
         return Response.json({ error: e.message }, { status: e.status });
+      if (archiveError(e))
+        return Response.json({ error: "Repository archived" }, { status: 409 });
       console.error(
         "Git transaction failed",
         e instanceof Error
@@ -136,13 +143,53 @@ export class Repository extends DurableObject<Env> {
       store = new ObjectStore(id, this.env.OBJECTS, this.objectCache);
     // Public API access was checked against fresh D1 metadata by the outer Worker.
     // Reads need only durable refs/tombstone; mutation/sync hooks load authoritative metadata.
-    const metadata = ["GET", "HEAD"].includes(request.method)
-      ? null
-      : await this.env.DB.prepare(
-          "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
-        )
-          .bind(id)
-          .first<Repo>();
+    const metadata =
+      ["GET", "HEAD"].includes(request.method) &&
+      url.searchParams.get("service") !== "git-receive-pack"
+        ? null
+        : await this.env.DB.prepare(
+            "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+          )
+            .bind(id)
+            .first<Repo>();
+    assertRepositoryWritable(metadata, request);
+    if (url.pathname === "/internal/lifecycle" && request.method === "POST") {
+      if (!metadata) fail(404, "Repository not found");
+      const body = z
+        .object({
+          actor_id: z.string(),
+          archived: z.boolean(),
+          revision: z.number().int().min(0),
+        })
+        .parse(JSON.parse(text(await boundedBody(request, 4096))));
+      if (await this.ctx.storage.get("sync-reconcile"))
+        fail(409, "Reconcile upstream before changing project state");
+      if (metadata.sync_status === "initializing")
+        fail(409, "Project initialization is in progress");
+      // Complete already-published merges before freezing D1 collaboration tables.
+      for (const [key, pending] of await this.ctx.storage.list<{
+        repo_id: string;
+        mr_id: number;
+        result: MergeResult;
+      }>({ prefix: "merge-projection:" })) {
+        await projectMerge(
+          this.env,
+          pending.repo_id,
+          pending.mr_id,
+          pending.result,
+        );
+        await this.ctx.storage.delete(key);
+      }
+      return Response.json(
+        await changeProjectState(
+          this.env,
+          id,
+          body.actor_id,
+          body.archived,
+          body.revision,
+        ),
+      );
+    }
     if (url.pathname === "/internal/sync" && request.method === "POST") {
       if (!metadata) fail(404, "Repository not found");
       return Response.json(

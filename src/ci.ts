@@ -109,7 +109,7 @@ export async function enqueueRun(
 ) {
   const id = crypto.randomUUID();
   const result = await env.DB.prepare(
-    "INSERT OR IGNORE INTO ci_runs(id,repo_id,event_id,ref,sha,config,trigger,actor_id,status) SELECT ?,?,?,?,?,?,?,?,'queued' WHERE (SELECT COUNT(*) FROM ci_runs WHERE repo_id=? AND status IN ('queued','running'))<20",
+    "INSERT OR IGNORE INTO ci_runs(id,repo_id,event_id,ref,sha,config,trigger,actor_id,status) SELECT ?,?,?,?,?,?,?,?,'queued' WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL) AND (SELECT COUNT(*) FROM ci_runs WHERE repo_id=? AND status IN ('queued','running'))<20",
   )
     .bind(
       id,
@@ -121,9 +121,19 @@ export async function enqueueRun(
       trigger,
       actor,
       repo.id,
+      repo.id,
     )
     .run();
   if (!result.meta.changes) {
+    const current = await env.DB.prepare(
+      "SELECT archived_at,deleted_at FROM repositories WHERE id=?",
+    )
+      .bind(repo.id)
+      .first<{ archived_at: string | null; deleted_at: string | null }>();
+    if (!current || current.archived_at || current.deleted_at) {
+      if (eventId) return null;
+      fail(409, "Repository archived or deleted");
+    }
     if (
       eventId &&
       (await env.DB.prepare("SELECT id FROM ci_runs WHERE event_id=?")
@@ -159,7 +169,7 @@ export async function triggerPush(
   )
     return;
   const repo = await env.DB.prepare(
-    "SELECT r.*,p.config FROM repositories r JOIN ci_pipelines p ON p.repo_id=r.id WHERE r.id=? AND r.deleted_at IS NULL AND p.enabled=1",
+    "SELECT r.*,p.config FROM repositories r JOIN ci_pipelines p ON p.repo_id=r.id WHERE r.id=? AND r.deleted_at IS NULL AND r.archived_at IS NULL AND p.enabled=1",
   )
     .bind(event.repository_id)
     .first<Repo & { config: string }>();
@@ -201,7 +211,7 @@ export async function claimRun(
 ) {
   const lease = randomToken();
   const row = await env.DB.prepare(
-    "UPDATE ci_runs SET status='running',runner_id=?,lease_hash=?,lease_until=?,started_at=datetime('now') WHERE id=(SELECT c.id FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.repo_id=? AND r.deleted_at IS NULL AND c.status='queued' AND json_extract(c.config,'$.runner')=? AND (? IS NULL OR c.id=?) ORDER BY c.created_at,c.id LIMIT 1) AND status='queued' RETURNING *",
+    "UPDATE ci_runs SET status='running',runner_id=?,lease_hash=?,lease_until=?,started_at=datetime('now') WHERE id=(SELECT c.id FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.repo_id=? AND r.deleted_at IS NULL AND r.archived_at IS NULL AND c.status='queued' AND json_extract(c.config,'$.runner')=? AND (? IS NULL OR c.id=?) ORDER BY c.created_at,c.id LIMIT 1) AND status='queued' RETURNING *",
   )
     .bind(
       runnerId,
@@ -244,7 +254,7 @@ async function finish(
 }
 export async function consumeCI(env: Env, id: string) {
   const pending = await env.DB.prepare(
-    "SELECT r.* FROM repositories r JOIN ci_runs c ON c.repo_id=r.id WHERE c.id=? AND r.deleted_at IS NULL AND c.status='queued'",
+    "SELECT r.* FROM repositories r JOIN ci_runs c ON c.repo_id=r.id WHERE c.id=? AND r.deleted_at IS NULL AND r.archived_at IS NULL AND c.status='queued'",
   )
     .bind(id)
     .first<Repo>();
@@ -575,7 +585,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
     const token = c.req.header("authorization")?.replace(/^Bearer /, "") || "";
     if (!token.startsWith("osr_")) fail(401, "Runner token required");
     const row = await c.env.DB.prepare(
-      "SELECT cr.*,r.default_branch FROM ci_runners cr JOIN repositories r ON r.id=cr.repo_id WHERE cr.token_hash=? AND r.deleted_at IS NULL",
+      "SELECT cr.*,r.default_branch FROM ci_runners cr JOIN repositories r ON r.id=cr.repo_id WHERE cr.token_hash=? AND r.deleted_at IS NULL AND r.archived_at IS NULL",
     )
       .bind(await digest(token))
       .first<any>();
@@ -669,7 +679,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
     await c.env.OBJECTS.put(key, data);
     try {
       const result = await c.env.DB.prepare(
-        "INSERT INTO ci_artifacts(id,run_id,name,size,object_key) SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.id=? AND c.status='running' AND c.lease_hash=? AND c.lease_until>? AND r.deleted_at IS NULL) AND (SELECT COUNT(*) FROM ci_artifacts WHERE run_id=?)<10",
+        "INSERT INTO ci_artifacts(id,run_id,name,size,object_key) SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.id=? AND c.status='running' AND c.lease_hash=? AND c.lease_until>? AND r.deleted_at IS NULL AND r.archived_at IS NULL) AND (SELECT COUNT(*) FROM ci_artifacts WHERE run_id=?)<10",
       )
         .bind(
           id,

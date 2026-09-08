@@ -180,7 +180,7 @@ export async function adminConsole(h, user) {
 export async function ciPage(r, base, ap, h, runId) {
   const { api, repoLayout, esc, bindForm, field, textarea, render, go } = h,
     root = ap + "/ci",
-    maintain = ["owner", "maintainer"].includes(r.role);
+    maintain = !r.archived_at && ["owner", "maintainer"].includes(r.role);
   if (runId) {
     const run = await api(root + "/runs/" + runId);
     if (!h.current()) return;

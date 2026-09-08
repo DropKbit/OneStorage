@@ -1,6 +1,6 @@
 const account = () => import("./account.js?v=1efd29f8c34c0b77");
-const collaboration = () => import("./collaboration.js?v=4350916dab45d6b6");
-const platform = () => import("./manage.js?v=7bf783bc42bd4ec0");
+const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
+const platform = () => import("./manage.js?v=09fe9f7bd8a72ccd");
 import {
   keyPage,
   forgePage,
@@ -424,7 +424,9 @@ function repoLayout(r, tab, content, actions = "") {
       .map(([key, label, path]) =>
         link(base + path, label, `tab ${tab === key ? "active" : ""}`),
       )
-      .join("")}</nav>${content}`,
+      .join(
+        "",
+      )}</nav>${r.archived_at ? '<div class="info" role="status">此项目已归档：代码与历史记录可读，协作写入和流水线已暂停。项目所有者可在设置中恢复。</div>' : ""}${content}`,
     `${esc(r.namespace)} / ${esc(r.name)}`,
   );
 }
@@ -438,7 +440,8 @@ function copyButton(value, id = "copy") {
     }
   });
 }
-const writeable = (r) => ["owner", "maintainer", "developer"].includes(r.role);
+const writeable = (r) =>
+  !r.archived_at && ["owner", "maintainer", "developer"].includes(r.role);
 async function codePage(r, base, ap, version) {
   const params = new URLSearchParams(location.search),
     p = params.get("path") || "",
@@ -585,7 +588,7 @@ async function issuesPage(r, base, ap, sub, version, helpers) {
     repoLayout(
       r,
       "issues",
-      `<div class="titlebar"><div><h2>#${i.id} ${esc(i.title)}</h2><span class="pill ${i.state === "open" ? "green" : "purple"}">${i.state === "open" ? "开放中" : "已关闭"}</span> <span class="muted">${esc(i.author)} · ${date(i.created_at)}</span></div>${user && (user.id === i.author_id || ["owner", "maintainer", "developer"].includes(r.role)) ? '<button class="btn" id="toggle">' + (i.state === "open" ? "关闭 Issue" : "重新打开") + "</button>" : ""}</div>${user && (user.id === i.author_id || ["owner", "maintainer", "developer"].includes(r.role)) ? `<details class="panel"><summary class="panelhead">编辑标题与描述</summary><form class="form" id="edit-issue">${field("标题", "title", "text", i.title)}${textarea("描述", "body", i.body)}<button class="btn primary" type="submit">保存</button></form></details>` : ""}<div class="panel"><div class="detail-body markdown" data-markdown>${esc(i.body || "暂无描述。")}</div>${i.comments.map((c) => `<div class="comment"><strong>${esc(c.author)}</strong> <span class="muted">${date(c.created_at)}</span><div class="markdown" data-markdown>${esc(c.body)}</div></div>`).join("")}${i.comments_next ? `<a data-link class="btn" href="${base}/issues/${i.id}?comments_after=${i.comments_next}">更多评论 →</a>` : ""}${user ? `<form class="form" id="comment">${textarea("参与讨论", "body")}<button class="btn primary" type="submit">发表评论</button></form>` : ""}</div>`,
+      `<div class="titlebar"><div><h2>#${i.id} ${esc(i.title)}</h2><span class="pill ${i.state === "open" ? "green" : "purple"}">${i.state === "open" ? "开放中" : "已关闭"}</span> <span class="muted">${esc(i.author)} · ${date(i.created_at)}</span></div>${!r.archived_at && user && (user.id === i.author_id || ["owner", "maintainer", "developer"].includes(r.role)) ? '<button class="btn" id="toggle">' + (i.state === "open" ? "关闭 Issue" : "重新打开") + "</button>" : ""}</div>${!r.archived_at && user && (user.id === i.author_id || ["owner", "maintainer", "developer"].includes(r.role)) ? `<details class="panel"><summary class="panelhead">编辑标题与描述</summary><form class="form" id="edit-issue">${field("标题", "title", "text", i.title)}${textarea("描述", "body", i.body)}<button class="btn primary" type="submit">保存</button></form></details>` : ""}<div class="panel"><div class="detail-body markdown" data-markdown>${esc(i.body || "暂无描述。")}</div>${i.comments.map((c) => `<div class="comment"><strong>${esc(c.author)}</strong> <span class="muted">${date(c.created_at)}</span><div class="markdown" data-markdown>${esc(c.body)}</div></div>`).join("")}${i.comments_next ? `<a data-link class="btn" href="${base}/issues/${i.id}?comments_after=${i.comments_next}">更多评论 →</a>` : ""}${!r.archived_at && user ? `<form class="form" id="comment">${textarea("参与讨论", "body")}<button class="btn primary" type="submit">发表评论</button></form>` : ""}</div>`,
     );
     document.querySelector("#toggle")?.addEventListener("click", async () => {
       try {
@@ -617,7 +620,7 @@ async function issuesPage(r, base, ap, sub, version, helpers) {
     });
     return i;
   }
-  return (await import("./issues.js?v=aa1fbaf368d46730")).issuesPage(
+  return (await import("./issues.js?v=35bf97a02fe71433")).issuesPage(
     r,
     base,
     ap,
@@ -672,8 +675,22 @@ async function settingsPage(r, base, ap, version) {
   repoLayout(
     r,
     "settings",
-    `<div class="stack"><div class="panel"><form class="form" id="repo-settings"><h2>项目设置</h2>${textarea("项目描述", "description", r.description)}${field("默认分支", "default_branch", "text", r.default_branch)}<div class="field"><label for="visibility">可见性</label><select name="visibility" id="visibility"><option value="private" ${r.visibility === "private" ? "selected" : ""}>私有 · 仅成员可访问</option><option value="public" ${r.visibility === "public" ? "selected" : ""}>公开 · 所有人可读取</option></select></div><button class="btn primary" type="submit">保存设置</button></form></div><div class="panel"><div class="panelhead"><strong>Webhook</strong><span class="muted">${webhooks.length} / 10</span></div>${webhooks.map((h) => `<div class="token-row"><span>${esc(h.url)}</span><button class="btn small danger" data-hook="${h.id}">移除</button></div>`).join("")}<form class="form" id="webhook"><p class="muted">接收地址须为管理员已允许的 HTTPS 主机。签名密钥仅在创建时显示一次。</p>${field("接收地址", "url", "url")}<button class="btn primary" type="submit">添加 Webhook</button><div id="hook-result"></div></form></div><div class="panel"><div class="panelhead"><strong>最近投递</strong></div>${deliveries.length ? deliveries.map((d) => `<div class="token-row"><code>${esc(d.id.slice(0, 8))}</code><span class="pill">${esc(d.state)}</span><span class="muted">${d.attempts} 次尝试 · HTTP ${d.last_status || "—"}</span></div>`).join("") : '<div class="empty"><p>暂无投递记录。</p></div>'}</div><div class="panel"><div class="panelhead"><strong>审计记录</strong><span class="muted">最近 100 条</span></div>${events.map((e) => `<div class="token-row"><div><strong>${esc(e.action)}</strong><p class="muted">${esc(e.actor || "system")} · ${esc(e.detail)}</p></div><span class="muted">${date(e.created_at)}</span></div>`).join("")}</div></div>`,
+    `<div class="stack">${r.role === "owner" ? `<div class="panel"><form class="form" id="project-lifecycle"><h2>${r.archived_at ? "恢复项目" : "归档项目"}</h2><p class="muted">归档后可继续 clone、下载和读取历史；停止写入及新流水线，取消正在执行的任务。已发布应用保留最后版本。恢复后，已取消任务需要手动重试。</p><button type="submit" class="btn">${r.archived_at ? "取消归档" : "归档为只读"}</button></form></div>` : ""}<div class="panel"><form class="form" id="repo-settings"><h2>项目设置</h2>${textarea("项目描述", "description", r.description)}${field("默认分支", "default_branch", "text", r.default_branch)}<div class="field"><label for="visibility">可见性</label><select name="visibility" id="visibility"><option value="private" ${r.visibility === "private" ? "selected" : ""}>私有 · 仅成员可访问</option><option value="public" ${r.visibility === "public" ? "selected" : ""}>公开 · 所有人可读取</option></select></div><button class="btn primary" type="submit">保存设置</button></form></div><div class="panel"><div class="panelhead"><strong>Webhook</strong><span class="muted">${webhooks.length} / 10</span></div>${webhooks.map((h) => `<div class="token-row"><span>${esc(h.url)}</span><button class="btn small danger" data-hook="${h.id}">移除</button></div>`).join("")}<form class="form" id="webhook"><p class="muted">接收地址须为管理员已允许的 HTTPS 主机。签名密钥仅在创建时显示一次。</p>${field("接收地址", "url", "url")}<button class="btn primary" type="submit">添加 Webhook</button><div id="hook-result"></div></form></div><div class="panel"><div class="panelhead"><strong>最近投递</strong></div>${deliveries.length ? deliveries.map((d) => `<div class="token-row"><code>${esc(d.id.slice(0, 8))}</code><span class="pill">${esc(d.state)}</span><span class="muted">${d.attempts} 次尝试 · HTTP ${d.last_status || "—"}</span></div>`).join("") : '<div class="empty"><p>暂无投递记录。</p></div>'}</div><div class="panel"><div class="panelhead"><strong>审计记录</strong><span class="muted">最近 100 条</span></div>${events.map((e) => `<div class="token-row"><div><strong>${esc(e.action)}</strong><p class="muted">${esc(e.actor || "system")} · ${esc(e.detail)}</p></div><span class="muted">${date(e.created_at)}</span></div>`).join("")}</div></div>`,
   );
+  bindForm("#project-lifecycle", async () => {
+    await api(ap + "/lifecycle", {
+      method: "PUT",
+      body: { archived: !r.archived_at, revision: r.lifecycle_revision },
+    });
+    notice(r.archived_at ? "项目已恢复" : "项目已归档");
+    render();
+  });
+  if (r.archived_at)
+    document
+      .querySelectorAll(
+        "#repo-settings input, #repo-settings textarea, #repo-settings select, #repo-settings button, #webhook input, #webhook button, [data-hook]",
+      )
+      .forEach((el) => (el.disabled = true));
   bindForm("#webhook", async (data) => {
     const result = await api(ap + "/webhooks", { method: "POST", body: data });
     document.querySelector("#hook-result").innerHTML =

@@ -1,3 +1,4 @@
+import { archivedApiWrite, archiveError } from "./project-state";
 import {
   registerIssueWorkflows,
   createIssue,
@@ -139,6 +140,12 @@ async function repoAccess(
   const user = c.get("user");
   const role = await repositoryRole(c.env, r, user);
   c.set("repoRole", role);
+  if (
+    (r.visibility === "public" || roleRank[role] >= 1) &&
+    r.archived_at &&
+    archivedApiWrite(c.req.method, c.req.path.split("/").slice(5).join("/"))
+  )
+    fail(409, "Repository archived; an owner must unarchive it before writing");
   if (level === "read" && (r.visibility === "public" || roleRank[role] >= 1))
     return r;
   if (!user) fail(401, "Authentication required");
@@ -231,6 +238,7 @@ app.onError((err, c) => {
       c.header("WWW-Authenticate", 'Basic realm="OneStorage", charset="UTF-8"');
     return c.json({ error: err.message }, err.status);
   }
+  if (archiveError(err)) return c.json({ error: "Repository archived" }, 409);
   console.error("Request failed", err instanceof Error ? err.name : "unknown");
   return c.json(
     { error: "Internal error; retry or contact the administrator" },
@@ -371,7 +379,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.9.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.10.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -823,6 +831,21 @@ app.get("/api/repos/:namespace/:repo", async (c) => {
     clone_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}.git`,
   });
 });
+app.put("/api/repos/:namespace/:repo/lifecycle", async (c) => {
+  const r = await repoAccess(c, "maintain");
+  if (c.get("delegation") || c.get("repoRole") !== "owner")
+    fail(403, "Project owner required");
+  const b = await input(
+    c,
+    z.object({ archived: z.boolean(), revision: z.number().int().min(0) }),
+  );
+  return c.json(
+    await engineJSON(c, r, "/internal/lifecycle", {
+      ...b,
+      actor_id: requireUser(c).id,
+    }),
+  );
+});
 app.patch("/api/repos/:namespace/:repo", async (c) => {
   const r = await repoAccess(c, "maintain");
   const b = await input(
@@ -1193,6 +1216,7 @@ app.all("/:namespace/:git/*", async (c, next) => {
     fail(u ? 404 : 401, "Repository not found or authentication required");
   if (writing && (!write || c.get("scope") !== "write"))
     fail(u ? 403 : 401, "Write access required");
+  if (writing && r.archived_at) fail(409, "Repository archived");
   if (suffix.startsWith("info/lfs/") && r.base_repo && !githubLFS(r))
     fail(409, "LFS is unavailable for generic or public GitHub sync");
   if (batch) {

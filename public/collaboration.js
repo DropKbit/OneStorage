@@ -15,8 +15,9 @@ function actions(h, fn) {
       }),
   );
 }
-const writable = (r) => ["owner", "maintainer", "developer"].includes(r.role),
-  maintain = (r) => ["owner", "maintainer"].includes(r.role);
+const writable = (r) =>
+    !r.archived_at && ["owner", "maintainer", "developer"].includes(r.role),
+  maintain = (r) => !r.archived_at && ["owner", "maintainer"].includes(r.role);
 export async function reviewPage(r, base, ap, h, id) {
   const { api, repoLayout, esc, field, textarea, bindForm, render } = h,
     m = await api(

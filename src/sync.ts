@@ -36,11 +36,12 @@ export function mirroredRefs(all: Refs, remote: Refs) {
 export async function scheduleSync(env: Env, repo: Repo) {
   if (!repo.base_repo) fail(400, "Repository has no upstream configured");
   const id = crypto.randomUUID();
-  await env.DB.prepare(
-    "INSERT INTO sync_jobs(id,repo_id,direction,lease_until) VALUES(?,?,'pull',0)",
+  const inserted = await env.DB.prepare(
+    "INSERT INTO sync_jobs(id,repo_id,direction,lease_until) SELECT ?,?,'pull',0 WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL)",
   )
-    .bind(id, repo.id)
+    .bind(id, repo.id, repo.id)
     .run();
+  if (!inserted.meta.changes) fail(409, "Repository archived or deleted");
   if (env.EVENTS) await env.EVENTS.send({ id: "sync:" + id });
   return { job_id: id, status: "pending" };
 }
@@ -56,7 +57,7 @@ export async function publishSyncJobs(env: Env) {
 }
 export async function consumeSync(env: Env, id: string) {
   const job = await env.DB.prepare(
-    "SELECT j.*,r.namespace,r.name,r.owner_id,r.default_branch FROM sync_jobs j JOIN repositories r ON r.id=j.repo_id WHERE j.id=? AND r.deleted_at IS NULL",
+    "SELECT j.*,r.namespace,r.name,r.owner_id,r.default_branch FROM sync_jobs j JOIN repositories r ON r.id=j.repo_id WHERE j.id=? AND r.deleted_at IS NULL AND r.archived_at IS NULL",
   )
     .bind(id)
     .first<any>();
@@ -82,7 +83,7 @@ export async function consumeSync(env: Env, id: string) {
   const ok = response.ok;
   await response.body?.cancel();
   await env.DB.prepare(
-    "UPDATE sync_jobs SET status=?,error=?,lease_until=? WHERE id=?",
+    "UPDATE sync_jobs SET status=?,error=?,lease_until=? WHERE id=? AND status='pending'",
   )
     .bind(
       ok ? "succeeded" : leased.attempts >= 5 ? "failed" : "pending",
