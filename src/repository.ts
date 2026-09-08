@@ -1,4 +1,5 @@
 import { assertDeployGitRequest } from "./deploy-tokens";
+import { advanceCodeIndex } from "./code-index";
 import {
   advanceQueue,
   queueMutation,
@@ -42,7 +43,7 @@ import { upstreamClient, pullRepository, scheduleSync } from "./sync";
 import { forgeEvent, dispatchEvent, ForgeEvent } from "./events";
 import type { Repo } from "./types";
 import type { RefStorage } from "./git/repository";
-import { lifecycle, collectDeleted } from "./lifecycle";
+import { lifecycle, collectDeleted, projectDefaultBranch } from "./lifecycle";
 import { DurableObject } from "cloudflare:workers";
 import { HTTPException } from "hono/http-exception";
 import {
@@ -141,6 +142,7 @@ export class Repository extends DurableObject<Env> {
         await collectDeleted(this.env, this.ctx.storage);
         return new Response(null, { status: 204 });
       }
+      await projectDefaultBranch(this.env, this.ctx.storage);
       const receipts = await drainGitReceipts(this.env, this.ctx.storage);
       try {
         await collectPackCache(this.env.OBJECTS, this.ctx.storage);
@@ -170,6 +172,8 @@ export class Repository extends DurableObject<Env> {
         limit: 20,
       })) {
         await dispatchEvent(this.env, event);
+        if (["push", "repo.sync.succeeded"].includes(event.event))
+          await this.ctx.storage.put("code-index", event.repository_id);
         await this.ctx.storage.delete(key);
       }
       const queueRepo = await this.ctx.storage.get<string>("merge-queue");
@@ -194,6 +198,45 @@ export class Repository extends DurableObject<Env> {
               },
             }),
           );
+      }
+      const codeRepo = await this.ctx.storage.get<string>("code-index");
+      if (codeRepo) {
+        await this.ctx.storage.setAlarm(Date.now() + 1000);
+        try {
+          const live = await this.env.DB.prepare(
+            "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+          )
+            .bind(codeRepo)
+            .first<Repo>();
+          if (!live) await this.ctx.storage.delete("code-index");
+          else if (live.sync_status === "initializing")
+            await this.ctx.storage.setAlarm(Date.now() + 30000);
+          else
+            await this.handle(
+              new Request("http://repository/internal/code-index-tick", {
+                method: "POST",
+                headers: {
+                  "x-repo-id": live.id,
+                  "x-lifecycle-revision": String(live.lifecycle_revision),
+                  "x-default-branch": live.default_branch,
+                },
+              }),
+            );
+          await this.ctx.storage.delete("code-index-failures");
+        } catch {
+          const attempts =
+            ((await this.ctx.storage.get<number>("code-index-failures")) || 0) +
+            1;
+          await this.ctx.storage.put("code-index-failures", attempts);
+          await this.ctx.storage.setAlarm(
+            Date.now() + Math.min(300000, 1000 * 2 ** Math.min(attempts, 9)),
+          );
+          await this.env.DB.prepare(
+            "UPDATE code_index_state SET status='failed',error='Index update temporarily unavailable; automatic retry pending',checked_at=? WHERE repo_id=?",
+          )
+            .bind(Date.now(), codeRepo)
+            .run();
+        }
       }
       const id = await this.ctx.storage.get<string>("sync-reconcile");
       if (
@@ -565,6 +608,17 @@ export class Repository extends DurableObject<Env> {
     const ephemeral = request.headers.get("x-namespace") === "ephemeral",
       repo = select(ephemeral),
       path = url.pathname;
+    if (path === "/internal/code-index-wake" && request.method === "POST") {
+      await this.ctx.storage.put("code-index", id);
+      await this.ctx.storage.setAlarm(Date.now() + 1000);
+      return Response.json({ scheduled: true });
+    }
+    if (path === "/internal/code-index-tick" && request.method === "POST") {
+      if (!metadata) fail(404, "Repository not found");
+      const pending = await advanceCodeIndex(this.env, metadata, repo);
+      if (!pending) await this.ctx.storage.delete("code-index");
+      return Response.json({ pending });
+    }
     if (path === "/internal/merge-queue-tick" && request.method === "POST") {
       if (!metadata) fail(404, "Repository not found");
       await advanceQueue(

@@ -8,7 +8,10 @@ export function archivedApiWrite(method: string, operation: string) {
   if (operation === "" && method === "DELETE") return false;
   if (/^(members|deploy-tokens)(?:\/|$)/.test(operation)) return false;
   if (/^ci\/runners\//.test(operation) && method === "DELETE") return false;
-  if (method === "POST" && ["grep", "archive"].includes(operation))
+  if (
+    method === "POST" &&
+    ["grep", "archive", "code-index/rebuild"].includes(operation)
+  )
     return false;
   return true;
 }
@@ -20,7 +23,9 @@ export function assertRepositoryWritable(repo: Repo | null, request: Request) {
   if (
     path === "/internal/delete" ||
     path === "/internal/lifecycle" ||
-    path === "/internal/transfer"
+    path === "/internal/transfer" ||
+    path === "/internal/code-index-wake" ||
+    path === "/internal/code-index-tick"
   )
     return;
   if (

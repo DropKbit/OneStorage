@@ -4,6 +4,24 @@ import type { Env, Repo } from "./types";
 import { fail, branch, boundedBody, digest } from "./security";
 import { ObjectStore, Refs, canonical, checkRefs, text } from "./git/objects";
 import type { ForgeRepository } from "./git/forge";
+/** Replay the authoritative DO branch after a failed D1 projection. Caller holds the writer gate. */
+export async function projectDefaultBranch(
+  env: Env,
+  storage: DurableObjectStorage,
+) {
+  const id = await storage.get<string>("default-branch-projection");
+  if (!id) return;
+  await storage.setAlarm(Date.now() + 1000);
+  const name = await storage.get<string>("default-branch");
+  if (!name) throw Error("Missing authoritative default branch");
+  await env.DB.prepare(
+    "UPDATE repositories SET default_branch=? WHERE id=? AND deleted_at IS NULL",
+  )
+    .bind(name, id)
+    .run();
+  await storage.put("code-index", id);
+  await storage.delete("default-branch-projection");
+}
 /** Called only inside the repository's serialized request queue. */
 export async function lifecycle(
   request: Request,
@@ -48,13 +66,13 @@ export async function lifecycle(
     const name = branch.parse(body.default_branch);
     if (Object.keys(repo.refs).length && !repo.refs["refs/heads/" + name])
       fail(409, "Default branch must exist");
-    // The DO value is authoritative for Git HEAD. Persist before the D1 metadata projection.
-    await storage.put("default-branch", name);
-    await env.DB.prepare(
-      "UPDATE repositories SET default_branch=? WHERE id=? AND deleted_at IS NULL",
-    )
-      .bind(name, id)
-      .run();
+    // Arm before the atomic multi-key write: a lost acknowledgement cannot strand the projection.
+    await storage.setAlarm(Date.now() + 1000);
+    await storage.put({
+      "default-branch": name,
+      "default-branch-projection": id,
+    });
+    await projectDefaultBranch(env, storage);
     return Response.json({ default_branch: name });
   }
   if (path === "/internal/fork-initialize" && request.method === "POST") {
@@ -243,6 +261,15 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
       await storage.setAlarm(Date.now() + 1000);
       return;
     }
+  }
+  const documents = await env.DB.prepare(
+    "DELETE FROM code_documents WHERE id IN(SELECT id FROM code_documents WHERE repo_id=? LIMIT 5)",
+  )
+    .bind(id)
+    .run();
+  if (documents.meta.changes) {
+    await storage.setAlarm(Date.now() + 1000);
+    return;
   }
   await env.DB.prepare(
     "DELETE FROM repositories WHERE id=? AND deleted_at IS NOT NULL",

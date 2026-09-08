@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.31.0",
+    "version": "0.32.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -3890,8 +3890,8 @@
         "tags": [
           "Search"
         ],
-        "summary": "Search accessible projects, issues, merge requests and current Wiki pages",
-        "description": "Literal title/body substring search; ASCII case-insensitive, other Unicode exact. Current D1 permission checks and live credential validation. Anonymous public search, session or PAT supported; delegated JWT and deploy tokens denied. No implicit administrator access. No Git code/comments/Wiki history. Ordered by type, immutable project ID and string item ID; cursor pagination is a live view, not an export snapshot. No fixed project cap. State filters omit projects/Wiki. No index migration or per-project Git RPC; SQL scans matching accessible documents, so latency depends on corpus size.",
+        "summary": "Search accessible collaboration content or indexed default-branch code",
+        "description": "Literal substring search; ASCII case-insensitive, other Unicode exact. Live D1 permissions and credentials; anonymous public search, session/PAT supported; delegated JWT/deploy tokens denied. No implicit administrator access. type=all includes project/issue/merge/wiki only, without comments or Wiki history. type=code uses ordinary D1 trigram postings and an asynchronously published immutable default-branch snapshot (migration 0026); results include SHA, line, time and stale flag plus visible-project coverage. No full body returned, no per-project Git RPC or fixed project cap. Code needs 3 Unicode codepoints, no regex/history/other branches. Cursor pagination is a live view, not an export snapshot. Collaboration content still uses SQL substring scans.",
         "security": [
           {},
           {
@@ -3910,7 +3910,7 @@
               "minLength": 1,
               "maxLength": 128
             },
-            "description": "Required single-line literal text, trimmed",
+            "description": "Required single-line literal text, trimmed; code requires at least 3 Unicode codepoints",
             "required": true
           },
           {
@@ -3923,7 +3923,8 @@
                 "project",
                 "issue",
                 "merge",
-                "wiki"
+                "wiki",
+                "code"
               ],
               "default": "all"
             },
@@ -3941,6 +3942,27 @@
             "required": false
           },
           {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "description": "Code-only literal path substring",
+            "required": false
+          },
+          {
+            "name": "extension",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[a-zA-Z0-9_-]*$"
+            },
+            "description": "Code-only extension without dot",
+            "required": false
+          },
+          {
             "name": "state",
             "in": "query",
             "schema": {
@@ -3953,7 +3975,7 @@
               ],
               "default": "all"
             },
-            "description": "Issue/merge state",
+            "description": "Issue/merge state; ignored by code search",
             "required": false
           },
           {
@@ -3988,9 +4010,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "maxLength": 4096
+              "maxLength": 8192
             },
-            "description": "Opaque cursor bound to filters and principal; retain filters on next request",
+            "description": "Opaque cursor bound to filters and principal; retain filters. Code max8192, collaboration max4096",
             "required": false
           }
         ],
@@ -4018,7 +4040,8 @@
                               "project",
                               "issue",
                               "merge",
-                              "wiki"
+                              "wiki",
+                              "code"
                             ]
                           },
                           "repo_id": {
@@ -4039,7 +4062,7 @@
                           },
                           "excerpt": {
                             "type": "string",
-                            "maxLength": 320
+                            "description": "Collaboration <=320 characters; code <=query length +300 Unicode codepoints"
                           },
                           "state": {
                             "type": [
@@ -4055,7 +4078,54 @@
                           },
                           "date": {
                             "type": "string"
+                          },
+                          "path": {
+                            "type": "string"
+                          },
+                          "line": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "indexed_sha": {
+                            "type": "string"
+                          },
+                          "blob_sha": {
+                            "type": "string"
+                          },
+                          "indexed_branch": {
+                            "type": "string"
+                          },
+                          "indexed_at": {
+                            "type": "integer",
+                            "description": "Unix milliseconds"
+                          },
+                          "stale": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "type": "string"
                           }
+                        }
+                      }
+                    },
+                    "coverage": {
+                      "type": "object",
+                      "description": "Code-only counts across visible projects; path/extension do not narrow project coverage",
+                      "properties": {
+                        "projects": {
+                          "type": "integer"
+                        },
+                        "indexed_projects": {
+                          "type": "integer"
+                        },
+                        "pending_projects": {
+                          "type": "integer"
+                        },
+                        "partial_projects": {
+                          "type": "integer"
+                        },
+                        "failed_projects": {
+                          "type": "integer"
                         }
                       }
                     },
@@ -4081,6 +4151,103 @@
           },
           "403": {
             "description": "Unsupported credential type"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/code-index": {
+      "get": {
+        "operationId": "getCodeIndex",
+        "tags": [
+          "Search"
+        ],
+        "summary": "Read current code-index status and published coverage",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status, indexed_sha/branch/time, build counters, published coverage, stale and safe retry error. Missing state returns queued."
+          },
+          "307": {
+            "description": "Historical address: authenticated redirect to the current project. Private destinations are not disclosed without current access."
+          },
+          "403": {
+            "description": "Read permission required"
+          },
+          "404": {
+            "description": "Project not visible"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/code-index/rebuild": {
+      "post": {
+        "operationId": "rebuildCodeIndex",
+        "tags": [
+          "Search"
+        ],
+        "summary": "Schedule a default-branch code-index rebuild",
+        "description": "Current maintainer/owner and live session or write PAT required. Archived projects allowed. Durable D1 intent with DO/cron recovery; overlapping pending requests coalesce. No Git modification.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Rebuild scheduled"
+          },
+          "403": {
+            "description": "Current maintain authority and write credential required"
+          },
+          "404": {
+            "description": "Project not visible"
           }
         }
       }

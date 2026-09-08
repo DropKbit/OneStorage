@@ -1,10 +1,12 @@
 # OneStorage
 
+v0.32 增加默认分支全局代码索引：DO 分批读取 R2 Git 快照，D1 倒排索引按当前权限检索，支持路径/扩展名筛选、固定提交行跳转、覆盖状态与重建。见 [代码搜索](docs/CODE-SEARCH-v32.md) 与 [验收记录](docs/VERIFICATION-v32.md)。
+
 v0.31 增加 Cloudflare 持久合并队列：按目标分支排队，针对最新基线重新审阅并执行候选 CI，发布同一个通过检查的提交。可在分支保护中要求队列，支持取消、故障恢复和网页状态跟踪。详见 [合并队列](docs/MERGE-QUEUE-v31.md) 与 [验收记录](docs/VERIFICATION-v31.md)。
 
 v0.30 增加 Workers/D1 内的自助密码找回：离线保存一次性密钥，保留双重验证，原子更新密码并撤销旧凭据。使用流程、恢复限制与接口见 [密码恢复](docs/PASSWORD-RECOVERY-v30.md)，测试与云端浏览器证据见 [验收记录](docs/VERIFICATION-v30.md)。
 
-v0.28 增加跨项目协作搜索：项目、Issue、合并请求和当前 Wiki 统一检索，支持空间/状态/归档筛选、稳定分页与实时权限校验，见 [使用说明](docs/SEARCH-v28.md) 和 [验收记录](docs/VERIFICATION-v28.md)。全局代码索引仍待实现，现有项目内代码搜索保留。
+v0.28 增加跨项目协作搜索：项目、Issue、合并请求和当前 Wiki 统一检索，支持空间/状态/归档筛选、稳定分页与实时权限校验，见 [使用说明](docs/SEARCH-v28.md) 和 [验收记录](docs/VERIFICATION-v28.md)。v0.32 补充独立代码搜索范围，现有项目内 Git 搜索保留。
 
 v0.27 支持当前实例内的私有 npm 依赖原生云构建：显式部署令牌授权、锁文件与 SHA-512 校验、独立 WASM 编译、工作流依赖撤权门禁，见 [私有包构建](docs/CI-PRIVATE-PACKAGES-v27.md) 和 [本地/生产验收](docs/VERIFICATION-v27.md)。
 
@@ -32,7 +34,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.27.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.32.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 

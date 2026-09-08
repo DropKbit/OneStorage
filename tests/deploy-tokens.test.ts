@@ -506,6 +506,8 @@ test("DO deployment guard rejects stale queued reads, writes, missing scope and 
     t = await f.create(),
     token = await resolveDeployToken(f.env, t.token),
     id = crypto.randomUUID();
+  // This fixture changes an otherwise immutable repository UUID before creating any index data.
+  f.db.exec("DELETE FROM code_index_state WHERE repo_id='other'");
   f.db.prepare("UPDATE repositories SET id=? WHERE id='other'").run(id);
   f.db.prepare("UPDATE deploy_tokens SET repo_id=? WHERE id=?").run(id, t.id);
   const request = (path = "/git/git-upload-pack", method = "POST") =>

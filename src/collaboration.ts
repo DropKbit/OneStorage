@@ -33,6 +33,38 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     if (level !== "read") identity(c);
     return h.access(c, level);
   };
+  app.get(base + "/code-index", async (c) => {
+    const repo = await access(c);
+    const row = await c.env.DB.prepare(
+      "SELECT indexed_sha,indexed_branch,indexed_at,status,requested,completed,files,indexed_files,skipped_files,coverage,error FROM code_index_state WHERE repo_id=?",
+    )
+      .bind(repo.id)
+      .first<any>();
+    return c.json(
+      row
+        ? {
+            ...row,
+            coverage: JSON.parse(row.coverage),
+            stale: row.requested > row.completed,
+          }
+        : { status: "queued", stale: true, coverage: null },
+    );
+  });
+  app.post(base + "/code-index/rebuild", async (c) => {
+    const repo = await access(c, "maintain"),
+      user = identity(c),
+      credential = c.get("credential");
+    const result = await c.env.DB.prepare(
+      `INSERT INTO code_index_state(repo_id,force_rebuild) SELECT r.id,1 FROM repositories r WHERE r.id=? AND r.deleted_at IS NULL AND ((r.workspace_id IS NULL AND r.owner_id=?) OR EXISTS(SELECT 1 FROM members m WHERE m.repo_id=r.id AND m.user_id=? AND m.role IN('maintainer','owner')) OR EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=r.workspace_id AND m.user_id=? AND m.role IN('maintainer','owner'))) AND EXISTS(SELECT 1 FROM credentials c JOIN users u ON u.id=c.user_id WHERE c.hash=? AND c.user_id=? AND u.disabled=0 AND c.expires_at>? AND (c.kind='session' OR (c.kind='pat' AND c.scope='write')))
+    ON CONFLICT(repo_id) DO UPDATE SET requested=requested+CASE WHEN force_rebuild=1 AND requested>coalesce(build_request,completed) THEN 0 ELSE 1 END,force_rebuild=1,status='queued',error=NULL`,
+    )
+      .bind(repo.id, user.id, user.id, user.id, credential, user.id, Date.now())
+      .run();
+    if (!result.meta.changes) fail(403, "Current write credential required");
+    await h.audit(c, "code_index.rebuild", repo.id);
+    await h.engine(c, repo, "/internal/code-index-wake", {});
+    return c.json({ scheduled: true }, 202);
+  });
   const mrFor = async (
     c: Context<App>,
     level: "read" | "write" | "maintain" = "read",

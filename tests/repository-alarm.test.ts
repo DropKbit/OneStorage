@@ -62,7 +62,7 @@ test("real merge queue DO preserves exact candidate/result across failed D1 proj
   for (const [key, value] of [...f.objects])
     f.objects.set(key.replace("repos/r/", "repos/" + id + "/"), value);
   f.db.exec(
-    `PRAGMA foreign_keys=OFF; UPDATE repositories SET id='${id}' WHERE id='r'; UPDATE members SET repo_id='${id}' WHERE repo_id='r'; UPDATE merge_requests SET repo_id='${id}' WHERE repo_id='r'; UPDATE branch_protections SET repo_id='${id}',require_codeowners=0,require_queue=1 WHERE repo_id='r'; PRAGMA foreign_keys=ON;`,
+    `PRAGMA foreign_keys=OFF; UPDATE repositories SET id='${id}' WHERE id='r'; UPDATE code_index_state SET repo_id='${id}' WHERE repo_id='r'; UPDATE members SET repo_id='${id}' WHERE repo_id='r'; UPDATE merge_requests SET repo_id='${id}' WHERE repo_id='r'; UPDATE branch_protections SET repo_id='${id}',require_codeowners=0,require_queue=1 WHERE repo_id='r'; PRAGMA foreign_keys=ON;`,
   );
   f.db
     .prepare("INSERT INTO ci_pipelines(repo_id,config,enabled) VALUES(?,?,0)")
@@ -202,6 +202,50 @@ test("real merge queue DO preserves exact candidate/result across failed D1 proj
     ).status,
     409,
   );
+  // A failed default-branch metadata update survives eviction and repairs the index via alarm.
+  const prepare = f.env.DB.prepare.bind(f.env.DB);
+  let metadataDown = true;
+  f.env.DB.prepare = ((sql: string) => {
+    const statement = prepare(sql);
+    if (sql.startsWith("UPDATE repositories SET default_branch=")) {
+      const run = statement.run.bind(statement);
+      statement.run = async () => {
+        if (metadataDown) throw Error("default metadata unavailable");
+        return run();
+      };
+    }
+    return statement;
+  }) as any;
+  assert.equal(
+    (await send("/internal/default-branch", { default_branch: "feature" }))
+      .status,
+    503,
+  );
+  assert.equal(state.get("default-branch"), "feature");
+  assert.equal(state.get("default-branch-projection"), id);
+  assert.equal(
+    f.db.prepare("SELECT default_branch FROM repositories WHERE id=?").get(id)!
+      .default_branch,
+    "main",
+  );
+  metadataDown = false;
+  doRepo = new Repository({ storage }, f.env);
+  for (let i = 0; i < 10; i++) await doRepo.alarm();
+  assert.equal(state.get("default-branch-projection"), undefined);
+  assert.equal(state.get("code-index"), undefined);
+  const indexed = f.db
+    .prepare("SELECT * FROM code_index_state WHERE repo_id=?")
+    .get(id)!;
+  assert.equal(indexed.status, "ready");
+  assert.equal(indexed.indexed_branch, "feature");
+  assert.equal(indexed.indexed_sha, source);
+  assert.equal(
+    f.db
+      .prepare("SELECT count(*) n FROM code_documents WHERE repo_id=?")
+      .get(id)!.n,
+    2,
+  );
+  assert.equal(f.db.prepare("PRAGMA foreign_key_check").all().length, 0);
   // Published fork-source reads bypass an unrelated long-running target writer.
   let release!: () => void;
   const hold = new Promise<void>((r) => {

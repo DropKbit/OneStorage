@@ -1,4 +1,5 @@
 import { collectPackages } from "./packages";
+import { publishCodeIndexes } from "./code-index";
 import { collectCICaches } from "./ci-cache";
 import { cleanupOIDC } from "./oidc-routes";
 import { publishSchedules, consumeSchedule } from "./ci-schedules";
@@ -79,5 +80,6 @@ export default {
     await publishPending(env);
     await publishSyncJobs(env);
     await collectPackages(env);
+    await publishCodeIndexes(env);
   },
 };

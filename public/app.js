@@ -1,4 +1,4 @@
-const globalSearch = () => import("./search.js?v=29036dd1cae22885");
+const globalSearch = () => import("./search.js?v=da1099b414f06039");
 const deployTokens = () => import("./deploy-tokens.js?v=3624ebb344aa8e94");
 const packages = () => import("./packages.js?v=940a14d638488fa5");
 const account = () => import("./account.js?v=6ffc55e60c26a3a9");
@@ -155,7 +155,7 @@ const namespaceQuery = () =>
 function codeViewer(code, path) {
   return `<div class="code-viewer"><pre class="line-numbers" aria-hidden="true">${code
     .split("\n")
-    .map((_, i) => i + 1)
+    .map((_, i) => `<span id="L${i + 1}">${i + 1}</span>`)
     .join(
       "\n",
     )}</pre><pre><code id="highlight-target" data-path="${esc(path)}">${esc(code)}</code></pre></div>`;
@@ -529,7 +529,7 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
     ? `<section class="panel readme"><div class="panelhead"><strong>README.md</strong></div><div class="markdown detail-body" data-markdown data-base="${esc(base)}" data-ref="${esc(data.ref)}" data-file="README.md">${esc(readmeFile.content)}</div></section>`
     : "";
   if (version !== routeVersion) return;
-  const nav = `<div class="toolbar"><div class="actionbar"><select class="select-branch" id="branch" aria-label="选择分支">${branches.map((b) => `<option ${b.name === ref ? "selected" : ""} value="${esc(b.name)}">⑂ ${esc(b.name)}</option>`).join("")}</select><span class="muted">${esc(p || "/")}</span></div>${writeable(r) ? link(`${base}/edit?ref=${encodeURIComponent(ref)}${blob ? "&path=" + encodeURIComponent(p) : ""}`, blob ? "编辑文件" : "新建文件", "btn small") : ""}</div>`;
+  const nav = `<div class="toolbar"><div class="actionbar"><select class="select-branch" id="branch" aria-label="选择分支">${!branches.some((b) => b.name === ref) ? `<option selected value="${esc(ref)}">提交 ${esc(ref.slice(0, 12))}</option>` : ""}${branches.map((b) => `<option ${b.name === ref ? "selected" : ""} value="${esc(b.name)}">⑂ ${esc(b.name)}</option>`).join("")}</select><span class="muted">${esc(p || "/")}</span></div>${writeable(r) ? link(`${base}/edit?ref=${encodeURIComponent(ref)}${blob ? "&path=" + encodeURIComponent(p) : ""}`, blob ? "编辑文件" : "新建文件", "btn small") : ""}</div>`;
   const up = p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "";
   const list = blob
     ? `<div class="panelhead">${esc(p)}<span class="muted">${data.size} bytes</span></div>${/\.(png|jpe?g|gif|webp)$/i.test(p) ? `<div class="image-preview"><img id="blob-preview" alt="${esc(p)}" src="${esc("/api" + ap + "/preview?" + new URLSearchParams({ ref: data.ref, path: p }))}"><p class="muted" id="preview-caption">图片预览 · ${esc(p)}</p></div>` : data.binary ? '<div class="empty"><p>二进制文件，请通过 Git 下载。</p></div>' : /\.md$/i.test(p) ? `<div class="markdown detail-body" data-markdown data-base="${esc(base)}" data-ref="${esc(data.ref)}" data-file="${esc(p)}">${esc(data.content)}</div><details><summary>查看源码</summary>${codeViewer(data.content, p)}</details>` : codeViewer(data.content, p)}`
@@ -563,6 +563,12 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
   }
   copyButton(r.clone_url);
   applyHighlight().catch(() => {});
+  if (/^#L[1-9][0-9]*$/.test(location.hash)) {
+    const line = document.getElementById(location.hash.slice(1));
+    const details = line?.closest("details");
+    if (details) details.open = true;
+    line?.scrollIntoView({ block: "center" });
+  }
   document.querySelector("#branch").onchange = (e) =>
     go(`${base}?ref=${encodeURIComponent(e.target.value)}`);
 }
@@ -575,8 +581,16 @@ async function searchPage(r, base, ap, version) {
   repoLayout(
     r,
     "search",
-    `<form class="toolbar" id="code-search"><div class="search"><input name="q" value="${esc(q)}" required maxlength="128" placeholder="在默认分支搜索代码…" aria-label="搜索代码"></div><button class="btn primary" type="submit">搜索代码</button></form><div class="panel"><div class="panelhead"><strong>${result.matches.length} 处匹配</strong><span class="muted">${esc(r.default_branch)}${result.truncated ? " · 仅显示前 200 条" : ""}</span></div>${result.matches.map((m) => `<div class="comment">${link(base + "?view=blob&path=" + encodeURIComponent(m.path), esc(m.path) + ":" + m.line)}<pre>${esc(m.text)}</pre></div>`).join("") || '<div class="empty"><p>' + (q ? "没有匹配的代码。" : "输入关键词，搜索仓库中的文本文件。") + "</p></div>"}</div>`,
+    `<section class="panel" id="code-index-status"></section><form class="toolbar" id="code-search"><div class="search"><input name="q" value="${esc(q)}" required maxlength="128" placeholder="在默认分支搜索代码…" aria-label="搜索代码"></div><button class="btn primary" type="submit">搜索代码</button></form><div class="panel"><div class="panelhead"><strong>${result.matches.length} 处匹配</strong><span class="muted">${esc(r.default_branch)}${result.truncated ? " · 仅显示前 200 条" : ""}</span></div>${result.matches.map((m) => `<div class="comment">${link(base + "?view=blob&path=" + encodeURIComponent(m.path), esc(m.path) + ":" + m.line)}<pre>${esc(m.text)}</pre></div>`).join("") || '<div class="empty"><p>' + (q ? "没有匹配的代码。" : "输入关键词，搜索仓库中的文本文件。") + "</p></div>"}</div>`,
   );
+  const indexUI = await import("./search.js?v=da1099b414f06039");
+  if (version !== routeVersion) return;
+  indexUI.mountCodeIndex(document.querySelector("#code-index-status"), r, ap, {
+    api,
+    esc,
+    notice,
+    current: () => version === routeVersion,
+  });
   document.querySelector("#code-search").onsubmit = (e) => {
     e.preventDefault();
     go(
