@@ -22,6 +22,15 @@ export const platformOperations = [
   ["patch", "/api/admin/repositories/{id}", "admin_update_repository"],
   ["delete", "/api/admin/repositories/{id}", "admin_delete_repository"],
   ["get", "/api/admin/audit", "admin_audit"],
+  ["get", base + "/schedules", "ci_list_schedules"],
+  ["post", base + "/schedules", "ci_create_schedule"],
+  ["put", base + "/schedules/{schedule}", "ci_update_schedule"],
+  ["delete", base + "/schedules/{schedule}", "ci_delete_schedule"],
+  [
+    "post",
+    base + "/schedules/{schedule}/take-ownership",
+    "ci_take_schedule_ownership",
+  ],
   ["get", base + "/config", "ci_config"],
   ["put", base + "/config", "ci_save_config"],
   ["get", base + "/runs", "ci_list_runs"],
@@ -133,6 +142,47 @@ export function addPlatformPaths(paths) {
       },
     };
     const operation = paths[path][method];
+    if (id.includes("schedule")) {
+      operation.description =
+        "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.";
+      if (method !== "get") {
+        const fields = {
+          name: { type: "string", minLength: 1, maxLength: 80 },
+          ref: { type: "string" },
+          cron: { type: "string", maxLength: 100 },
+          timezone: { type: "string", default: "UTC" },
+          enabled: { type: "boolean", default: true },
+          revision: { type: "integer", minimum: 0 },
+        };
+        const full = id === "ci_create_schedule" || id === "ci_update_schedule";
+        operation.requestBody = {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                additionalProperties: false,
+                properties: full
+                  ? Object.fromEntries(
+                      Object.entries(fields).filter(
+                        ([k]) => k !== "revision" || method === "put",
+                      ),
+                    )
+                  : { revision: fields.revision },
+                required: full
+                  ? [
+                      "name",
+                      "ref",
+                      "cron",
+                      ...(method === "put" ? ["revision"] : []),
+                    ]
+                  : ["revision"],
+              },
+            },
+          },
+        };
+      }
+    }
     if (id === "ci_save_config") {
       operation.description +=
         " Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See docs/CI-WORKFLOWS-v14.md for task schemas, dependency artifacts and limits.";

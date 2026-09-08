@@ -1,3 +1,4 @@
+import { publishSchedules, consumeSchedule } from "./ci-schedules";
 import { consumeCI, consumeCIEvent, publishCI } from "./ci";
 export { Repository } from "./repository";
 import { publishSyncJobs, consumeSync } from "./sync";
@@ -10,7 +11,8 @@ export default {
     const jobs = batch.messages.filter(
       (message) =>
         message.body.id.startsWith("ci:") ||
-        message.body.id.startsWith("ci-event:"),
+        message.body.id.startsWith("ci-event:") ||
+        message.body.id.startsWith("ci-schedule:"),
     );
     let next = 0;
     await Promise.all(
@@ -18,7 +20,9 @@ export default {
         while (next < jobs.length) {
           const message = jobs[next++];
           try {
-            if (message.body.id.startsWith("ci-event:"))
+            if (message.body.id.startsWith("ci-schedule:"))
+              await consumeSchedule(env, message.body.id.slice(12));
+            else if (message.body.id.startsWith("ci-event:"))
               await consumeCIEvent(env, message.body.id.slice(9));
             else await consumeCI(env, message.body.id.slice(3));
             message.ack();
@@ -49,13 +53,15 @@ export default {
           (m) =>
             !m.body.id.startsWith("sync:") &&
             !m.body.id.startsWith("ci:") &&
-            !m.body.id.startsWith("ci-event:"),
+            !m.body.id.startsWith("ci-event:") &&
+            !m.body.id.startsWith("ci-schedule:"),
         ),
       },
       env,
     );
   },
   async scheduled(_event: ScheduledController, env: Env) {
+    await publishSchedules(env);
     await publishCI(env);
     await publishPending(env);
     await publishSyncJobs(env);

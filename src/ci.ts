@@ -1,3 +1,4 @@
+import { activeTick, registerScheduleRoutes } from "./ci-schedules";
 import {
   executeJavaScript,
   saveCloudOutput,
@@ -61,7 +62,7 @@ export async function enqueueRun(
 ) {
   const id = crypto.randomUUID();
   const result = await env.DB.prepare(
-    "INSERT OR IGNORE INTO ci_runs(id,repo_id,event_id,ref,sha,config,trigger,actor_id,status,config_path,config_sha,error,config_error,finished_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,CASE WHEN ? IS NOT NULL THEN datetime('now') END WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL) AND (SELECT COUNT(*) FROM ci_runs WHERE repo_id=? AND parent_id IS NULL AND status IN ('queued','running'))<20",
+    `INSERT OR IGNORE INTO ci_runs(id,repo_id,event_id,ref,sha,config,trigger,actor_id,status,config_path,config_sha,error,config_error,schedule_tick_id,finished_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,CASE WHEN ? IS NOT NULL THEN datetime('now') END WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL AND archived_at IS NULL) AND (SELECT COUNT(*) FROM ci_runs WHERE repo_id=? AND parent_id IS NULL AND status IN ('queued','running'))<20 AND (? IS NULL OR ? IN (${activeTick}))`,
   )
     .bind(
       id,
@@ -77,12 +78,24 @@ export async function enqueueRun(
       origin.config_sha || null,
       origin.error || null,
       origin.error || null,
+      origin.schedule_tick_id || null,
       origin.error || null,
       repo.id,
       repo.id,
+      origin.schedule_tick_id || null,
+      origin.schedule_tick_id || null,
     )
     .run();
   if (!result.meta.changes) {
+    if (
+      origin.schedule_tick_id &&
+      !(await env.DB.prepare(
+        `SELECT id FROM ci_schedule_ticks WHERE id=? AND id IN (${activeTick})`,
+      )
+        .bind(origin.schedule_tick_id)
+        .first())
+    )
+      return null;
     const current = await env.DB.prepare(
       "SELECT archived_at,deleted_at FROM repositories WHERE id=?",
     )
@@ -413,6 +426,7 @@ export function registerCIRoutes(app: Hono<App>, h: Helpers) {
     if (!roleRank[c.get("repoRole")]) fail(404, "Pipeline not found");
     return repo;
   };
+  registerScheduleRoutes(app, { ...h, access });
   const getRun = async (
     c: Context<App>,
     level: "read" | "write" | "maintain" = "read",
