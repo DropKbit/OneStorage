@@ -75,6 +75,7 @@ export function streamResponse(
   iterator: AsyncIterator<Uint8Array>,
   headers: HeadersInit,
   idleMs = 20000,
+  status = 200,
 ) {
   let resolve!: () => void,
     closed = false,
@@ -140,7 +141,7 @@ export function streamResponse(
     },
     { highWaterMark: 0 },
   );
-  const response = new Response(stream, { headers });
+  const response = new Response(stream, { headers, status });
   completions.set(response, completed);
   return response;
 }

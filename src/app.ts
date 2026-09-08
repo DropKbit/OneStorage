@@ -420,7 +420,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.17.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.18.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({

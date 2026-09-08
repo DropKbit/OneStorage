@@ -1,3 +1,13 @@
+import { RequestGate } from "./git/request-gate";
+import {
+  acquireSnapshot,
+  SnapshotBudget,
+  SnapshotStore,
+  repositoryRead,
+  snapshotRead,
+  shareableOperation,
+  snapshotResponse,
+} from "./git/snapshot-read";
 import { PackCache, collectPackCache } from "./git/pack-cache";
 import { responseCompletion } from "./git/pack-stream";
 import { receiveStream } from "./git/receive-stream";
@@ -41,26 +51,19 @@ import { advertise, upload } from "./git/protocol";
 import { importSnapshot } from "./git/legacy";
 /** The per-repository DO serializes requests; immutable R2 objects precede atomic ref publication. */
 export class Repository extends DurableObject<Env> {
-  private tail: Promise<unknown> = Promise.resolve();
-  private waiting = 0;
+  private gate = new RequestGate();
+  private get waiting() {
+    return this.gate.waiting;
+  }
   private objectCache = new ObjectCache();
   private objectIndex?: GitObjectIndex;
   async fetch(request: Request): Promise<Response> {
-    if (this.waiting >= 16)
-      return Response.json(
-        { error: "Repository busy; retry shortly" },
-        { status: 429 },
-      );
-    this.waiting++;
-    const result = this.tail.then(() => this.handle(request));
-    this.tail = result
-      .then((response) => responseCompletion(response))
-      .catch(() => undefined)
-      .finally(() => {
-        this.waiting--;
-      });
     try {
-      return await result;
+      return await this.gate.run(
+        shareableOperation(request),
+        (ready) => this.handle(request, ready),
+        snapshotRead(request) ? () => this.handleSnapshot(request) : undefined,
+      );
     } catch (e) {
       if (e instanceof HTTPException)
         return Response.json({ error: e.message }, { status: e.status });
@@ -88,10 +91,11 @@ export class Repository extends DurableObject<Env> {
       await this.ctx.storage.setAlarm(Date.now() + 30000);
       return;
     }
-    const result = this.tail.then(async () => {
+    await this.gate.run(false, async () => {
       if (await this.ctx.storage.get("deleted")) {
         this.objectCache.clear();
-        return collectDeleted(this.env, this.ctx.storage);
+        await collectDeleted(this.env, this.ctx.storage);
+        return new Response(null, { status: 204 });
       }
       try {
         await collectPackCache(this.env.OBJECTS, this.ctx.storage);
@@ -157,11 +161,97 @@ export class Repository extends DurableObject<Env> {
           .size
       )
         await this.ctx.storage.setAlarm(Date.now() + 1000);
+      return new Response(null, { status: 204 });
     });
-    this.tail = result.catch(() => undefined);
-    await result;
   }
-  private async handle(request: Request) {
+  private async handleSnapshot(
+    request: Request,
+  ): Promise<Response | undefined> {
+    const release = acquireSnapshot();
+    if (!release) return;
+    let store: SnapshotStore | undefined, completion: Promise<void> | undefined;
+    const id = request.headers.get("x-repo-id") || "";
+    try {
+      if (!/^[0-9a-f-]{36}$/.test(id) || this.objectIndex?.repoId !== id)
+        fail(400, "Invalid repository");
+      if (await this.ctx.storage.get("deleted"))
+        fail(404, "Repository deleted");
+      const version = await this.ctx.storage.get<number>("project-version");
+      if (
+        version === undefined ||
+        (await this.ctx.storage.get("project-transition"))
+      )
+        throw new SnapshotBudget();
+      if (
+        request.headers.has("x-lifecycle-revision") &&
+        request.headers.get("x-lifecycle-revision") !== String(version)
+      )
+        fail(
+          409,
+          "Project moved or lifecycle changed; reload before reading or writing",
+        );
+      const ephemeral = request.headers.get("x-namespace") === "ephemeral";
+      if (!ephemeral && (await this.ctx.storage.get("sync-reconcile")))
+        fail(
+          409,
+          "Upstream outcome is being reconciled; pull upstream before reading",
+        );
+      const defaultBranch = branch.parse(
+        (await this.ctx.storage.get<string>("default-branch")) ||
+          request.headers.get("x-default-branch") ||
+          "main",
+      );
+      const refs = (await this.ctx.storage.get<Refs>("refs.v2")) || {};
+      store = new SnapshotStore(id, this.env.OBJECTS, this.objectCache);
+      const readonlyStorage: RefStorage = {
+        get: <T>(key: string) => this.ctx.storage.get<T>(key),
+        put: async () => {
+          throw Error("Snapshot attempted ref publication");
+        },
+      };
+      const repo = namespaceRepositories(
+        store,
+        readonlyStorage,
+        refs,
+        defaultBranch,
+        { rules: [] },
+      )(ephemeral);
+      // Explicit unpublished/ancestry selectors retain their existing serialized API semantics.
+      const query = new URL(request.url).searchParams;
+      for (const selector of [query.get("ref"), query.get("sha")]) {
+        if (!selector) continue;
+        if (
+          /[~^]/.test(selector) ||
+          /^[0-9a-f]{4,39}$/.test(selector) ||
+          (/^[0-9a-f]{40}$/.test(selector) &&
+            !Object.values(repo.refs).includes(selector))
+        )
+          throw new SnapshotBudget();
+      }
+      const result = await repositoryRead(repo, request, defaultBranch);
+      if (!result) throw new SnapshotBudget();
+      const response = await snapshotResponse(result);
+      completion = responseCompletion(response);
+      return response;
+    } catch (error) {
+      if (error instanceof SnapshotBudget) return;
+      throw error;
+    } finally {
+      await store?.close();
+      if (completion)
+        this.ctx.waitUntil(
+          completion.then(() => {
+            release();
+            console.info("Git snapshot drained", {
+              repoId: id,
+              ...store?.ioUsage,
+            });
+          }),
+        );
+      else release();
+    }
+  }
+  private async handle(request: Request, ready: () => void = () => {}) {
     const id = request.headers.get("x-repo-id") || "";
     if (!/^[0-9a-f-]{36}$/.test(id)) fail(400, "Invalid repository");
     if (await this.ctx.storage.get("deleted")) fail(404, "Repository deleted");
@@ -290,6 +380,7 @@ export class Repository extends DurableObject<Env> {
         );
       } else refs = {};
     }
+    ready();
     const policy = JSON.parse(
       request.headers.get("x-write-policy") || '{"rules":[]}',
     );
@@ -512,14 +603,10 @@ export class Repository extends DurableObject<Env> {
       fail(409, "Repository initialization is in progress");
     const q = Object.fromEntries(url.searchParams),
       page = { limit: q.limit, cursor: q.cursor };
-    if (request.method === "HEAD" && path === "/file")
-      return repo.rawFile(request, q.ref || "HEAD", q.path || "");
+    const sharedRead = await repositoryRead(repo, request, defaultBranch);
+    if (sharedRead) return sharedRead;
     if (request.method === "GET") {
       switch (path) {
-        case "/resolve":
-          return Response.json({ sha: await repo.resolve(q.ref || "HEAD") });
-        case "/file":
-          return repo.rawFile(request, q.ref || "HEAD", q.path || "");
         case "/files":
         case "/files/metadata":
           return Response.json(
@@ -531,10 +618,6 @@ export class Repository extends DurableObject<Env> {
               metadata: path.endsWith("metadata"),
             }),
           );
-        case "/commit-detail":
-          return Response.json({
-            commit: await repo.metadata(q.sha || q.ref || "HEAD"),
-          });
         case "/diff":
           return Response.json(
             await repo.diff(q.sha || q.ref || "HEAD", q.base, {
@@ -549,57 +632,6 @@ export class Repository extends DurableObject<Env> {
               url.searchParams.getAll("path"),
             ),
           );
-        case "/browse": {
-          const branches = repo.listBranches({ limit: 256 }).branches;
-          if (!branches.length)
-            return Response.json({
-              branches,
-              default_branch: defaultBranch,
-              data: null,
-              readme: null,
-            });
-          const ref = q.ref || defaultBranch,
-            filePath = q.path || "",
-            blob = q.view === "blob";
-          const data = blob
-            ? await repo.blob(ref, filePath)
-            : await repo.tree(ref, filePath);
-          let readme = null;
-          if (
-            !blob &&
-            !filePath &&
-            "entries" in data &&
-            data.entries.some(
-              (e) => e.name === "README.md" && e.type === "blob",
-            )
-          ) {
-            try {
-              readme = await repo.blob(data.ref, "README.md");
-            } catch (e) {
-              if (!(e instanceof HTTPException) || e.status !== 413) throw e;
-            }
-          }
-          return Response.json({
-            branches,
-            default_branch: defaultBranch,
-            data,
-            readme,
-          });
-        }
-        case "/branch": {
-          const name = q.branch || q.name || defaultBranch,
-            sha = repo.refs["refs/heads/" + name];
-          if (!sha) fail(404, "Branch not found");
-          return Response.json({ name, sha });
-        }
-        case "/tags":
-          return Response.json(await repo.listTags(page));
-        case "/tag": {
-          const tags = (await repo.listTags({ limit: 1000 })).tags;
-          const tag = tags.find((t) => t.name === (q.name || q.tag));
-          if (!tag) fail(404, "Tag not found");
-          return Response.json(tag);
-        }
         case "/notes":
           return Response.json(
             await repo.getNote(q.sha || "", q.notes_ref || q.ref),
@@ -770,16 +802,6 @@ export class Repository extends DurableObject<Env> {
       const ref = url.searchParams.get("ref") || "HEAD",
         file = url.searchParams.get("path") || "";
       switch (path) {
-        case "/branches":
-          return Response.json(repo.listBranches(page));
-        case "/tree":
-          return Response.json(await repo.tree(ref, file));
-        case "/blob":
-          return Response.json(await repo.blob(ref, file));
-        case "/commits":
-          return Response.json(
-            await repo.listCommits({ ...page, ref, path: q.path }),
-          );
         case "/search":
           return Response.json(
             await repo.search(ref, url.searchParams.get("q") || ""),

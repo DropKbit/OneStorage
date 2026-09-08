@@ -8,10 +8,11 @@ export class ObjectCache {
     private ttl = 300000,
     private now = () => Date.now(),
   ) {}
-  get(repo: string, oid: string): GitObject | undefined {
+  get(repo: string, oid: string, maxBytes = Infinity): GitObject | undefined {
     const key = repo + "/" + oid,
       entry = this.entries.get(key);
     if (!entry) return;
+    if (entry.object.data.length > maxBytes) return;
     this.remove(key);
     if (entry.expires <= this.now()) return;
     this.entries.set(key, entry);

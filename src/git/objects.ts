@@ -234,7 +234,7 @@ export class ObjectStore {
   constructor(
     readonly repoId: string,
     private bucket: Pick<R2Bucket, "get" | "put">,
-    private shared?: ObjectCache,
+    private shared?: Pick<ObjectCache, "get" | "put">,
     readonly index?: GitObjectIndex,
     private io = new GitIO(undefined, (detail) =>
       console.warn("Git object I/O retry", { repoId, ...detail }),
