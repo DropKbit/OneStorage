@@ -4,7 +4,7 @@
 
 规范地址为 **https://git.1s.hk**；`1s.hk` 继续提供 Cubelink。独立 Worker 地址为 `https://onestorage.xbitfun.workers.dev`，浏览器登录和 LFS 应使用规范地址，以匹配 APP_ORIGIN。
 
-资源：Worker `onestorage`、私有编译 Worker `onestorage-build`、D1 `onestorage`、R2 `onestorage-objects`、Queue `onestorage-events`、SQLite Durable Object 类 `Repository`。应用由独立 `onestorage-apps` 网关提供。没有 Containers、Docker 镜像或外部 Git 服务器。
+资源：Worker `onestorage`、私有编译 Worker `onestorage-build`、D1 `onestorage`、R2 `onestorage-objects` 与 `onestorage-npm-cache`、Queue `onestorage-events`、SQLite Durable Object 类 `Repository`。应用由独立 `onestorage-apps` 网关提供。没有 Containers、Docker 镜像或外部 Git 服务器。
 
 首次初始化通过网页完成，用户名和密码由操作者选择。初始化 secret 存放在本机被 Git 忽略的 `.data/production-bootstrap-secret.txt`（权限 0600），同时保存在 Worker secret 中。不要将它加入源码或公开发送。成功创建管理员后，D1 会锁定初始化，可删除云端 BOOTSTRAP_SECRET。
 
@@ -18,10 +18,13 @@ npx wrangler login
 npx wrangler whoami
 npx wrangler d1 create onestorage
 npx wrangler r2 bucket create onestorage-objects
+npx wrangler r2 bucket create onestorage-npm-cache
 npx wrangler queues create onestorage-events
 ```
 
-这些 create 命令仅用于新实例；当前实例的资源已存在，不能重复创建。将返回的数据库 UUID 填入 `wrangler.jsonc`，资源同名冲突时选择独立名称。替换 APP_ORIGIN 及自定义域名 route，不能覆盖其他服务。若仅使用 workers.dev，移除 routes 并将 APP_ORIGIN 改为实际 Worker URL。逻辑 binding 名 `DB`、`OBJECTS`、`REPOSITORIES`、`EVENTS` 保持不变。
+这些 create 命令仅用于新实例；当前实例的资源已存在，不能重复创建。将返回的数据库 UUID 填入 `wrangler.jsonc` 和 `wrangler.apps.jsonc`，两个配置的 `DB` / `OBJECTS` 必须指向本实例的同一数据库和 Git 对象桶。编译配置 `wrangler.build.jsonc` 的 `NPM_CACHE` 指向独立 npm 缓存桶，缓存清理配置见 [npm 缓存](CI-NPM-CACHE-v35.md)。
+
+资源同名冲突时选择独立名称。替换 APP_ORIGIN 及自定义域名 route，不能覆盖其他服务。若仅使用 workers.dev，移除 routes 并将 APP_ORIGIN 改为实际 Worker URL。逻辑 binding 名 `DB`、`OBJECTS`、`REPOSITORIES`、`EVENTS` 保持不变。
 
 ```sh
 npm run check
@@ -29,20 +32,30 @@ npm run build:production
 npm run build:compiler
 npm run db:remote
 npm run deploy:build
+npm run deploy:apps
+# 将返回的应用网关 URL 写入主配置 APPS_ORIGIN，再部署主服务
 npm run deploy
 npx wrangler secret put BOOTSTRAP_SECRET
 npx wrangler secret put CREDENTIAL_ENCRYPTION_KEY
 ```
 
-先部署编译 Worker，再部署主 Worker；主配置的 `BUILDER` 服务名必须与 `wrangler.build.jsonc` 的 Worker 名一致。编译 Worker 无存储/密钥绑定，禁用 workers.dev 和预览 URL。升级它无需 D1 迁移。详见 [云端构建](CI-BUILDS-v22.md)。
+先部署编译 Worker 和应用网关，最后部署主 Worker；主配置的 `BUILDER` 服务名必须与 `wrangler.build.jsonc` 的 Worker 名一致。编译 Worker 仅绑定公共 npm 缓存桶 `NPM_CACHE`，不绑定 Git 数据库、Git 对象桶或登录密钥，禁用 workers.dev 和预览 URL。升级它无需 D1 迁移。详见 [云端构建](CI-BUILDS-v22.md)。
 
-若使用应用发布，另外配置 `wrangler.apps.jsonc` 的 D1/R2 为本实例资源，保留 `LOADER`，运行 `npm run deploy:apps`，再把主 Worker 的 `APPS_ORIGIN` 设置为返回的独立应用域名并发布主 Worker。应用域名须与 Git 登录域名分开。
+应用网关的 `wrangler.apps.jsonc` 保留 `LOADER`。把主 Worker 的 `APPS_ORIGIN` 设置为 `npm run deploy:apps` 返回的独立应用域名，然后发布主 Worker。应用域名须与 Git 登录域名分开。
 
 `deploy` 与打包命令会先从明确的源码目录生成 `public/source.tar.gz`，通过页面提供 AGPL 源码下载。不要将私有文件放入这些源码目录；`.data`、`.wrangler` 和环境密钥文件不在打包白名单。
 
 为 BOOTSTRAP_SECRET 使用至少 32 字节的随机值，在 Wrangler 提示中输入。未配置密钥时初始化接口拒绝创建账号，不会开放无密钥注册。生产不能使用 `wrangler.local.jsonc`；它含公开的本地测试密钥。不要导入本地 `.wrangler` 数据。
 
 访问 `/api/health`，确认 HTTPS 与静态页面可用，然后初始化管理员、创建私有验收项目和临时 PAT，执行真实 push、clone、fetch、merge 与 LFS。验证后撤销验收凭证。公开 DNS 和本地负缓存传播可能有时间差；不要为排查 DNS 而关闭 TLS 校验。
+
+## 关于一键部署
+
+[Cloudflare 官方 Deploy 按钮](https://developers.cloudflare.com/workers/platform/deploy-buttons/) 目前只接受 `github.com` / `gitlab.com` 的公开仓库，不接受 `git.1s.hk` 等自托管 Git 地址，也不原生同时部署多个 Worker。
+
+接入前需要公开镜像仓库，以及针对主服务、编译服务、应用网关的部署编排：共享本实例的 D1 / R2，连接 `BUILDER` 与 `APPS_ORIGIN`，应用 D1 migrations，并配置 `BOOTSTRAP_SECRET` 和 `CREDENTIAL_ENCRYPTION_KEY`。仅把本仓库 URL 拼进官方按钮不能完成这些步骤。
+
+当前可用方式为上面的源码部署流程。准备公开镜像和部署编排后，再发布经过实际新实例验收的 Deploy 链接。
 
 ## 更新和 v0.1 迁移
 
@@ -67,7 +80,7 @@ Git ref 与 push 事件现在在 DO 中原子写入，再由 alarm 幂等投影�
 - APP_ORIGIN 必须与浏览器规范地址一致，影响 Cookie 写操作和 LFS action URL。
 - 每仓库一个 DO，最多 16 个请求排队；操作串行执行。没有 Container 实例数/启动延迟。
 - R2 逐对象保存 canonical 数据；传输时重新生成 pack。每次请求的 R2 读取数量和历史大小会影响延迟与成本。
-- 应用限额见 README；Worker/DO CPU、内存、子请求等平台限额仍独立生效。大仓库尚不适用。
+- 应用限额见 [使用边界](LIMITS.md)；Worker/DO CPU、内存、子请求等平台限额仍独立生效。大仓库尚不适用。
 - 删除整个仓库会通过 DO alarm 清理对象；活跃仓库没有不可达对象 GC 或总存储配额。
 - 监控 Worker 错误、DO 请求饱和、R2 用量和缺失对象、D1/Queue 失败。不要把成功健康检查视为持久化或恢复测试。
 
