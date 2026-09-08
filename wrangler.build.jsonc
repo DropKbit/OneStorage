@@ -5,12 +5,26 @@
   "compatibility_date": "2026-09-01",
   "workers_dev": false,
   "preview_urls": false,
-  "limits": { "cpu_ms": 60000 },
+  "limits": {
+    "cpu_ms": 60000
+  },
   "rules": [
-    { "type": "CompiledWasm", "globs": ["**/*.wasm"], "fallthrough": true },
+    {
+      "type": "CompiledWasm",
+      "globs": [
+        "**/*.wasm"
+      ],
+      "fallthrough": true
+    }
   ],
   "r2_buckets": [
-    { "binding": "NPM_CACHE", "bucket_name": "onestorage-npm-cache" },
+    {
+      "binding": "NPM_CACHE",
+      "bucket_name": "onestorage-npm-cache"
+    }
   ],
-  "dev": { "port": 8788, "ip": "127.0.0.1" },
+  "dev": {
+    "port": 8788,
+    "ip": "127.0.0.1"
+  }
 }

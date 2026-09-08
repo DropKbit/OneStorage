@@ -3,27 +3,30 @@
   "name": "onestorage-apps",
   "main": "src/apps-gateway.ts",
   "compatibility_date": "2026-09-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "worker_loaders": [
     {
-      "binding": "LOADER",
-    },
+      "binding": "LOADER"
+    }
   ],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "onestorage",
-      "database_id": "d2e2b162-f443-4d8f-9a85-e726048ae356",
-    },
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
   ],
   "r2_buckets": [
     {
       "binding": "OBJECTS",
-      "bucket_name": "onestorage-objects",
-    },
+      "bucket_name": "onestorage-objects"
+    }
   ],
   "workers_dev": true,
   "observability": {
-    "enabled": true,
-  },
+    "enabled": true
+  }
 }

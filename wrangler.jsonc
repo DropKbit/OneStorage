@@ -3,70 +3,89 @@
   "name": "onestorage",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "limits": { "subrequests": 250000 },
-  "services": [{ "binding": "BUILDER", "service": "onestorage-build" }],
-  "worker_loaders": [{ "binding": "LOADER" }],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "limits": {
+    "subrequests": 250000
+  },
+  "worker_loaders": [
+    {
+      "binding": "LOADER"
+    }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": true,
+    "run_worker_first": true
   },
   "vars": {
-    "APPS_ORIGIN": "https://onestorage-apps.xbitfun.workers.dev",
-    "APP_ORIGIN": "https://git.1s.hk",
-    "WEBHOOK_ALLOWED_HOSTS": "",
+    "APP_ORIGIN": "",
+    "APPS_ORIGIN": "",
+    "WEBHOOK_ALLOWED_HOSTS": ""
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "onestorage",
-      "database_id": "d2e2b162-f443-4d8f-9a85-e726048ae356",
-      "migrations_dir": "migrations",
-    },
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
   ],
   "r2_buckets": [
     {
       "binding": "OBJECTS",
-      "bucket_name": "onestorage-objects",
+      "bucket_name": "onestorage-objects"
     },
+    {
+      "binding": "NPM_CACHE",
+      "bucket_name": "onestorage-npm-cache"
+    }
   ],
   "durable_objects": {
     "bindings": [
       {
         "name": "REPOSITORIES",
-        "class_name": "Repository",
-      },
-    ],
+        "class_name": "Repository"
+      }
+    ]
   },
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["Repository"],
-    },
+      "new_sqlite_classes": [
+        "Repository"
+      ]
+    }
   ],
   "observability": {
-    "enabled": true,
+    "enabled": true
   },
   "queues": {
     "producers": [
       {
         "binding": "EVENTS",
-        "queue": "onestorage-events",
-      },
+        "queue": "onestorage-events"
+      }
     ],
     "consumers": [
       {
         "queue": "onestorage-events",
         "max_batch_size": 5,
         "max_batch_timeout": 1,
-        "max_retries": 5,
-      },
-    ],
+        "max_retries": 5
+      }
+    ]
   },
   "triggers": {
-    "crons": ["*/5 * * * *"],
+    "crons": [
+      "*/5 * * * *"
+    ]
   },
   "workers_dev": true,
-  "routes": [{ "pattern": "git.1s.hk", "custom_domain": true }],
+  "secrets": {
+    "required": [
+      "CREDENTIAL_ENCRYPTION_KEY"
+    ]
+  }
 }
