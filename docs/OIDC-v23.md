@@ -1,3 +1,5 @@
+> v0.33 新增独立 GitHub/GitLab OAuth 适配，复用本文账户与流程机制；配置见 [OAuth 登录](OAUTH-v33.md)。本文 JWT 规则仍仅适用于 OIDC。
+
 # v0.23 统一登录
 
 OneStorage 在 Workers 中实现 OIDC Authorization Code + PKCE S256，通过 Web Crypto/Jose 验证 ID Token。D1 保存身份映射、版本化配置与一次性登录状态，提供方密钥和短期流程数据用既有 `CREDENTIAL_ENCRYPTION_KEY` 加密。无需容器、独立认证服务器或外部数据库。

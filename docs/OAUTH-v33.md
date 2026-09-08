@@ -31,3 +31,5 @@ GitLab 身份来自 `/api/v4/user`，要求 `state=active`，拒绝 locked/bot�
 沿用 `/api/auth/oidc/*`、`/api/admin/identity-providers`、`/api/account/identities` 和已有 D1 表；新增配置字段 `protocol=oidc|github|gitlab`（省略默认 oidc），没有数据库迁移。旧 OIDC 配置继续工作，API 路径和审计事件前缀保留。运行旧版本前应先停用其不支持的 OAuth 提供方。
 
 `npm run check` 包含协议适配与账户事务测试。`npm run test:oauth` 使用临时 Cloudflare Worker/DO 提供方执行真实浏览器跳转、单次授权码、PKCE、opaque token 和用户 API。测试服务实现 GitLab 协议契约，不是真实 GitLab 实例；没有因此声称已验证用户的实际 GitHub/GitLab OAuth 应用。真实应用需在对应服务注册并通过管理界面配置。详细证据见 [验收记录](VERIFICATION-v33.md)。
+
+重建验收时，将 `scripts/support/oauth-provider.ts` 作为独立 Worker 的 main，绑定 `IDP` 到 `OAuthFixture`，使用 SQLite DO migration。以随机值设置 `CLIENT_SECRET`、`TEST_PASSWORD` 两个 Worker secrets，并在忽略目录保存同名 JSON 字段，文件权限 0600。测试客户端 ID 固定为 `onestorage-acceptance-v33`。运行脚本时设置 `OAUTH_FIXTURE_ISSUER`、`OAUTH_FIXTURE_SECRETS`；Playwright 不在普通 node_modules 时还需 `PLAYWRIGHT_MODULE`。远端验收额外需要 `ALLOW_REMOTE_ACCEPTANCE=1`、`TEST_ORIGIN`、私有 `ONESTORAGE_TOKEN_FILE`。夹具只允许 localhost:8787 与 git.1s.hk 的精确回调，测试其他部署须调整允许列表。脚本负责清理本站账户关联和提供方；调用方在脚本终止且清理验证完成后删除临时 Worker 与本地密钥。验收及清理期间不要重新部署目标服务。
