@@ -6,6 +6,7 @@
 
 | 检查 | 结果 |
 | --- | --- |
+| `npm ci --ignore-scripts` | 从锁文件重新安装成功，审计 0 漏洞；随后重新运行类型/单元测试和生产构建通过 |
 | `npm run check` | TypeScript 通过，83/83 单元测试通过 |
 | `npm run test:e2e` | 43 项基础 API 断言及真实 Git clone/push/clone、pack、并发、LFS、R2/DO 持久化通过 |
 | `npm run test:features` | 76 项高级 HTTP 验证通过：JWT、撤销、引用策略、临时命名空间、流式提交、Notes、Range、Fork、生命周期 |
