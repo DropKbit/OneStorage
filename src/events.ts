@@ -1,4 +1,4 @@
-import { triggerPush } from "./ci";
+import { stagePush } from "./ci";
 import type { Env } from "./types";
 import { publishPending } from "./webhooks";
 export interface ForgeEvent {
@@ -10,7 +10,7 @@ export interface ForgeEvent {
 }
 /** Idempotent projection of durable events into the D1 delivery outbox. */
 export async function dispatchEvent(env: Env, event: ForgeEvent) {
-  await triggerPush(env, event);
+  await stagePush(env, event);
   const hooks = await env.DB.prepare(
     "SELECT id,events FROM webhooks WHERE repo_id=? LIMIT 10",
   )

@@ -67,7 +67,7 @@ export async function reviewGate(
     } else changes++;
   }
   const ci = await env.DB.prepare(
-    "SELECT id,status FROM ci_runs WHERE repo_id=? AND sha=? ORDER BY rowid DESC LIMIT 1",
+    "SELECT id,status FROM ci_runs WHERE repo_id=? AND sha=? AND parent_id IS NULL ORDER BY rowid DESC LIMIT 1",
   )
     .bind(repo.id, mr.source_sha)
     .first<any>();

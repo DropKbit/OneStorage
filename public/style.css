@@ -497,6 +497,9 @@ pre {
   padding: 28px;
   max-width: 720px;
 }
+.form [data-ci-source][hidden] {
+  display: none;
+}
 .form label {
   display: block;
   font-size: 14px;

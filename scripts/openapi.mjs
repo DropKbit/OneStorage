@@ -289,7 +289,7 @@ await writeFile(
       openapi: "3.1.0",
       info: {
         title: "OneStorage",
-        version: "0.13.0",
+        version: "0.14.0",
         description:
           "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs.",
       },

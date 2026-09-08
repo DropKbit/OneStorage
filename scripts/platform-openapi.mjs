@@ -36,6 +36,7 @@ export const platformOperations = [
   ["post", "/api/runner/claim", "runner_claim"],
   ["post", "/api/runner/runs/{id}/heartbeat", "runner_heartbeat"],
   ["get", "/api/runner/runs/{id}/source", "runner_source"],
+  ["get", "/api/runner/runs/{id}/inputs", "runner_dependency_inputs"],
   ["post", "/api/runner/runs/{id}/logs", "runner_logs"],
   ["put", "/api/runner/runs/{id}/artifacts/{name}", "runner_artifact"],
   ["post", "/api/runner/runs/{id}/complete", "runner_complete"],
@@ -131,5 +132,48 @@ export function addPlatformPaths(paths) {
         409: { description: "State conflict" },
       },
     };
+    const operation = paths[path][method];
+    if (id === "ci_save_config") {
+      operation.description +=
+        " Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See docs/CI-WORKFLOWS-v14.md for task schemas, dependency artifacts and limits.";
+      operation.requestBody = {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                source_path: {
+                  type: "string",
+                  minLength: 1,
+                  maxLength: 500,
+                  description:
+                    "Relative UTF-8 JSON configuration file, up to 128 KiB. Takes precedence over inline config.",
+                },
+                config: {
+                  type: "object",
+                  description:
+                    "Worker/external steps, or runner=workflow with up to ten uniquely named jobs and acyclic needs dependencies.",
+                },
+                enabled: { type: "boolean", default: true },
+              },
+              anyOf: [{ required: ["source_path"] }, { required: ["config"] }],
+            },
+          },
+        },
+      };
+    }
+    if (id === "ci_get_run")
+      operation.description +=
+        " Includes config_path/config_sha/config_error, parent_id/job_key, and child jobs for a workflow. Lease hashes are never returned. Only top-level runs appear in ci_list_runs or satisfy merge gates.";
+    if (id === "runner_dependency_inputs")
+      operation.description +=
+        " Returns dependencies[job][relativePath] = {content,binary}; binary content is Base64. Only declared successful siblings are included, up to 16 MiB raw data. Runner and lease authorization are checked again after storage reads.";
+    if (id === "ci_retry")
+      operation.description +=
+        " Child jobs and invalid repository configuration records cannot be retried directly; retry the parent workflow or start a new run after fixing configuration. Ordinary retries preserve the original config snapshot.";
+    if (id === "activate_deployment")
+      operation.description +=
+        " For workflow jobs, both the deployment job and the parent workflow must have succeeded.";
   }
 }

@@ -110,7 +110,7 @@ npm run deploy
 | 富文本 Markdown、图片/PDF/Notebook 预览、个人资料与活动页                   | v0.6 实现 Markdown、栅格图片、资料与活动；PDF/Notebook 待开发                                                                                                                      |
 | 2FA、OAuth/OIDC、Cloudflare Access 登录、注册/找回、细粒度 deploy token     | v0.6 实现 TOTP/恢复码/会话管理；其余待开发                                                                                                                                         |
 | 项目转移/归档、跨项目搜索、Issue 看板/筛选/批量操作、Wiki 迁移              | v0.9 实现项目 Issue 筛选/分页、标签看板、事务批量操作；v0.10 实现可恢复归档及写入/CI 屏障；v0.11 实现项目转移/重命名与旧路径授权；跨项目搜索和 Wiki 迁移待开发                     |
-| 仓库流水线配置、DAG/并行任务/调度、缓存、变量/密钥、npm/TS 构建             | 仍待开发                                                                                                                                                                           |
+| 仓库流水线配置、DAG/并行任务/调度、缓存、变量/密钥、npm/TS 构建             | v0.14 实现固定版本 JSON 配置、DAG、并行任务与依赖产物；定时调度、缓存、变量/密钥和云端 npm/TS 仍待开发                                                                             |
 | 包仓库、镜像仓库、扫描/质量报告、完整 GitLab YAML/API 兼容                  | 仍待开发，不能宣称兼容                                                                                                                                                             |
 | 持久化可达索引、流式 pack、大仓库增量验证                                   | v0.12 实现 DO 完整性索引、8 MiB LRU、流式出站及增量协商，v0.13 增加四路/8 MiB 有界读取预取；入站仍 16 MiB/2,000 对象/32 MiB 展开，大导入与关联算法待扩展，详见 GIT-PREFETCH-v13.md |
 | 原生 SSH 入站、POSIX/Linux 任意构建                                         | 当前无容器 Workers 架构不提供此执行模型；HTTPS Git 和 JS/WASM 可用                                                                                                                 |

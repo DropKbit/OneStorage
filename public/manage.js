@@ -184,10 +184,26 @@ export async function ciPage(r, base, ap, h, runId) {
   if (runId) {
     const run = await api(root + "/runs/" + runId);
     if (!h.current()) return;
+    const workflowJobs =
+      run.config.runner === "workflow"
+        ? run.config.jobs
+            .map((job) => {
+              const child = (run.jobs || []).find(
+                (row) => row.job_key === job.id,
+              );
+              const state = child
+                ? statuses[child.status]
+                : ["failed", "canceled"].includes(run.status)
+                  ? "未执行"
+                  : "等待依赖";
+              return `<div class="token-row"><div>${child ? `<a data-link href="${base}/ci/${child.id}"><strong>${esc(job.id)}</strong></a>` : `<strong>${esc(job.id)}</strong>`}<p class="muted">${esc(job.pipeline.runner)} · ${job.needs.length ? "依赖：" + job.needs.map(esc).join("、") : "可独立执行"}</p></div><span class="pill">${esc(state)}</span></div>`;
+            })
+            .join("")
+        : "";
     repoLayout(
       r,
       "ci",
-      `<div class="toolbar"><a data-link class="btn" href="${base}/ci">← 流水线</a><span class="pill ci-${run.status}">${statuses[run.status]}</span>${button("刷新", "refresh")}${maintain ? (["queued", "running"].includes(run.status) ? button("取消运行", "cancel", run.id, true) : button("重新运行", "retry", run.id)) : ""}</div><div class="panel"><div class="panelhead"><strong>${esc(run.config.name)}</strong><code>${run.sha.slice(0, 12)}</code></div><div class="detail-body"><p>${esc(run.ref)} · ${esc(run.trigger)} · ${esc(run.created_at)}</p>${run.error ? `<p class="error">${esc(run.error)}</p>` : ""}<pre class="ci-log" aria-label="流水线日志">${esc(run.logs.map((l) => l.content).join("") || "等待执行器领取任务…")}</pre></div></div><div class="panel"><div class="panelhead"><strong>构建产物</strong></div>${run.artifacts.map((a) => `<div class="token-row"><a href="/api${root}/runs/${run.id}/artifacts/${a.id}" download>${esc(a.name)}</a><span>${a.size} bytes</span></div>`).join("") || '<div class="empty">暂无产物</div>'}</div>`,
+      `<div class="toolbar"><a data-link class="btn" href="${base}/ci">← 流水线</a><span class="pill ci-${run.status}">${statuses[run.status]}</span>${button("刷新", "refresh")}${maintain ? (["queued", "running"].includes(run.status) ? button("取消运行", "cancel", run.id, true) : !run.parent_id && !run.config_error ? button("重新运行", "retry", run.id) : "") : ""}</div>${run.parent_id ? `<p><a data-link href="${base}/ci/${run.parent_id}">← 返回工作流</a></p>` : ""}${workflowJobs ? `<section class="panel" aria-label="工作流任务"><div class="panelhead"><strong>任务与依赖</strong></div>${workflowJobs}</section>` : ""}<div class="panel"><div class="panelhead"><strong>${esc(run.config.name)}</strong><code>${run.sha.slice(0, 12)}</code></div><div class="detail-body"><p>${esc(run.ref)} · ${esc(run.trigger)} · ${esc(run.created_at)}</p>${run.config_path ? `<p>配置：<code>${esc(run.config_path)}</code> @ <code>${esc(run.config_sha?.slice(0, 12) || "")}</code></p>` : ""}${run.error ? `<p class="error">${esc(run.error)}</p>` : ""}<pre class="ci-log" aria-label="流水线日志">${esc(run.logs.map((l) => l.content).join("") || (run.config.runner === "workflow" ? "打开上方任务查看独立日志与产物。" : "等待执行器领取任务…"))}</pre></div></div><div class="panel"><div class="panelhead"><strong>构建产物</strong></div>${run.artifacts.map((a) => `<div class="token-row"><a href="/api${root}/runs/${run.id}/artifacts/${a.id}" download>${esc(a.name)}</a><span>${a.size} bytes</span></div>`).join("") || '<div class="empty">暂无产物</div>'}</div>`,
     );
     actions(h, async (a) => {
       if (a === "refresh") return render();
@@ -246,11 +262,33 @@ export async function ciPage(r, base, ap, h, runId) {
       environment: "production",
     },
   };
+  const workflowSample = {
+    name: "Parallel checks and Cloudflare build",
+    runner: "workflow",
+    branches: [r.default_branch],
+    jobs: [
+      {
+        id: "source",
+        pipeline: {
+          runner: "worker",
+          steps: [{ type: "file", path: "ci.js" }],
+        },
+      },
+      {
+        id: "metadata",
+        pipeline: {
+          runner: "worker",
+          steps: [{ type: "file", path: "package.json", format: "json" }],
+        },
+      },
+      { id: "build", needs: ["source", "metadata"], pipeline: cloudSample },
+    ],
+  };
   const config = saved.config || cloudSample;
   repoLayout(
     r,
     "ci",
-    `<div class="titlebar"><div><h2>CI/CD</h2><p class="muted">推送自动触发，按提交构建，查看日志与部署结果。</p></div>${button("刷新", "refresh")}</div>${maintain ? `<form class="toolbar" id="run-pipeline">${field("分支", "ref", "text", r.default_branch)}<button class="btn primary" type="submit">运行流水线</button></form>` : ""}<div class="panel"><div class="panelhead"><strong>最近运行</strong><span>${saved.enabled ? "自动触发已启用" : "自动触发已关闭"}</span></div>${runs.map((run) => `<div class="token-row"><div><a data-link href="${base}/ci/${run.id}"><strong>${esc(run.config.name)}</strong></a><p class="muted">${esc(run.ref)} · ${run.sha.slice(0, 8)} · ${esc(run.created_at)}</p></div><span class="pill ci-${run.status}">${statuses[run.status]}</span></div>`).join("") || '<div class="empty">配置流水线后，推送代码或手动运行。</div>'}</div>${maintain ? `<div class="panel"><form class="form" id="pipeline-config"><h2>流水线配置</h2><p class="muted">Cloudflare 模板在隔离 Worker 中执行仓库 ci.js，保存产物和应用版本。CI 脚本导出异步函数，失败时抛出异常；发布后在「应用发布」中激活或回滚。</p><div class="actionbar">${button("Cloudflare 云端执行模板", "template-cloud")}${button("外部 Runner 模板", "template-external")}${button("Worker 检查模板", "template-worker")}</div>${textarea("JSON 配置", "config", JSON.stringify(config, null, 2), "code-input")}<label class="check"><input type="checkbox" name="enabled" ${saved.enabled ? "checked" : ""}> 推送自动触发</label><button class="btn primary" type="submit">保存配置</button></form></div><div class="panel"><div class="panelhead"><strong>仓库 Runner</strong></div>${runnerData.runners.map((r) => `<div class="token-row"><div><strong>${esc(r.name)}</strong><p class="muted">${r.last_seen ? "最近在线 " + new Date(r.last_seen).toLocaleString() : "尚未连接"}</p></div>${button("撤销", "revoke-runner", r.id, true)}</div>`).join("")}<form class="form" id="create-runner">${field("Runner 名称", "name")}<button class="btn" type="submit">注册 Runner</button></form><div id="runner-token"></div><div class="detail-body"><p>在专用主机下载源码、安装依赖后运行：</p><pre>ONESTORAGE_ORIGIN=${esc(location.origin)} \\\nONESTORAGE_RUNNER_TOKEN_FILE=/secure/runner-token \\\nONESTORAGE_JOB_ENV=CLOUDFLARE_API_TOKEN,CLOUDFLARE_ACCOUNT_ID \\\nnode scripts/runner.mjs</pre><p class="muted">令牌文件权限设为 600。仅连接你信任代码的仓库；每个 Runner 只领取本仓库任务。</p></div></div>` : ""}`,
+    `<div class="titlebar"><div><h2>CI/CD</h2><p class="muted">推送自动触发，按提交构建，查看日志与部署结果。</p></div>${button("刷新", "refresh")}</div>${maintain ? `<form class="toolbar" id="run-pipeline">${field("分支", "ref", "text", r.default_branch)}<button class="btn primary" type="submit">运行流水线</button></form>` : ""}<div class="panel"><div class="panelhead"><strong>最近运行</strong><span>${saved.enabled ? "自动触发已启用" : "自动触发已关闭"}</span></div>${runs.map((run) => `<div class="token-row"><div><a data-link href="${base}/ci/${run.id}"><strong>${esc(run.config.name)}</strong></a><p class="muted">${esc(run.ref)} · ${run.sha.slice(0, 8)} · ${esc(run.created_at)}</p></div><span class="pill ci-${run.status}">${statuses[run.status]}</span></div>`).join("") || '<div class="empty">配置流水线后，推送代码或手动运行。</div>'}</div>${maintain ? `<div class="panel"><form class="form" id="pipeline-config"><h2>流水线配置</h2><p class="muted">Cloudflare 模板在隔离 Worker 中执行仓库 ci.js，保存产物和应用版本。CI 脚本导出异步函数，失败时抛出异常；发布后在「应用发布」中激活或回滚。</p><div class="actionbar">${button("工作流模板", "template-workflow")}${button("Cloudflare 云端执行模板", "template-cloud")}${button("外部 Runner 模板", "template-external")}${button("Worker 检查模板", "template-worker")}</div><label>配置来源<select name="source_mode"><option value="inline" ${saved.source_path ? "" : "selected"}>页面保存的配置</option><option value="repository" ${saved.source_path ? "selected" : ""}>仓库中的 JSON 文件</option></select></label><label data-ci-source="repository">配置文件路径<input name="source_path" value="${esc(saved.source_path || ".onestorage-ci.json")}"></label><p class="hint">仓库配置随提交固定；MR 使用目标提交的配置，重试保留原始配置快照。修复无效配置后请新建运行。</p><div data-ci-source="inline">${textarea("JSON 配置", "config", JSON.stringify(config, null, 2), "code-input")}</div><label class="check"><input type="checkbox" name="enabled" ${saved.enabled ? "checked" : ""}> 推送自动触发</label><button class="btn primary" type="submit">保存配置</button></form></div><div class="panel"><div class="panelhead"><strong>仓库 Runner</strong></div>${runnerData.runners.map((r) => `<div class="token-row"><div><strong>${esc(r.name)}</strong><p class="muted">${r.last_seen ? "最近在线 " + new Date(r.last_seen).toLocaleString() : "尚未连接"}</p></div>${button("撤销", "revoke-runner", r.id, true)}</div>`).join("")}<form class="form" id="create-runner">${field("Runner 名称", "name")}<button class="btn" type="submit">注册 Runner</button></form><div id="runner-token"></div><div class="detail-body"><p>在专用主机下载源码、安装依赖后运行：</p><pre>ONESTORAGE_ORIGIN=${esc(location.origin)} \\\nONESTORAGE_RUNNER_TOKEN_FILE=/secure/runner-token \\\nONESTORAGE_JOB_ENV=CLOUDFLARE_API_TOKEN,CLOUDFLARE_ACCOUNT_ID \\\nnode scripts/runner.mjs</pre><p class="muted">令牌文件权限设为 600。仅连接你信任代码的仓库；每个 Runner 只领取本仓库任务。</p></div></div>` : ""}`,
   );
   bindForm("#run-pipeline", async (b) => {
     const run = await api(root + "/runs", { method: "POST", body: b });
@@ -259,10 +297,26 @@ export async function ciPage(r, base, ap, h, runId) {
   bindForm("#pipeline-config", async (b) => {
     await api(root + "/config", {
       method: "PUT",
-      body: { config: JSON.parse(b.config), enabled: b.enabled === "on" },
+      body: {
+        ...(b.source_mode === "repository"
+          ? { source_path: b.source_path }
+          : { config: JSON.parse(b.config) }),
+        enabled: b.enabled === "on",
+      },
     });
     render();
   });
+  const mode = document.querySelector(
+    '#pipeline-config select[name="source_mode"]',
+  );
+  if (mode) {
+    const updateMode = () =>
+      document.querySelectorAll("[data-ci-source]").forEach((element) => {
+        element.hidden = element.dataset.ciSource !== mode.value;
+      });
+    mode.onchange = updateMode;
+    updateMode();
+  }
   bindForm("#create-runner", async (b) => {
     const runner = await api(root + "/runners", { method: "POST", body: b });
     document.querySelector("#runner-token").innerHTML =
@@ -275,21 +329,27 @@ export async function ciPage(r, base, ap, h, runId) {
       return render();
     }
     if (a.startsWith("template-")) {
+      if (mode) {
+        mode.value = "inline";
+        mode.onchange();
+      }
       document.querySelector("#pipeline-config textarea").value =
         JSON.stringify(
-          a === "template-cloud"
-            ? cloudSample
-            : a === "template-worker"
-              ? {
-                  name: "Repository checks",
-                  runner: "worker",
-                  branches: [r.default_branch],
-                  steps: [
-                    { type: "file", path: "package.json", format: "json" },
-                  ],
-                  artifacts: [],
-                }
-              : sample,
+          a === "template-workflow"
+            ? workflowSample
+            : a === "template-cloud"
+              ? cloudSample
+              : a === "template-worker"
+                ? {
+                    name: "Repository checks",
+                    runner: "worker",
+                    branches: [r.default_branch],
+                    steps: [
+                      { type: "file", path: "package.json", format: "json" },
+                    ],
+                    artifacts: [],
+                  }
+                : sample,
           null,
           2,
         );

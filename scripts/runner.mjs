@@ -9,7 +9,7 @@ import {
   mkdir,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { resolve, join, sep } from "node:path";
+import { resolve, join, sep, dirname } from "node:path";
 import { spawn } from "node:child_process";
 import { extract } from "tar";
 const origin = process.env.ONESTORAGE_ORIGIN?.replace(/\/$/, ""),
@@ -143,6 +143,42 @@ async function execute(run, lease) {
     if (process.env[key] !== undefined && !key.startsWith("ONESTORAGE_"))
       env[key] = process.env[key];
   try {
+    if (run.parent_id) {
+      const inputRoot = join(dir, "inputs");
+      await mkdir(inputRoot);
+      const { dependencies } = await (
+        await request(base + "/inputs", undefined, lease)
+      ).json();
+      let inputSize = 0;
+      for (const [job, files] of Object.entries(dependencies)) {
+        if (!/^[a-z][a-z0-9_-]{0,39}$/.test(job))
+          throw Error("Invalid dependency job");
+        for (const [name, file] of Object.entries(files)) {
+          if (
+            !name ||
+            name.startsWith("/") ||
+            name.includes("\\") ||
+            /[\x00-\x1f]/.test(name) ||
+            name.split("/").some((p) => !p || p === "." || p === "..")
+          )
+            throw Error("Unsafe dependency artifact path");
+          const target = resolve(inputRoot, job, name);
+          if (!target.startsWith(inputRoot + sep))
+            throw Error("Dependency path escapes inputs");
+          const data = Buffer.from(
+            file.content,
+            file.binary ? "base64" : "utf8",
+          );
+          inputSize += data.length;
+          if (inputSize > 16 * 1024 * 1024)
+            throw Error("Dependency artifacts exceed 16 MiB");
+          await mkdir(dirname(target), { recursive: true });
+          await writeFile(target, data, { flag: "wx", mode: 0o600 });
+        }
+      }
+      env.ONESTORAGE_DEPENDENCIES = inputRoot;
+      env.ONESTORAGE_JOB = run.job_key;
+    }
     sendLog("Checking out " + run.sha + "\n");
     const source = await request(base + "/source", undefined, lease);
     if (source.headers.get("x-git-commit") !== run.sha)

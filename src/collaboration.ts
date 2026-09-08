@@ -1,5 +1,6 @@
 import { activeRepo, contributionSource, familySQL } from "./fork-reviews";
-import { enqueueRun, pipelineSchema } from "./ci";
+import { enqueueRun } from "./ci";
+import { resolvePipeline, type SavedPipeline } from "./ci-source";
 import type { Hono, Context } from "hono";
 import type { App, Repo } from "./types";
 import { z } from "zod";
@@ -357,19 +358,23 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     const { repo, mr } = await mrFor(c, "maintain");
     if (mr.state !== "open") fail(409, "Merge request is closed");
     const saved = await c.env.DB.prepare(
-      "SELECT config FROM ci_pipelines WHERE repo_id=?",
+      "SELECT config,source_path FROM ci_pipelines WHERE repo_id=?",
     )
       .bind(repo.id)
-      .first<{ config: string }>();
+      .first<SavedPipeline>();
     if (!saved) fail(409, "Save a target repository pipeline first");
+    // The target snapshot chooses the checks; a fork cannot substitute its own pipeline configuration.
+    const loaded = await resolvePipeline(c.env, repo, saved, mr.target_sha);
     const run = await enqueueRun(
       c.env,
       repo,
       "merge/" + mr.id,
       mr.source_sha,
-      pipelineSchema.parse(JSON.parse(saved.config)),
+      loaded.config,
       "merge_request",
       identity(c).id,
+      null,
+      loaded,
     );
     await h.audit(c, "ci.run.create", repo.id, run!.id);
     return c.json(run, 201);
@@ -629,7 +634,7 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     if (
       b.deployment_id &&
       !(await c.env.DB.prepare(
-        "SELECT d.id FROM deployments d JOIN ci_runs c ON c.id=d.run_id WHERE d.id=? AND d.repo_id=? AND d.environment=? AND c.status='succeeded'",
+        "SELECT d.id FROM deployments d JOIN ci_runs c ON c.id=d.run_id WHERE d.id=? AND d.repo_id=? AND d.environment=? AND c.status='succeeded' AND (c.parent_id IS NULL OR EXISTS(SELECT 1 FROM ci_runs p WHERE p.id=c.parent_id AND p.status='succeeded'))",
       )
         .bind(b.deployment_id, r.id, name)
         .first())

@@ -13,7 +13,7 @@ function setup() {
  UPDATE repositories SET namespace='source',workspace_id='source' WHERE id='r';
  DELETE FROM members WHERE repo_id='r' AND user_id='a';
  INSERT INTO issues(id,repo_id,author_id,title) VALUES(1,'r','a','Preserved');
- INSERT INTO ci_pipelines VALUES('r','{}',1,datetime('now'));
+ INSERT INTO ci_pipelines(repo_id,config,enabled,updated_at) VALUES('r','{}',1,datetime('now'));
  INSERT INTO ci_runs(id,repo_id,ref,sha,config,trigger,status,lease_hash,lease_until) VALUES('running','r','main','sha','{}','manual','running','lease',9999999999999),('done','r','main','sha','{}','manual','succeeded',NULL,NULL);
  INSERT INTO ci_runners(id,repo_id,name,token_hash) VALUES('runner','r','Runner','hash');
  INSERT INTO git_credentials(id,repo_id,encrypted) VALUES('credential','r','cipher');

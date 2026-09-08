@@ -1,0 +1,44 @@
+{
+  "name": "Parallel checks and static deployment",
+  "runner": "workflow",
+  "branches": ["main"],
+  "timeout_seconds": 300,
+  "jobs": [
+    {
+      "id": "build",
+      "pipeline": {
+        "runner": "worker",
+        "steps": [
+          { "type": "javascript", "entry": "build.js", "files": ["build.js"] }
+        ]
+      }
+    },
+    {
+      "id": "lint",
+      "pipeline": {
+        "runner": "worker",
+        "steps": [{ "type": "file", "path": "package.json", "format": "json" }]
+      }
+    },
+    {
+      "id": "publish",
+      "needs": ["build", "lint"],
+      "pipeline": {
+        "runner": "worker",
+        "steps": [
+          {
+            "type": "javascript",
+            "entry": "publish.js",
+            "files": ["publish.js"]
+          }
+        ],
+        "deploy": {
+          "kind": "static",
+          "entry": "index.html",
+          "files": ["index.html"],
+          "environment": "preview"
+        }
+      }
+    }
+  ]
+}

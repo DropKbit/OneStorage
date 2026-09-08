@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.13.0",
+    "version": "0.14.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -4066,7 +4066,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See docs/CI-WORKFLOWS-v14.md for task schemas, dependency artifacts and limits.",
         "parameters": [
           {
             "name": "namespace",
@@ -4111,6 +4111,44 @@
           },
           "409": {
             "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source_path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "description": "Relative UTF-8 JSON configuration file, up to 128 KiB. Takes precedence over inline config."
+                  },
+                  "config": {
+                    "type": "object",
+                    "description": "Worker/external steps, or runner=workflow with up to ten uniquely named jobs and acyclic needs dependencies."
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "source_path"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "config"
+                    ]
+                  }
+                ]
+              }
+            }
           }
         }
       }
@@ -4235,7 +4273,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Includes config_path/config_sha/config_error, parent_id/job_key, and child jobs for a workflow. Lease hashes are never returned. Only top-level runs appear in ci_list_runs or satisfy merge gates.",
         "parameters": [
           {
             "name": "namespace",
@@ -4366,7 +4404,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Child jobs and invalid repository configuration records cannot be retried directly; retry the parent workflow or start a new run after fixing configuration. Ordinary retries preserve the original config snapshot.",
         "parameters": [
           {
             "name": "namespace",
@@ -4778,6 +4816,62 @@
           "Runner"
         ],
         "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Run-Lease",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "State conflict"
+          }
+        }
+      }
+    },
+    "/api/runner/runs/{id}/inputs": {
+      "get": {
+        "operationId": "runner_dependency_inputs",
+        "summary": "runner dependency inputs",
+        "tags": [
+          "Runner"
+        ],
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Returns dependencies[job][relativePath] = {content,binary}; binary content is Base64. Only declared successful siblings are included, up to 16 MiB raw data. Runner and lease authorization are checked again after storage reads.",
         "parameters": [
           {
             "name": "id",
@@ -6172,7 +6266,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. For workflow jobs, both the deployment job and the parent workflow must have succeeded.",
         "parameters": [
           {
             "name": "namespace",

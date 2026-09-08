@@ -3,6 +3,7 @@ import type { Env, Repo } from "./types";
 import type { CIRun } from "./ci";
 import { base64 } from "./base64";
 import { boundedBody } from "./security";
+import type { DependencyFiles } from "./ci-inputs";
 export const cloudPath = z
   .string()
   .min(1)
@@ -93,6 +94,7 @@ export async function executeJavaScript(
   run: CIRun,
   step: z.infer<typeof cloudStep>,
   artifacts: CloudFiles,
+  dependencies: DependencyFiles = {},
 ) {
   if (!env.LOADER)
     throw Error("Cloudflare Dynamic Workers binding is not configured");
@@ -113,7 +115,14 @@ export default { async fetch(request) { try { const input = await request.json()
   const response = await worker.getEntrypoint().fetch(
     new Request("https://ci.invalid/run", {
       method: "POST",
-      body: JSON.stringify({ sha: run.sha, ref: run.ref, files, artifacts }),
+      body: JSON.stringify({
+        sha: run.sha,
+        ref: run.ref,
+        job: run.job_key || null,
+        files,
+        artifacts,
+        dependencies,
+      }),
       signal: AbortSignal.timeout(20000),
     }),
   );
