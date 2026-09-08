@@ -1,3 +1,4 @@
+import "./openapi.mjs";
 // Build-time only: publish an explicit allowlist of source files, never local state/secrets.
 import { readFile, readdir, lstat, writeFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -16,6 +17,12 @@ const files = [
 ];
 async function collect(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {
+    if (
+      e.name === "__pycache__" ||
+      e.name.endsWith(".egg-info") ||
+      e.name.endsWith(".pyc")
+    )
+      continue;
     const path = join(dir, e.name);
     if (e.isSymbolicLink())
       throw Error("Source archive must not contain symlinks: " + path);
@@ -26,6 +33,7 @@ async function collect(dir) {
 for (const dir of [
   "src",
   "sdk",
+  "examples",
   "public",
   "scripts",
   "tests",

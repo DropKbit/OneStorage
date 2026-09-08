@@ -74,7 +74,7 @@ test("signed delivery is persisted and duplicate message does not redeliver", as
   const send = async (url: any, init: any) => {
     calls++;
     assert.equal(url, "https://hooks.example.com/events");
-    assert.equal(init.redirect, "error");
+    assert.equal(init.redirect, "manual");
     assert.equal(init.headers["X-OneStorage-Delivery"], "d");
     assert.equal(
       init.headers["X-OneStorage-Signature"],

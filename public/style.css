@@ -949,3 +949,47 @@ button.text {
     padding: 16px;
   }
 }
+.forge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.forge-grid > .panel {
+  margin: 0;
+}
+.forge-output {
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre;
+  max-width: 100%;
+  font-size: 12px;
+}
+.forge-output:empty {
+  display: none;
+}
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 14px;
+}
+.check input {
+  width: auto;
+}
+.tabs {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.form code {
+  overflow-wrap: anywhere;
+}
+.panel + .panel {
+  margin-top: 24px;
+}
+@media (max-width: 850px) {
+  .forge-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -10,6 +10,16 @@ export const slug = z
       ),
     "Reserved name",
   );
+export const repoName = z
+  .string()
+  .min(1)
+  .max(200)
+  .refine(
+    (value) =>
+      value.split("/").length <= 5 &&
+      value.split("/").every((part) => slug.safeParse(part).success),
+    "Invalid repository name or group path",
+  );
 export const branch = z
   .string()
   .min(1)

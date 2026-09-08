@@ -1,21 +1,32 @@
 name: CI
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache: false
       - run: npm ci
-      - run: npm run check
+      - run: python -m pip install -e ./sdk/python
+      - run: npm run check && npm run test:parity
       - run: npm run build:production
-      - name: Native Git end-to-end test
+      - name: Native Git, feature and SDK integration
+        env:
+          PYTHON_BINARY: python
+          GO_BINARY: go
         run: |
           npm run dev > /tmp/onestorage-dev.log 2>&1 &
           APP_PID=$!
@@ -24,4 +35,15 @@ jobs:
             if curl --fail --silent http://localhost:8787/api/health; then break; fi
             sleep 1
           done
-          npm run test:e2e || { cat /tmp/onestorage-dev.log; exit 1; }
+          npm run test:e2e && npm run test:features && npm run test:git-features && npm run test:sdks || { cat /tmp/onestorage-dev.log; exit 1; }
+      - name: Public GitHub interoperability (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          npm run dev > /tmp/onestorage-dev.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8787/api/health; then break; fi
+            sleep 1
+          done
+          npm run test:sync || { cat /tmp/onestorage-dev.log; exit 1; }

@@ -13,6 +13,7 @@
     "APP_ORIGIN": "http://localhost:8787",
     "BOOTSTRAP_SECRET": "local-development-only-change-me",
     "WEBHOOK_ALLOWED_HOSTS": "",
+    "CREDENTIAL_ENCRYPTION_KEY": "bG9jYWwtdGVzdC1vbmx5LW5ldmVyLXVzZS1pbi1wcm8=",
   },
   "d1_databases": [
     {

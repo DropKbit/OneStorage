@@ -68,7 +68,7 @@ export async function readCanonical(
 }
 export function validRef(ref: string) {
   return (
-    /^refs\/(heads|tags)\//.test(ref) &&
+    /^refs\/(?:namespaces\/ephemeral\/refs\/)?(heads|tags|notes)\//.test(ref) &&
     bytes(ref).length <= 240 &&
     !/[\s~^:?*\[\\\x00-\x1f\x7f]/.test(ref) &&
     !ref.includes("..") &&
@@ -86,8 +86,10 @@ export function checkRefs(refs: Refs) {
   if (names.length > LIMITS.refs) fail(413, "Maximum 256 refs");
   for (let i = 0; i < names.length; i++) {
     if (!validRef(names[i]) || !isOid(refs[names[i]])) fail(400, "Invalid ref");
-    if (i && names[i].startsWith(names[i - 1] + "/"))
-      fail(409, "Conflicting ref names");
+    const parts = names[i].split("/");
+    for (let j = 1; j < parts.length; j++)
+      if (Object.hasOwn(refs, parts.slice(0, j).join("/")))
+        fail(409, "Conflicting ref names");
   }
 }
 export interface TreeEntry {

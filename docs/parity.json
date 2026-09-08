@@ -1,0 +1,812 @@
+{
+  "reference": "https://code.storage/docs/",
+  "reviewed_at": "2026-09-08",
+  "baseline": "e72e52d",
+  "features": [
+    {
+      "id": "get_repo_url_by_id",
+      "method": "GET",
+      "reference_path": "/api/repo-urls/{repo_id}",
+      "name": "Get Repo Url By Id",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repo-url/{id}",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_repos",
+      "method": "GET",
+      "reference_path": "/api/repos",
+      "name": "List Repos",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos",
+      "cloud_verified": true
+    },
+    {
+      "id": "create_repo",
+      "method": "POST",
+      "reference_path": "/api/repos",
+      "name": "Create Repo",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos",
+      "cloud_verified": true
+    },
+    {
+      "id": "delete_repo",
+      "method": "DELETE",
+      "reference_path": "/api/repos/{repo_name}",
+      "name": "Delete Repo",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}",
+      "cloud_verified": true
+    },
+    {
+      "id": "get_repo",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}",
+      "name": "Get Repo",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}",
+      "cloud_verified": true
+    },
+    {
+      "id": "update_repo",
+      "method": "PATCH",
+      "reference_path": "/api/repos/{repo_name}",
+      "name": "Update Repository Settings",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}",
+      "cloud_verified": true
+    },
+    {
+      "id": "archive",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/archive",
+      "name": "Archive",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/archive",
+      "cloud_verified": true
+    },
+    {
+      "id": "unset_base_repo",
+      "method": "DELETE",
+      "reference_path": "/api/repos/{repo_name}/base",
+      "name": "Unset Base Repo",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "tests/persistence.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-sync.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/base",
+      "cloud_verified": true
+    },
+    {
+      "id": "blame",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/blame",
+      "name": "Blame",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/blame",
+      "cloud_verified": true,
+      "note": "RE2 range expressions and conservative rename/copy heuristics; not byte-for-byte native Git blame equivalence for every language driver."
+    },
+    {
+      "id": "get_branch",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/branch",
+      "name": "Get Branch",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/branch",
+      "cloud_verified": true
+    },
+    {
+      "id": "delete_branch",
+      "method": "DELETE",
+      "reference_path": "/api/repos/{repo_name}/branches",
+      "name": "Delete Branch",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/branches",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_branches",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/branches",
+      "name": "List Branches",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/branches",
+      "cloud_verified": true
+    },
+    {
+      "id": "create_branch",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/branches/create",
+      "name": "Create Branch",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/branches/create",
+      "cloud_verified": true
+    },
+    {
+      "id": "get_branch_diff",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/branches/diff",
+      "name": "Get Branch Diff",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/branches/diff",
+      "cloud_verified": true,
+      "note": "Uses merge base; ambiguous multiple bases require an explicit base through /diff."
+    },
+    {
+      "id": "get_commit",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/commit",
+      "name": "Get Commit",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/commit",
+      "cloud_verified": true
+    },
+    {
+      "id": "commit_pack",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/commit-pack",
+      "name": "Create Commit from Files",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/commit-pack",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_commits",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/commits",
+      "name": "List Commits",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/commits",
+      "cloud_verified": true
+    },
+    {
+      "id": "get_commit_diff",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/diff",
+      "name": "Get Commit Diff",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/diff",
+      "cloud_verified": true
+    },
+    {
+      "id": "diff_commit",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/diff-commit",
+      "name": "Create Commit from Diff",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/diff-commit",
+      "cloud_verified": true
+    },
+    {
+      "id": "get_file",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/file",
+      "name": "Get File",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/file",
+      "cloud_verified": true
+    },
+    {
+      "id": "head_file",
+      "method": "HEAD",
+      "reference_path": "/api/repos/{repo_name}/file",
+      "name": "Get File Headers",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/file",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_files",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/files",
+      "name": "List Files",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/files",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_files_metadata",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/files/metadata",
+      "name": "List Files with Metadata",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/files/metadata",
+      "cloud_verified": true
+    },
+    {
+      "id": "create_generic_git_credential",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/git-credentials",
+      "name": "Create Git Credential",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "tests/persistence.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-sync.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/git-credentials",
+      "cloud_verified": true
+    },
+    {
+      "id": "delete_generic_git_credential",
+      "method": "DELETE",
+      "reference_path": "/api/repos/{repo_name}/git-credentials/{git_credential_id}",
+      "name": "Delete Git Credential",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "tests/persistence.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-sync.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/git-credentials/{id}",
+      "cloud_verified": true
+    },
+    {
+      "id": "update_generic_git_credential",
+      "method": "PUT",
+      "reference_path": "/api/repos/{repo_name}/git-credentials/{git_credential_id}",
+      "name": "Update Git Credential",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "tests/persistence.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-sync.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/git-credentials",
+      "cloud_verified": true
+    },
+    {
+      "id": "grep",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/grep",
+      "name": "Grep",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/grep",
+      "cloud_verified": true
+    },
+    {
+      "id": "merge_branch",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/merge",
+      "name": "Merge Branch",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/merge",
+      "cloud_verified": true,
+      "note": "Three-way text/rename merging; ambiguous criss-cross bases produce explicit conflicts rather than synthesizing a native recursive merge base."
+    },
+    {
+      "id": "preview_merge",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/merge/preview",
+      "name": "Preview Merge",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/merge/preview",
+      "cloud_verified": true,
+      "note": "Three-way text/rename merging; ambiguous criss-cross bases produce explicit conflicts rather than synthesizing a native recursive merge base."
+    },
+    {
+      "id": "notes_delete",
+      "method": "DELETE",
+      "reference_path": "/api/repos/{repo_name}/notes",
+      "name": "Delete Note",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/notes",
+      "cloud_verified": true
+    },
+    {
+      "id": "notes_read",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/notes",
+      "name": "Get Note",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-git-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/notes",
+      "cloud_verified": true
+    },
+    {
+      "id": "notes_write",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/notes",
+      "name": "Create or Append Note",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-git-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/notes",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_notes_refs",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/notes/refs",
+      "name": "List Notes Refs",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/notes/refs",
+      "cloud_verified": true
+    },
+    {
+      "id": "pull_upstream",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/pull-upstream",
+      "name": "Pull Upstream",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "tests/persistence.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-sync.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/pull-upstream",
+      "cloud_verified": true
+    },
+    {
+      "id": "reset_commits",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/reset-commits",
+      "name": "Reset Branch to Commit",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/reset-commits",
+      "cloud_verified": true
+    },
+    {
+      "id": "restore_commit",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/restore-commit",
+      "name": "Restore Commit",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/restore-commit",
+      "cloud_verified": true
+    },
+    {
+      "id": "get_tag",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/tag",
+      "name": "Get Tag",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/tag",
+      "cloud_verified": true
+    },
+    {
+      "id": "list_tags",
+      "method": "GET",
+      "reference_path": "/api/repos/{repo_name}/tags",
+      "name": "List Tags",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/tags",
+      "cloud_verified": true
+    },
+    {
+      "id": "create_tag",
+      "method": "POST",
+      "reference_path": "/api/repos/{repo_name}/tags",
+      "name": "Create Tag",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/tags",
+      "cloud_verified": true
+    },
+    {
+      "id": "delete_tag",
+      "method": "DELETE",
+      "reference_path": "/api/repos/{repo_name}/tags/{tag_name}",
+      "name": "Delete Tag",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "implementation_path": "/api/repos/{namespace}/{repo}/tags/{tag}",
+      "cloud_verified": true
+    },
+    {
+      "id": "jwt",
+      "name": "JWT key registration, exact scopes, repository restriction and revocation",
+      "status": "implemented",
+      "evidence": ["tests/forge.test.ts", "scripts/e2e-features.mjs"],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false
+    },
+    {
+      "id": "policies",
+      "name": "Ordered ref policies across every Git/API write",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-git-features.mjs"
+      ],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false
+    },
+    {
+      "id": "signatures",
+      "name": "SSH and OpenPGP registered commit signature verification",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-git-features.mjs"
+      ],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false
+    },
+    {
+      "id": "ephemeral",
+      "name": "Isolated +ephemeral HTTP remote and API promotion",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-git-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "cloud_verified": true
+    },
+    {
+      "id": "imports",
+      "name": "Push-only +import remote, normal refs and synced-repo restriction",
+      "status": "implemented",
+      "evidence": [
+        "tests/forge.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-git-features.mjs"
+      ],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false
+    },
+    {
+      "id": "forks",
+      "name": "Independent fork with immutable snapshot and LFS copy",
+      "status": "implemented",
+      "evidence": [
+        "scripts/e2e-features.mjs",
+        "tests/persistence.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "cloud_verified": true,
+      "note": "OneStorage additionally copies available reachable LFS objects; Code Storage documents Git history only."
+    },
+    {
+      "id": "sync",
+      "name": "HTTPS provider pull/push and encrypted credentials",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "tests/persistence.test.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/e2e-sync.mjs"
+      ],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false,
+      "cloud_verification_note": "Public GitHub pull verified on Cloudflare; bidirectional generic Git tested against an independent local native Git HTTP backend."
+    },
+    {
+      "id": "github-app",
+      "name": "GitHub App installation auth, webhook verification, LFS behavior",
+      "status": "implemented",
+      "evidence": [
+        "tests/sync.test.ts",
+        "src/github.ts",
+        "src/lfs-sync.ts",
+        "src/sync-routes.ts"
+      ],
+      "verification": "simulated provider with real RSA JWT and HMAC; real private installation not configured",
+      "cloud_verified": false
+    },
+    {
+      "id": "webhook-events",
+      "name": "Push and sync lifecycle events with detailed ref updates",
+      "status": "implemented",
+      "evidence": [
+        "tests/webhooks.test.ts",
+        "tests/persistence.test.ts",
+        "src/repository.ts"
+      ],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false
+    },
+    {
+      "id": "sdk",
+      "name": "TypeScript, Python and Go SDK feature coverage",
+      "status": "implemented",
+      "evidence": [
+        "tests/sdk.test.ts",
+        "scripts/e2e-sdks.mjs",
+        "sdk/python/test_sdk.py",
+        "sdk/go/client_test.go"
+      ],
+      "verification": "local-workerd and native-Git tests",
+      "cloud_verified": false,
+      "cloud_verification_note": "TypeScript SDK verified against Cloudflare; TypeScript/Python/Go signed clients verified against local workerd."
+    },
+    {
+      "id": "agent-docs",
+      "name": "llms.txt, MCP, and seven executable agent workflow examples",
+      "status": "implemented",
+      "evidence": [
+        "examples/workflows.ts",
+        "scripts/e2e-sdk-ts.ts",
+        "scripts/e2e-features.mjs",
+        "scripts/verify-cloud.mjs",
+        "docs/VERIFICATION.md"
+      ],
+      "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
+      "cloud_verified": true
+    }
+  ],
+  "limits_document": "docs/PARITY.md",
+  "release": "0.3.0",
+  "cloud_acceptance_date": "2026-09-08"
+}

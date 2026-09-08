@@ -1,9 +1,18 @@
+import { upstreamClient, pullRepository, scheduleSync } from "./sync";
+import { forgeEvent, dispatchEvent, ForgeEvent } from "./events";
+import type { Repo } from "./types";
+import type { RefStorage } from "./git/repository";
+import { lifecycle, collectDeleted } from "./lifecycle";
 import { DurableObject } from "cloudflare:workers";
 import { HTTPException } from "hono/http-exception";
 import type { Env } from "./types";
 import { boundedBody, fail, branch } from "./security";
 import { ObjectStore, Refs, LIMITS, text } from "./git/objects";
-import { GitRepository } from "./git/repository";
+import { namespaceRepositories } from "./git/namespaces";
+import { normalizePolicies } from "./delegation";
+import { parseCommitStream } from "./git/commit-stream";
+import { applyGitPatch } from "./git/patch";
+import { paginate } from "./git/forge-utils";
 import { advertise, receive, upload } from "./git/protocol";
 import { importSnapshot } from "./git/legacy";
 /** The per-repository DO serializes requests; immutable R2 objects precede atomic ref publication. */
@@ -26,7 +35,11 @@ export class Repository extends DurableObject<Env> {
         return Response.json({ error: e.message }, { status: e.status });
       console.error(
         "Git transaction failed",
-        e instanceof Error ? e.name : "unknown",
+        e instanceof Error
+          ? this.env.APP_ORIGIN.startsWith("http://localhost")
+            ? e.stack
+            : e.name
+          : "unknown",
       );
       return Response.json(
         { error: "Git transaction failed; inspect refs before retrying" },
@@ -36,14 +49,81 @@ export class Repository extends DurableObject<Env> {
       this.waiting--;
     }
   }
+  async alarm() {
+    const result = this.tail.then(async () => {
+      if (await this.ctx.storage.get("deleted"))
+        return collectDeleted(this.env, this.ctx.storage);
+      for (const [key, event] of await this.ctx.storage.list<ForgeEvent>({
+        prefix: "event:",
+        limit: 20,
+      })) {
+        await dispatchEvent(this.env, event);
+        await this.ctx.storage.delete(key);
+      }
+      const id = await this.ctx.storage.get<string>("sync-reconcile");
+      if (
+        id &&
+        ((await this.ctx.storage.get<number>("sync-retries")) || 0) < 5
+      ) {
+        const metadata = await this.env.DB.prepare(
+          "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+        )
+          .bind(id)
+          .first<Repo>();
+        if (metadata) {
+          try {
+            await pullRepository(
+              this.env,
+              this.ctx.storage,
+              metadata,
+              new ObjectStore(id, this.env.OBJECTS),
+            );
+            await this.ctx.storage.delete("sync-retries");
+          } catch {
+            const n =
+              ((await this.ctx.storage.get<number>("sync-retries")) || 0) + 1;
+            await this.ctx.storage.put("sync-retries", n);
+            if (n < 5) await this.ctx.storage.setAlarm(Date.now() + 300000);
+          }
+        }
+      }
+      if ((await this.ctx.storage.list({ prefix: "event:", limit: 1 })).size)
+        await this.ctx.storage.setAlarm(Date.now() + 1000);
+    });
+    this.tail = result.catch(() => undefined);
+    await result;
+  }
   private async handle(request: Request) {
     const id = request.headers.get("x-repo-id") || "";
     if (!/^[0-9a-f-]{36}$/.test(id)) fail(400, "Invalid repository");
+    if (await this.ctx.storage.get("deleted")) fail(404, "Repository deleted");
     const defaultBranch = branch.parse(
-      request.headers.get("x-default-branch") || "main",
+      (await this.ctx.storage.get<string>("default-branch")) ||
+        request.headers.get("x-default-branch") ||
+        "main",
     );
     const url = new URL(request.url),
       store = new ObjectStore(id, this.env.OBJECTS);
+    const metadata = await this.env.DB.prepare(
+      "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+    )
+      .bind(id)
+      .first<Repo>();
+    if (url.pathname === "/internal/sync" && request.method === "POST") {
+      if (!metadata) fail(404, "Repository not found");
+      return Response.json(
+        await pullRepository(this.env, this.ctx.storage, metadata, store),
+      );
+    }
+    if (
+      (await this.ctx.storage.get("sync-reconcile")) &&
+      url.pathname !== "/internal/delete" &&
+      request.headers.get("x-namespace") !== "ephemeral"
+    )
+      fail(
+        409,
+        "Upstream outcome is being reconciled; pull upstream before retrying",
+      );
     let refs = await this.ctx.storage.get<Refs>("refs.v2");
     if (!refs) {
       const legacy = await this.ctx.storage.get<string>("snapshot");
@@ -59,13 +139,258 @@ export class Repository extends DurableObject<Env> {
         );
       } else refs = {};
     }
-    const repo = new GitRepository(
-        store,
-        this.ctx.storage,
-        refs,
-        defaultBranch,
-      ),
+    const policy = JSON.parse(
+      request.headers.get("x-write-policy") || '{"rules":[]}',
+    );
+    let forwarded = false;
+    const publication: RefStorage = {
+      get: <T>(key: string) => this.ctx.storage.get<T>(key),
+      put: async (key, value) => {
+        if (key !== "refs.v2") fail(400, "Unexpected Git state key");
+        const next = value as Refs;
+        const before = (await this.ctx.storage.get<Refs>("refs.v2")) || {};
+        const values: Record<string, unknown> = { "refs.v2": next };
+        for (const ref of new Set([
+          ...Object.keys(before),
+          ...Object.keys(next),
+        ]))
+          if (before[ref] !== next[ref]) {
+            const event = forgeEvent(id, "push", {
+              ref,
+              before: before[ref] || "0".repeat(40),
+              after: next[ref] || "0".repeat(40),
+              actor: request.headers.get("x-actor") || null,
+            });
+            values["event:" + event.id] = event;
+          }
+        await this.ctx.storage.setAlarm(Date.now() + 1000);
+        await this.ctx.storage.put(values);
+        if (forwarded) {
+          await scheduleSync(this.env, metadata!);
+          await this.ctx.storage.delete(["sync-reconcile", "sync-retries"]);
+        }
+      },
+    };
+    const select = namespaceRepositories(
+      store,
+      publication,
+      refs,
+      defaultBranch,
+      {
+        beforePublish: async (before, after, ephemeral) => {
+          if (!metadata?.base_repo || ephemeral) return after;
+          const config = JSON.parse(metadata.base_repo);
+          if (config.provider === "github" && config.mode === "public")
+            return after;
+          const client = await upstreamClient(this.env, metadata);
+          await this.ctx.storage.put("sync-reconcile", id);
+          await this.ctx.storage.setAlarm(Date.now() + 1000);
+          await client.push(store, before, after);
+          forwarded = true;
+          return after;
+        },
+        rules: normalizePolicies(policy.rules),
+        allowForce: policy.allowForce === true,
+        signingKeys: async () =>
+          (
+            await this.env.DB.prepare(
+              "SELECT format,public_key FROM signing_keys WHERE user_id=?",
+            )
+              .bind(request.headers.get("x-repo-owner-id") || "")
+              .all<{ format: string; public_key: string }>()
+          ).results,
+      },
+    );
+    const ephemeral = request.headers.get("x-namespace") === "ephemeral",
+      repo = select(ephemeral),
       path = url.pathname;
+    const life = await lifecycle(request, repo, this.env, this.ctx.storage);
+    if (life) return life;
+    if (metadata?.sync_status === "initializing")
+      fail(409, "Repository initialization is in progress");
+    const q = Object.fromEntries(url.searchParams),
+      page = { limit: q.limit, cursor: q.cursor };
+    if (request.method === "HEAD" && path === "/file")
+      return repo.rawFile(request, q.ref || "HEAD", q.path || "");
+    if (request.method === "GET") {
+      switch (path) {
+        case "/file":
+          return repo.rawFile(request, q.ref || "HEAD", q.path || "");
+        case "/files":
+        case "/files/metadata":
+          return Response.json(
+            await repo.listFiles({
+              ...page,
+              ref: q.ref,
+              path: q.path,
+              recursive: q.recursive !== "false",
+              metadata: path.endsWith("metadata"),
+            }),
+          );
+        case "/commit-detail":
+          return Response.json({
+            commit: await repo.metadata(q.sha || q.ref || "HEAD"),
+          });
+        case "/diff":
+          return Response.json(
+            await repo.diff(q.sha || q.ref || "HEAD", q.base, {
+              paths: url.searchParams.getAll("path"),
+            }),
+          );
+        case "/branches/diff":
+          return Response.json(
+            await repo.diffBranches(
+              q.branch || q.source || "HEAD",
+              q.base || q.target || defaultBranch,
+              url.searchParams.getAll("path"),
+            ),
+          );
+        case "/branch": {
+          const name = q.branch || q.name || defaultBranch,
+            sha = repo.refs["refs/heads/" + name];
+          if (!sha) fail(404, "Branch not found");
+          return Response.json({ name, sha });
+        }
+        case "/tags":
+          return Response.json(await repo.listTags(page));
+        case "/tag": {
+          const tags = (await repo.listTags({ limit: 1000 })).tags;
+          const tag = tags.find((t) => t.name === (q.name || q.tag));
+          if (!tag) fail(404, "Tag not found");
+          return Response.json(tag);
+        }
+        case "/notes":
+          return Response.json(
+            await repo.getNote(q.sha || "", q.notes_ref || q.ref),
+          );
+        case "/notes/refs": {
+          const list = Object.entries(repo.refs)
+              .filter(([ref]) => ref.startsWith(q.prefix || "refs/notes/"))
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([ref, sha]) => ({ ref, sha })),
+            p = paginate(list, page, JSON.stringify(list));
+          return Response.json({
+            refs: p.items,
+            has_more: p.has_more,
+            next_cursor: p.next_cursor,
+          });
+        }
+        case "/blame":
+          return Response.json(
+            await repo.blame({
+              ref: q.ref,
+              path: q.path || "",
+              range: [
+                ...url.searchParams.getAll("range"),
+                ...url.searchParams.getAll("ranges"),
+              ],
+              detect_moves: q.detect_moves !== "false",
+            }),
+          );
+        case "/merge/preview": {
+          const p = await select(
+            q.target_is_ephemeral === "true" || ephemeral,
+          ).previewMerge({
+            source_ref: q.source_ref || q.source_branch,
+            target_branch: q.target_branch,
+            source_is_ephemeral: q.source_is_ephemeral === "true",
+            include_content: q.include_content === "true",
+            allow_unrelated_histories: q.allow_unrelated_histories === "true",
+          });
+          const { merged, ...result } = p;
+          return Response.json(result);
+        }
+      }
+    }
+    if (
+      request.method === "POST" &&
+      [
+        "/commit-pack",
+        "/diff-commit",
+        "/restore-commit",
+        "/reset-commits",
+      ].includes(path)
+    ) {
+      const kind =
+          path === "/commit-pack"
+            ? "files"
+            : path === "/diff-commit"
+              ? "diff"
+              : "restore",
+        parsed = await parseCommitStream(request, store, kind),
+        target = select(parsed.metadata.ephemeral === true || ephemeral);
+      if (kind === "files")
+        return Response.json(await target.commitFiles(parsed.metadata), {
+          status: 201,
+        });
+      if (kind === "diff")
+        return Response.json(
+          await applyGitPatch(target, parsed.metadata, parsed.diff!),
+          { status: 201 },
+        );
+      return Response.json(await target.restore(parsed.metadata), {
+        status: 201,
+      });
+    }
+    if (
+      ["POST", "DELETE"].includes(request.method) &&
+      [
+        "/branches/create",
+        "/branches/delete",
+        "/tags/create",
+        "/tags/delete",
+        "/notes/write",
+        "/grep",
+        "/archive",
+        "/merge-advanced",
+        "/commit-files",
+      ].includes(path)
+    ) {
+      let body;
+      try {
+        body = JSON.parse(text(await boundedBody(request, 12 * 1024 * 1024)));
+      } catch (e) {
+        if (e instanceof HTTPException) throw e;
+        fail(400, "Invalid JSON");
+      }
+      const target = select(
+        body.ephemeral === true ||
+          body.target_is_ephemeral === true ||
+          ephemeral,
+      );
+      switch (path) {
+        case "/branches/create":
+          return Response.json(await target.createBranch(body), {
+            status: 201,
+          });
+        case "/branches/delete":
+          return Response.json(
+            await target.deleteBranch(
+              body.branch || body.name,
+              body.expected_sha,
+            ),
+          );
+        case "/tags/create":
+          return Response.json(
+            await target.createTag(body.name, body.ref || body.sha),
+            { status: 201 },
+          );
+        case "/tags/delete":
+          return Response.json(await target.deleteTag(body.name));
+        case "/notes/write":
+          return Response.json(await target.writeNote(body), {
+            status: body.operation === "delete" ? 200 : 201,
+          });
+        case "/grep":
+          return Response.json(await target.grep(body));
+        case "/archive":
+          return target.archive(body);
+        case "/merge-advanced":
+          return Response.json(await target.mergeBranches(body));
+        case "/commit-files":
+          return Response.json(await target.commitFiles(body), { status: 201 });
+      }
+    }
     if (path === "/git/info/refs" && request.method === "GET") {
       const service = url.searchParams.get("service") || "";
       if (!["git-upload-pack", "git-receive-pack"].includes(service))
@@ -87,18 +412,15 @@ export class Repository extends DurableObject<Env> {
         file = url.searchParams.get("path") || "";
       switch (path) {
         case "/branches":
-          return Response.json({
-            branches: Object.entries(refs)
-              .filter(([name]) => name.startsWith("refs/heads/"))
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([name, sha]) => ({ name: name.slice(11), sha })),
-          });
+          return Response.json(repo.listBranches(page));
         case "/tree":
           return Response.json(await repo.tree(ref, file));
         case "/blob":
           return Response.json(await repo.blob(ref, file));
         case "/commits":
-          return Response.json(await repo.commits(ref));
+          return Response.json(
+            await repo.listCommits({ ...page, ref, path: q.path }),
+          );
         case "/search":
           return Response.json(
             await repo.search(ref, url.searchParams.get("q") || ""),

@@ -1,3 +1,12 @@
+import { base64, unbase64 } from "./git/signatures";
+import { registerMCP } from "./mcp";
+import { githubLFS } from "./lfs-sync";
+import { registerSyncRoutes } from "./sync-routes";
+import { upstreamSchema, upstreamURL } from "./sync-config";
+import { scheduleSync } from "./sync";
+import { registerForgeRoutes } from "./forge-routes";
+import { verifyDelegation, requireScope } from "./delegation";
+import { registerIdentityRoutes } from "./identity-routes";
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
@@ -6,6 +15,7 @@ import type { App, Repo, User } from "./types";
 import { publishPending, webhookURL } from "./webhooks";
 import {
   slug,
+  repoName,
   branch,
   sha,
   fail,
@@ -53,13 +63,15 @@ async function audit(
       "INSERT INTO audit(repo_id,actor_id,action,detail) VALUES(?,?,?,?)",
     ).bind(repoId, c.get("user")?.id || null, action, detail),
   ];
-  if (repoId) {
+  if (repoId && !action.startsWith("git.")) {
     const hooks = await c.env.DB.prepare(
-      "SELECT id FROM webhooks WHERE repo_id=? LIMIT 10",
+      "SELECT id,events FROM webhooks WHERE repo_id=? LIMIT 10",
     )
       .bind(repoId)
-      .all<{ id: string }>();
+      .all<{ id: string; events: string }>();
     for (const hook of hooks.results) {
+      const selected = JSON.parse(hook.events);
+      if (!selected.includes("*") && !selected.includes(action)) continue;
       const id = crypto.randomUUID();
       const payload = JSON.stringify({
         id,
@@ -86,11 +98,28 @@ async function repoAccess(
   const namespace = c.req.param("namespace"),
     name = c.req.param("repo");
   const r = await c.env.DB.prepare(
-    "SELECT * FROM repositories WHERE namespace=? AND name=?",
+    "SELECT * FROM repositories WHERE namespace=? AND name=? AND deleted_at IS NULL",
   )
     .bind(namespace, name)
     .first<Repo>();
   if (!r) fail(404, "Repository not found");
+  const delegated = c.get("delegation");
+  if (delegated) {
+    const operation = c.req.path.split("/").slice(5).join("/");
+    if (
+      /^(members|issues|merges|audit|webhooks|deliveries)(\/|$)/.test(operation)
+    )
+      fail(403, "Delegated Git tokens cannot manage collaboration");
+    requireScope(
+      delegated,
+      level === "read"
+        ? "git:read"
+        : level === "maintain"
+          ? "repo:write"
+          : "git:write",
+      `${r.namespace}/${r.name}`,
+    );
+  }
   const user = c.get("user");
   const owner = user?.id === r.owner_id;
   const member = user
@@ -122,11 +151,28 @@ async function engine(
     body?: BodyInit | null;
     headers?: HeadersInit;
     mutation?: boolean;
+    namespace?: "ephemeral" | "import";
   } = {},
 ) {
   const headers = new Headers(options.headers);
+  headers.delete("x-write-policy");
+  headers.delete("x-namespace");
   headers.set("x-repo-id", repo.id);
   headers.set("x-default-branch", repo.default_branch);
+  headers.set("x-repo-owner-id", repo.owner_id);
+  headers.set(
+    "x-actor",
+    c.get("delegation")?.subject || c.get("user")?.username || "",
+  );
+  const delegation = c.get("delegation");
+  if (delegation)
+    headers.set(
+      "x-write-policy",
+      JSON.stringify({ rules: delegation.refs, allowForce: true }),
+    );
+  if (options.namespace) headers.set("x-namespace", options.namespace);
+  else if (c.req.query("ephemeral") === "true")
+    headers.set("x-namespace", "ephemeral");
   if (options.mutation) headers.set("x-mutation", "1");
   const ns = c.env.REPOSITORIES;
   return ns.get(ns.idFromName(repo.id)).fetch(
@@ -221,7 +267,18 @@ app.use("*", async (c, next) => {
     ? getCookie(c, "onestorage_session")
     : undefined;
   token ||= cookie;
-  if (token) {
+  if (token?.split(".").length === 3 && authorization) {
+    const delegation = await verifyDelegation(c.env, token);
+    c.set("delegation", delegation);
+    c.set("user", delegation.user);
+    c.set(
+      "scope",
+      delegation.scopes.some((s) => s === "git:write" || s === "repo:write")
+        ? "write"
+        : "read",
+    );
+    c.set("kind", "jwt");
+  } else if (token) {
     const hash = await digest(token);
     const row = await c.env.DB.prepare(
       "SELECT u.id,u.username,u.admin,c.scope,c.kind FROM credentials c JOIN users u ON u.id=c.user_id WHERE c.hash=? AND c.expires_at>?",
@@ -241,13 +298,19 @@ app.use("*", async (c, next) => {
     mutating &&
     c.req.path.startsWith("/api/") &&
     c.get("user") &&
-    c.get("scope") === "read"
+    c.get("scope") === "read" &&
+    !(
+      c.req.method === "POST" &&
+      /^\/api\/repos\/[^/]+\/[^/]+\/(grep|archive)$/.test(c.req.path)
+    )
   )
     fail(403, "Read-only access token");
   await next();
 });
+registerIdentityRoutes(app);
+registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.2.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.3.0", status: "ok" }),
 );
 app.get("/api/setup", async (c) =>
   c.json({
@@ -442,37 +505,121 @@ app.delete("/api/tokens/:id", async (c) => {
   return c.json({ ok: true });
 });
 app.get("/api/repos", async (c) => {
-  const u = c.get("user"),
-    search = (c.req.query("q") || "").slice(0, 100),
-    page = Math.max(0, Math.min(10000, Number(c.req.query("page")) || 0));
-  const result = await c.env.DB.prepare(
-    "SELECT DISTINCT r.* FROM repositories r LEFT JOIN members m ON m.repo_id=r.id AND m.user_id=? WHERE (r.visibility='public' OR r.owner_id=? OR m.user_id IS NOT NULL) AND (r.name LIKE ? ESCAPE '\\' OR r.description LIKE ? ESCAPE '\\') ORDER BY r.created_at DESC,r.id LIMIT 50 OFFSET ?",
-  )
-    .bind(
-      u?.id || "",
-      u?.id || "",
-      `%${search.replace(/[\\%_]/g, "\\$&")}%`,
-      `%${search.replace(/[\\%_]/g, "\\$&")}%`,
-      page * 50,
-    )
+  const delegation = c.get("delegation");
+  requireScope(delegation, "org:read");
+  const u = c.get("user");
+  const search = (c.req.query("q") || "").slice(0, 100),
+    limit = z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .parse(c.req.query("limit") || 50);
+  let offset =
+    z.coerce
+      .number()
+      .int()
+      .min(0)
+      .max(10000)
+      .parse(c.req.query("page") || 0) * limit;
+  if (c.req.query("cursor")) {
+    try {
+      const cursor = JSON.parse(
+        new TextDecoder().decode(unbase64(c.req.query("cursor")!)),
+      );
+      if (
+        cursor.q !== search ||
+        cursor.user !== (u?.id || "") ||
+        !Number.isSafeInteger(cursor.offset) ||
+        cursor.offset < 0 ||
+        cursor.offset > 1000000
+      )
+        throw Error();
+      offset = cursor.offset;
+    } catch {
+      fail(400, "Invalid repository cursor");
+    }
+  }
+  const query = `SELECT DISTINCT r.* FROM repositories r LEFT JOIN members m ON m.repo_id=r.id AND m.user_id=? WHERE r.deleted_at IS NULL AND ${delegation ? "r.owner_id=?" : "(r.visibility='public' OR r.owner_id=? OR m.user_id IS NOT NULL)"} AND (r.name LIKE ? ESCAPE '\\' OR r.description LIKE ? ESCAPE '\\') ORDER BY r.created_at DESC,r.id LIMIT ? OFFSET ?`;
+  const pattern = "%" + search.replace(/[\\%_]/g, "\\$&") + "%";
+  const result = await c.env.DB.prepare(query)
+    .bind(u?.id || "", u?.id || "", pattern, pattern, limit + 1, offset)
     .all();
-  return c.json({ repositories: result.results, page });
+  const has_more = result.results.length > limit;
+  return c.json({
+    repositories: result.results.slice(0, limit),
+    page: Math.floor(offset / limit),
+    has_more,
+    next_cursor: has_more
+      ? base64(
+          new TextEncoder().encode(
+            JSON.stringify({
+              q: search,
+              user: u?.id || "",
+              offset: offset + limit,
+            }),
+          ),
+        )
+      : null,
+  });
 });
 app.post("/api/repos", async (c) => {
   const u = requireUser(c);
   const b = await input(
     c,
     z.object({
-      name: slug,
+      name: repoName.optional(),
+      id: repoName.optional(),
+      base_repo: z
+        .union([
+          z.object({
+            id: z.string().min(1).max(150),
+            ref: z.string().max(300).optional(),
+            sha: sha.optional(),
+          }),
+          upstreamSchema,
+        ])
+        .optional(),
       description: z.string().max(1000).default(""),
       visibility: z.enum(["public", "private"]).default("private"),
-      default_branch: branch.default("main"),
+      default_branch: branch.optional(),
     }),
   );
   const id = crypto.randomUUID();
+  b.name = b.name || b.id || id;
+  requireScope(c.get("delegation"), "repo:write", `${u.username}/${b.name}`);
+  let source: Repo | null = null;
+  if (b.base_repo && "id" in b.base_repo) {
+    const key = b.base_repo.id;
+    source = await c.env.DB.prepare(
+      "SELECT * FROM repositories WHERE owner_id=? AND deleted_at IS NULL AND (id=? OR name=? OR namespace||'/'||name=?)",
+    )
+      .bind(u.id, key, key, key)
+      .first<Repo>();
+    if (!source) fail(404, "Fork source not found in your namespace");
+    requireScope(c.get("delegation"), "git:read");
+    if (source.sync_status === "initializing")
+      fail(409, "Source is initializing");
+  }
+  const upstream =
+    b.base_repo && "provider" in b.base_repo ? b.base_repo : null;
+  if (upstream) {
+    upstreamURL(upstream, c.env.SYNC_ALLOWED_HOSTS);
+    upstream.mode =
+      upstream.provider === "github"
+        ? upstream.mode === "public"
+          ? "public"
+          : "app"
+        : "generic";
+  }
+  b.default_branch =
+    b.default_branch ||
+    source?.default_branch ||
+    upstream?.default_branch ||
+    "main";
   try {
     await c.env.DB.prepare(
-      "INSERT INTO repositories(id,owner_id,namespace,name,description,visibility,default_branch) VALUES(?,?,?,?,?,?,?)",
+      "INSERT INTO repositories(id,owner_id,namespace,name,description,visibility,default_branch,fork_source,sync_status,base_repo) VALUES(?,?,?,?,?,?,?,?,?,?)",
     )
       .bind(
         id,
@@ -482,18 +629,48 @@ app.post("/api/repos", async (c) => {
         b.description,
         b.visibility,
         b.default_branch,
+        source?.id || null,
+        source ? "initializing" : "idle",
+        upstream ? JSON.stringify(upstream) : null,
       )
       .run();
   } catch {
     fail(409, "Repository name already exists");
   }
+  if (source) {
+    const target = {
+      id,
+      owner_id: u.id,
+      namespace: u.username,
+      name: b.name,
+      description: b.description,
+      visibility: b.visibility,
+      default_branch: b.default_branch,
+      created_at: new Date().toISOString(),
+    } as Repo;
+    try {
+      await engineJSON(c, target, "/internal/fork-initialize", {
+        source: source.id,
+        ref: (b.base_repo as any).sha || (b.base_repo as any).ref,
+        default_branch: b.default_branch,
+      });
+    } catch (e) {
+      await engine(c, target, "/internal/delete", { method: "POST" });
+      throw e;
+    }
+  }
+  if (upstream?.provider === "github")
+    await scheduleSync(c.env, {
+      id,
+      base_repo: JSON.stringify(upstream),
+    } as Repo);
   await audit(c, "repo.create", id, b.name);
   return c.json(
     {
       id,
       namespace: u.username,
       ...b,
-      clone_url: `${c.env.APP_ORIGIN}/${u.username}/${b.name}.git`,
+      clone_url: `${c.env.APP_ORIGIN}/${u.username}/${encodeURIComponent(b.name)}.git`,
     },
     201,
   );
@@ -511,7 +688,7 @@ app.get("/api/repos/:namespace/:repo", async (c) => {
   return c.json({
     ...r,
     role: user?.id === r.owner_id ? "owner" : member?.role || "guest",
-    clone_url: `${c.env.APP_ORIGIN}/${r.namespace}/${r.name}.git`,
+    clone_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}.git`,
   });
 });
 app.patch("/api/repos/:namespace/:repo", async (c) => {
@@ -519,18 +696,56 @@ app.patch("/api/repos/:namespace/:repo", async (c) => {
   const b = await input(
     c,
     z.object({
-      description: z.string().max(1000),
-      visibility: z.enum(["public", "private"]),
+      description: z.string().max(1000).optional(),
+      visibility: z.enum(["public", "private"]).optional(),
+      default_branch: branch.optional(),
     }),
   );
+  if (b.default_branch)
+    await engineJSON(c, r, "/internal/default-branch", {
+      default_branch: b.default_branch,
+    });
   await c.env.DB.prepare(
     "UPDATE repositories SET description=?,visibility=? WHERE id=?",
   )
-    .bind(b.description, b.visibility, r.id)
+    .bind(b.description ?? r.description, b.visibility ?? r.visibility, r.id)
     .run();
   await audit(c, "repo.update", r.id, b.visibility);
   return c.json({ ok: true });
 });
+app.delete("/api/repos/:namespace/:repo", async (c) => {
+  const r = await repoAccess(c, "maintain");
+  return engine(c, r, "/internal/delete", { method: "POST" });
+});
+app.get("/api/repo-url/:id", async (c) => {
+  const r = await c.env.DB.prepare(
+    "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+  )
+    .bind(c.req.param("id"))
+    .first<Repo>();
+  if (!r) fail(404, "Repository not found");
+  requireScope(c.get("delegation"), "git:read", r.namespace + "/" + r.name);
+  const user = c.get("user");
+  const member = user
+    ? await c.env.DB.prepare(
+        "SELECT role FROM members WHERE repo_id=? AND user_id=?",
+      )
+        .bind(r.id, user.id)
+        .first()
+    : null;
+  if (r.visibility !== "public" && r.owner_id !== user?.id && !member)
+    fail(404, "Repository not found");
+  return c.json({
+    id: r.id,
+    namespace: r.namespace,
+    name: r.name,
+    url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}.git`,
+    ephemeral_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}+ephemeral.git`,
+    import_url: `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}+import.git`,
+  });
+});
+registerForgeRoutes(app, { access: repoAccess, engine, audit });
+registerSyncRoutes(app, { access: repoAccess, engine, audit });
 for (const operation of [
   "branches",
   "tree",
@@ -781,7 +996,7 @@ app.get("/api/repos/:namespace/:repo/webhooks", async (c) => {
   return c.json({
     webhooks: (
       await c.env.DB.prepare(
-        "SELECT id,url,created_at FROM webhooks WHERE repo_id=? ORDER BY created_at",
+        "SELECT id,url,events,created_at FROM webhooks WHERE repo_id=? ORDER BY created_at",
       )
         .bind(r.id)
         .all()
@@ -790,7 +1005,27 @@ app.get("/api/repos/:namespace/:repo/webhooks", async (c) => {
 });
 app.post("/api/repos/:namespace/:repo/webhooks", async (c) => {
   const r = await repoAccess(c, "maintain");
-  const b = await input(c, z.object({ url: z.string().url().max(2000) }));
+  const b = await input(
+    c,
+    z.object({
+      url: z.string().url().max(2000),
+      events: z
+        .array(
+          z.enum([
+            "*",
+            "push",
+            "repo.sync.started",
+            "repo.sync.succeeded",
+            "repo.sync.failed",
+            "repo.create",
+            "repo.update",
+          ]),
+        )
+        .min(1)
+        .max(10)
+        .default(["*"]),
+    }),
+  );
   let url;
   try {
     url = webhookURL(b.url, c.env.WEBHOOK_ALLOWED_HOSTS);
@@ -803,9 +1038,9 @@ app.post("/api/repos/:namespace/:repo/webhooks", async (c) => {
   const id = crypto.randomUUID(),
     secret = randomToken();
   const result = await c.env.DB.prepare(
-    "INSERT INTO webhooks(id,repo_id,url,secret) SELECT ?,?,?,? WHERE (SELECT COUNT(*) FROM webhooks WHERE repo_id=?)<10",
+    "INSERT INTO webhooks(id,repo_id,url,secret,events) SELECT ?,?,?,?,? WHERE (SELECT COUNT(*) FROM webhooks WHERE repo_id=?)<10",
   )
-    .bind(id, r.id, url, secret, r.id)
+    .bind(id, r.id, url, secret, JSON.stringify(b.events), r.id)
     .run();
   if (!result.meta.changes) fail(409, "Maximum 10 webhooks per repository");
   return c.json({ id, url, secret }, 201);
@@ -833,18 +1068,34 @@ app.get("/api/repos/:namespace/:repo/deliveries", async (c) => {
 app.all("/:namespace/:git/*", async (c, next) => {
   const gitName = c.req.param("git");
   if (!gitName.endsWith(".git")) return next();
-  const name = gitName.slice(0, -4);
-  slug.parse(name);
+  let name = gitName.slice(0, -4);
+  const gitNamespace = name.endsWith("+ephemeral")
+    ? "ephemeral"
+    : name.endsWith("+import")
+      ? "import"
+      : undefined;
+  if (gitNamespace) name = name.slice(0, -gitNamespace.length - 1);
+  repoName.parse(name);
   slug.parse(c.req.param("namespace"));
   // Hono route params are immutable: authorize through the same repository policy using an explicit lookup.
   const r = await c.env.DB.prepare(
-    "SELECT * FROM repositories WHERE namespace=? AND name=?",
+    "SELECT * FROM repositories WHERE namespace=? AND name=? AND deleted_at IS NULL",
   )
     .bind(c.req.param("namespace"), name)
     .first<Repo>();
   if (!r) fail(404, "Repository not found");
   const suffix = new URL(c.req.url).pathname.split("/").slice(3).join("/"),
     u = c.get("user");
+  if (gitNamespace === "import" && r.base_repo)
+    fail(409, "Import remotes cannot be used with synced repositories");
+  if (
+    gitNamespace === "import" &&
+    !(
+      suffix === "git-receive-pack" ||
+      c.req.query("service") === "git-receive-pack"
+    )
+  )
+    fail(400, "Reads are disabled for +import remotes; use the normal remote");
   let writing =
     suffix === "git-receive-pack" ||
     c.req.query("service") === "git-receive-pack" ||
@@ -872,6 +1123,11 @@ app.all("/:namespace/:git/*", async (c, next) => {
     );
     writing = batch.operation === "upload";
   }
+  requireScope(
+    c.get("delegation"),
+    writing ? "git:write" : "git:read",
+    `${r.namespace}/${r.name}`,
+  );
   const member = u
     ? await c.env.DB.prepare(
         "SELECT role FROM members WHERE repo_id=? AND user_id=?",
@@ -887,13 +1143,15 @@ app.all("/:namespace/:git/*", async (c, next) => {
     fail(u ? 404 : 401, "Repository not found or authentication required");
   if (writing && (!write || c.get("scope") !== "write"))
     fail(u ? 403 : 401, "Write access required");
+  if (suffix.startsWith("info/lfs/") && r.base_repo && !githubLFS(r))
+    fail(409, "LFS is unavailable for generic or public GitHub sync");
   if (batch) {
     const objects = [];
     for (const object of batch.objects) {
       const exists = await c.env.OBJECTS.head(`lfs/${r.id}/${object.oid}`);
       const auth = c.req.header("authorization");
       const header = auth ? { Authorization: auth } : {};
-      const href = `${c.env.APP_ORIGIN}/${r.namespace}/${r.name}.git/info/lfs/objects/${object.oid}`;
+      const href = `${c.env.APP_ORIGIN}/${r.namespace}/${encodeURIComponent(r.name)}${gitNamespace ? "+" + gitNamespace : ""}.git/info/lfs/objects/${object.oid}${githubLFS(r) ? "?size=" + object.size : ""}`;
       if (exists && exists.size !== object.size) {
         objects.push({
           ...object,
@@ -904,9 +1162,11 @@ app.all("/:namespace/:git/*", async (c, next) => {
       objects.push({
         ...object,
         authenticated: !!u,
-        ...(batch.operation === "download" && !exists
+        ...(batch.operation === "download" && !exists && !githubLFS(r)
           ? { error: { code: 404, message: "Object not found" } }
-          : batch.operation === "upload" && exists
+          : batch.operation === "upload" &&
+              exists &&
+              !(githubLFS(r) && gitNamespace !== "ephemeral")
             ? {}
             : { actions: { [batch.operation]: { href, header } } }),
       });
@@ -916,22 +1176,19 @@ app.all("/:namespace/:git/*", async (c, next) => {
   const lfs = suffix.match(/^info\/lfs\/objects\/([0-9a-f]{64})$/);
   if (lfs) {
     const key = `lfs/${r.id}/${lfs[1]}`;
-    if (c.req.method === "GET") {
-      const object = await c.env.OBJECTS.get(key);
-      if (!object) fail(404, "LFS object missing");
-      return new Response(object.body, {
-        headers: {
-          "content-type": "application/octet-stream",
-          "content-length": String(object.size),
-          "cache-control": "no-store",
-        },
-      });
-    }
+    if (c.req.method === "GET")
+      return engine(
+        c,
+        r,
+        "/internal/lfs/" + lfs[1] + new URL(c.req.url).search,
+        { namespace: gitNamespace },
+      );
     if (c.req.method === "PUT") {
-      const bytes = await boundedBody(c.req.raw, 16 * 1024 * 1024);
-      if ((await digest(bytes)) !== lfs[1]) fail(400, "LFS SHA-256 mismatch");
-      await c.env.OBJECTS.put(key, bytes as ArrayBufferView);
-      return c.json({ ok: true });
+      return engine(c, r, "/internal/lfs/" + lfs[1], {
+        method: "PUT",
+        body: c.req.raw.body,
+        namespace: gitNamespace,
+      });
     }
     fail(404, "Unsupported LFS endpoint");
   }
@@ -961,6 +1218,7 @@ app.all("/:namespace/:git/*", async (c, next) => {
       headers,
       body: c.req.raw.body,
       mutation: c.req.method === "POST" && suffix === "git-receive-pack",
+      namespace: gitNamespace,
     },
   );
   if (response.ok && c.req.method === "POST" && suffix === "git-receive-pack")
@@ -972,6 +1230,8 @@ app.get("*", async (c) => {
   const url = new URL(c.req.url);
   if (
     url.pathname === "/app.js" ||
+    url.pathname === "/forge.js" ||
+    url.pathname === "/openapi.json" ||
     url.pathname === "/style.css" ||
     url.pathname === "/favicon.svg" ||
     url.pathname === "/source.tar.gz"

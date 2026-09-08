@@ -13,7 +13,7 @@ import {
 } from "./objects";
 import { pkt, FLUSH, DELIM, readPackets, band } from "./pkt";
 import { parsePack, writePack } from "./pack";
-const agent = "agent=onestorage/0.2";
+const agent = "agent=onestorage/0.3";
 const uploadCaps = `side-band-64k ofs-delta no-progress ${agent} object-format=sha1`;
 const receiveCaps = `report-status delete-refs ofs-delta atomic ${agent} object-format=sha1`;
 export function gitResponse(
@@ -59,7 +59,10 @@ export async function advertise(
   const caps =
     service === "git-receive-pack"
       ? receiveCaps
-      : uploadCaps + ` symref=HEAD:refs/heads/${repo.defaultBranch}`;
+      : uploadCaps +
+        (repo.defaultBranch
+          ? ` symref=HEAD:refs/heads/${repo.defaultBranch}`
+          : "");
   const lines: Uint8Array[] = [];
   if (!rows.length) lines.push(pkt(`${ZERO} capabilities^{}\0${caps}\n`));
   else
@@ -212,10 +215,14 @@ export async function upload(repo: GitRepository, data: Uint8Array) {
         symrefs = args.includes("symrefs"),
         peel = args.includes("peel");
       const rows: { ref: string; oid: string }[] = [
-          {
-            ref: "HEAD",
-            oid: repo.refs["refs/heads/" + repo.defaultBranch] || "",
-          },
+          ...(repo.defaultBranch
+            ? [
+                {
+                  ref: "HEAD",
+                  oid: repo.refs["refs/heads/" + repo.defaultBranch] || "",
+                },
+              ]
+            : []),
           ...Object.entries(repo.refs)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([ref, oid]) => ({ ref, oid })),

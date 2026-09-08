@@ -114,11 +114,13 @@ export async function consume(
         timestamp = String(Math.floor(Date.now() / 1000));
       const response = await send(url, {
         method: "POST",
-        redirect: "error",
+        redirect: "manual",
         signal: AbortSignal.timeout(10000),
         headers: {
           "Content-Type": "application/json",
           "X-OneStorage-Delivery": row.id,
+          "X-OneStorage-Event": JSON.parse(row.payload).event,
+          "User-Agent": "OneStorage-Webhook/1.0",
           "X-OneStorage-Timestamp": timestamp,
           "X-OneStorage-Signature": await signature(
             row.secret,

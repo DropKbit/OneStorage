@@ -1,0 +1,16 @@
+CREATE TABLE api_keys (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, algorithm TEXT NOT NULL, public_key TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX api_keys_user ON api_keys(user_id);
+CREATE TABLE signing_keys (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, name TEXT NOT NULL, format TEXT NOT NULL CHECK(format IN ('ssh','openpgp')), public_key TEXT NOT NULL, fingerprint TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(user_id,fingerprint));
+ALTER TABLE repositories ADD COLUMN deleted_at TEXT;
+ALTER TABLE repositories ADD COLUMN base_repo TEXT;
+ALTER TABLE repositories ADD COLUMN fork_source TEXT;
+ALTER TABLE repositories ADD COLUMN sync_status TEXT NOT NULL DEFAULT 'idle';
+ALTER TABLE repositories ADD COLUMN sync_error TEXT;
+ALTER TABLE repositories ADD COLUMN synced_at TEXT;
+CREATE TABLE git_credentials (id TEXT PRIMARY KEY, repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, encrypted TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX git_credentials_repo ON git_credentials(repo_id);
+CREATE TABLE sync_jobs (id TEXT PRIMARY KEY, repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE, direction TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, lease_until INTEGER, error TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX sync_jobs_status ON sync_jobs(status,lease_until);
+CREATE TABLE github_integrations (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, encrypted TEXT NOT NULL);
+CREATE TABLE incoming_webhooks (id TEXT PRIMARY KEY, received_at INTEGER NOT NULL);
+ALTER TABLE webhooks ADD COLUMN events TEXT NOT NULL DEFAULT '["*"]';

@@ -7,6 +7,8 @@ export interface Env {
   WEBHOOK_ALLOWED_HOSTS?: string;
   APP_ORIGIN: string;
   BOOTSTRAP_SECRET: string;
+  CREDENTIAL_ENCRYPTION_KEY?: string;
+  SYNC_ALLOWED_HOSTS?: string;
 }
 export interface User {
   id: string;
@@ -22,13 +24,20 @@ export interface Repo {
   visibility: "private" | "public";
   default_branch: string;
   created_at: string;
+  deleted_at?: string | null;
+  base_repo?: string | null;
+  fork_source?: string | null;
+  sync_status?: string;
+  sync_error?: string | null;
+  synced_at?: string | null;
 }
 export type App = {
   Bindings: Env;
   Variables: {
     user: User | null;
     scope: "read" | "write";
-    kind: "pat" | "session" | null;
+    kind: "pat" | "session" | "jwt" | null;
+    delegation?: import("./delegation").Delegation;
     credential: string | null;
   };
 };

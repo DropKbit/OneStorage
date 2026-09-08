@@ -1,3 +1,4 @@
+import { keyPage, forgePage, upstreamPage } from "./forge.js";
 const root = document.querySelector("#app");
 const esc = (x) =>
   String(x ?? "").replace(
@@ -71,7 +72,7 @@ window.addEventListener("popstate", render);
 const link = (path, label, cls = "") =>
   `<a data-link href="${esc(path)}" class="${cls}">${label}</a>`;
 function layout(content, crumb = "项目", active = "repos") {
-  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || "公开空间")}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div><div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user?.admin ? link("/admin/users", icon("users") + "用户管理", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.2.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
+  root.innerHTML = `<div class="layout"><aside class="sidebar">${link("/", '<img src="/favicon.svg" alt="">OneStorage', "brand")}<div class="workspace"><span class="avatar">${esc(user?.username[0].toUpperCase() || "O")}</span><div>${esc(user?.username || "公开空间")}<div class="muted">${user ? "个人工作空间" : "探索开源项目"}</div></div></div><div class="eyebrow">WORKSPACE</div><nav>${link("/", icon("repo") + "项目", `navlink ${active === "repos" ? "active" : ""}`)}${user ? link("/settings/tokens", icon("key") + "访问令牌", `navlink ${active === "tokens" ? "active" : ""}`) : ""}${user ? link("/settings/keys", icon("key") + "密钥与连接", `navlink ${active === "keys" ? "active" : ""}`) : ""}${user?.admin ? link("/admin/users", icon("users") + "用户管理", `navlink ${active === "admin" ? "active" : ""}`) : ""}</nav><footer><a href="https://git.1s.hk">git.1s.hk ↗</a>OneStorage / v0.3.0 alpha<br><a href="/source.tar.gz" download>源代码 · AGPL-3.0 ↓</a></footer></aside><main class="main"><header class="topbar"><div class="breadcrumb">${link("/", "工作空间")}<span>/</span><span>${crumb}</span></div><div class="right"><span class="pill">SELF-HOSTED</span>${user ? `<span class="avatar" title="${esc(user.username)}">${esc(user.username[0].toUpperCase())}</span><button class="text" id="logout">退出</button>` : link("/login", "登录", "btn small")}</div></header><div class="content">${content}</div></main></div>`;
   document.querySelector("#logout")?.addEventListener("click", async () => {
     await api("/logout", { method: "POST" });
     user = null;
@@ -80,6 +81,11 @@ function layout(content, crumb = "项目", active = "repos") {
 }
 function bindForm(id, handler) {
   const form = document.querySelector(id);
+  form?.querySelectorAll("input,textarea,select").forEach((input, i) => {
+    input.id = form.id + "-" + (input.name || i);
+    const label = input.closest(".field")?.querySelector("label");
+    if (label) label.htmlFor = input.id;
+  });
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = form.querySelector("[type=submit]");
@@ -127,7 +133,7 @@ async function projects(version) {
   );
   if (version !== routeVersion) return;
   layout(
-    `<div class="titlebar"><div><h1>项目</h1><p class="muted">每一个想法，都从一个仓库开始。</p></div>${user ? link("/new", icon("plus") + "新建项目", "btn primary") : link("/login", "登录以创建项目", "btn primary")}</div><div class="stats"><div class="stat"><div class="muted">当前列表</div><div class="number">${repositories.length}<span>个项目</span></div></div><div class="stat"><div class="muted">公开项目</div><div class="number">${repositories.filter((r) => r.visibility === "public").length}<span>开放协作</span></div></div><div class="stat"><div class="muted">私有项目</div><div class="number">${repositories.filter((r) => r.visibility === "private").length}<span>受控访问</span></div></div></div><form class="toolbar" id="search"><div class="search"><input name="q" value="${esc(q)}" placeholder="搜索项目名称或描述…" aria-label="搜索项目"></div><button class="btn" type="submit">搜索</button><span class="muted">最近创建 ↓</span></form><div class="panel"><div class="panelhead"><strong>${q ? "搜索结果" : "所有可访问项目"}</strong><span class="muted">${repositories.length} 个项目</span></div>${repositories.length ? repositories.map((r) => `<article class="repo-row"><div class="repo-icon">${icon("repo")}</div><div class="repo-info">${link(`/${r.namespace}/${r.name}`, `<span class="namespace">${esc(r.namespace)} / </span>${esc(r.name)}`, "repo-name")}<p>${esc(r.description || "这个项目还没有描述。")}</p><div class="rowmeta"><span><i class="dot"></i>Git</span><span>${esc(r.default_branch)}</span><span>创建于 ${date(r.created_at)}</span></div></div><span class="pill">${r.visibility === "private" ? "私有" : "公开"}</span></article>`).join("") : `<div class="empty">${icon("repo")}<h2>${q ? "没有找到匹配的项目" : "让第一个想法落地"}</h2><p>${q ? "试试其他项目名称或描述关键词。" : "创建一个仓库，用 Git 推送代码，邀请伙伴一起构建。"}</p>${user && !q ? link("/new", "创建第一个项目", "btn primary") : ""}</div>`}</div><div class="page-nav">${page > 0 ? link(`/?page=${page - 1}&q=${encodeURIComponent(q)}`, "← 上一页", "btn small") : "<span></span>"}${repositories.length === 50 ? link(`/?page=${page + 1}&q=${encodeURIComponent(q)}`, "下一页 →", "btn small") : ""}</div><p class="footer-note">你的代码，存放在你自己的 Cloudflare 账户。</p>`,
+    `<div class="titlebar"><div><h1>项目</h1><p class="muted">每一个想法，都从一个仓库开始。</p></div>${user ? link("/new", icon("plus") + "新建项目", "btn primary") : link("/login", "登录以创建项目", "btn primary")}</div><div class="stats"><div class="stat"><div class="muted">当前列表</div><div class="number">${repositories.length}<span>个项目</span></div></div><div class="stat"><div class="muted">公开项目</div><div class="number">${repositories.filter((r) => r.visibility === "public").length}<span>开放协作</span></div></div><div class="stat"><div class="muted">私有项目</div><div class="number">${repositories.filter((r) => r.visibility === "private").length}<span>受控访问</span></div></div></div><form class="toolbar" id="search"><div class="search"><input name="q" value="${esc(q)}" placeholder="搜索项目名称或描述…" aria-label="搜索项目"></div><button class="btn" type="submit">搜索</button><span class="muted">最近创建 ↓</span></form><div class="panel"><div class="panelhead"><strong>${q ? "搜索结果" : "所有可访问项目"}</strong><span class="muted">${repositories.length} 个项目</span></div>${repositories.length ? repositories.map((r) => `<article class="repo-row"><div class="repo-icon">${icon("repo")}</div><div class="repo-info">${link(`/${r.namespace}/${encodeURIComponent(r.name)}`, `<span class="namespace">${esc(r.namespace)} / </span>${esc(r.name)}`, "repo-name")}<p>${esc(r.description || "这个项目还没有描述。")}</p><div class="rowmeta"><span><i class="dot"></i>Git</span><span>${esc(r.default_branch)}</span><span>创建于 ${date(r.created_at)}</span></div></div><span class="pill">${r.visibility === "private" ? "私有" : "公开"}</span></article>`).join("") : `<div class="empty">${icon("repo")}<h2>${q ? "没有找到匹配的项目" : "让第一个想法落地"}</h2><p>${q ? "试试其他项目名称或描述关键词。" : "创建一个仓库，用 Git 推送代码，邀请伙伴一起构建。"}</p>${user && !q ? link("/new", "创建第一个项目", "btn primary") : ""}</div>`}</div><div class="page-nav">${page > 0 ? link(`/?page=${page - 1}&q=${encodeURIComponent(q)}`, "← 上一页", "btn small") : "<span></span>"}${repositories.length === 50 ? link(`/?page=${page + 1}&q=${encodeURIComponent(q)}`, "下一页 →", "btn small") : ""}</div><p class="footer-note">你的代码，存放在你自己的 Cloudflare 账户。</p>`,
   );
   document.querySelector("#search").onsubmit = (e) => {
     e.preventDefault();
@@ -137,20 +143,38 @@ async function projects(version) {
 function newProject() {
   if (!user) return go("/login");
   layout(
-    `<div class="titlebar"><div><h1>新建项目</h1><p class="muted">为下一件值得构建的事，留一个位置。</p></div></div><div class="panel"><form class="form" id="create">${field("项目名称", "name", "text", "", "仅支持小写字母、数字、短横线和下划线。")}<p class="muted">命名空间：${esc(user.username)} /</p>${textarea("项目描述", "description")}<div class="inline"><div class="field"><label for="visibility">可见性</label><select id="visibility" name="visibility"><option value="private">私有 · 仅成员可访问</option><option value="public">公开 · 所有人可读取</option></select></div>${field("默认分支", "default_branch", "text", "main")}</div><button type="submit" class="btn primary">创建项目</button></form></div>`,
+    `<div class="titlebar"><div><h1>新建项目</h1><p class="muted">为下一件值得构建的事，留一个位置。</p></div></div><div class="panel"><form class="form" id="create">${field("项目名称", "name", "text", "", "支持小写字母、数字、短横线、下划线和最多 5 层分组路径，例如 team/project。")}<p class="muted">命名空间：${esc(user.username)} /</p>${textarea("项目描述", "description")}<div class="inline"><div class="field"><label for="visibility">可见性</label><select id="visibility" name="visibility"><option value="private">私有 · 仅成员可访问</option><option value="public">公开 · 所有人可读取</option></select></div>${field("默认分支", "default_branch", "text", "main")}</div><button type="submit" class="btn primary">创建项目</button></form></div>`,
     "新建项目",
   );
   bindForm("#create", async (data) => {
     const r = await api("/repos", { method: "POST", body: data });
-    go(`/${r.namespace}/${r.name}`);
+    go(`/${r.namespace}/${encodeURIComponent(r.name)}`);
   });
 }
 let currentRepo = null;
 function repoLayout(r, tab, content, actions = "") {
   currentRepo = r;
-  const base = `/${r.namespace}/${r.name}`;
+  const base = `/${r.namespace}/${encodeURIComponent(r.name)}`;
   layout(
-    `<div class="titlebar"><div><div class="inline"><h1>${esc(r.name)}</h1><span class="pill">${r.visibility === "public" ? "公开" : "私有"}</span></div><p class="muted">${esc(r.description || "添加描述，让伙伴了解这个项目。")}</p></div>${actions}</div><nav class="tabs" aria-label="项目导航">${[["code", "代码", ""], ["commits", "提交", "/commits"], ["search", "搜索", "/search"], ["issues", "Issues", "/issues"], ["merges", "合并请求", "/merges"], ["members", "成员", "/members"], ...(["owner", "maintainer"].includes(r.role) ? [["settings", "设置", "/settings"]] : [])].map(([key, label, path]) => link(base + path, label, `tab ${tab === key ? "active" : ""}`)).join("")}</nav>${content}`,
+    `<div class="titlebar"><div><div class="inline"><h1>${esc(r.name)}</h1><span class="pill">${r.visibility === "public" ? "公开" : "私有"}</span></div><p class="muted">${esc(r.description || "添加描述，让伙伴了解这个项目。")}</p></div>${actions}</div><nav class="tabs" aria-label="项目导航">${[
+      ["code", "代码", ""],
+      ["commits", "提交", "/commits"],
+      ["forge", "Git 工具", "/forge"],
+      ["search", "搜索", "/search"],
+      ["issues", "Issues", "/issues"],
+      ["merges", "合并请求", "/merges"],
+      ["members", "成员", "/members"],
+      ...(["owner", "maintainer"].includes(r.role)
+        ? [
+            ["settings", "设置", "/settings"],
+            ["upstream", "同步与 Fork", "/upstream"],
+          ]
+        : []),
+    ]
+      .map(([key, label, path]) =>
+        link(base + path, label, `tab ${tab === key ? "active" : ""}`),
+      )
+      .join("")}</nav>${content}`,
     `${esc(r.namespace)} / ${esc(r.name)}`,
   );
 }
@@ -286,7 +310,7 @@ async function commitsPage(r, base, ap, version) {
   repoLayout(
     r,
     "commits",
-    `<div class="panel"><div class="panelhead"><strong>最近 30 次提交</strong><span class="muted">${esc(r.default_branch)}</span></div>${commits.map((c) => `<div class="repo-row"><span class="avatar">${esc(c.author[0])}</span><div class="repo-info"><strong>${esc(c.message)}</strong><p>${esc(c.author)} · ${date(c.date)}</p></div><code>${c.sha.slice(0, 8)}</code></div>`).join("")}</div>`,
+    `<div class="panel"><div class="panelhead"><strong>最近提交</strong><span class="muted">${esc(r.default_branch)}</span></div>${commits.map((c) => `<div class="repo-row"><span class="avatar">${esc(c.author[0])}</span><div class="repo-info"><strong>${esc(c.message)}</strong><p>${esc(c.author)} · ${date(c.date)}</p></div><code>${c.sha.slice(0, 8)}</code></div>`).join("")}</div>`,
   );
 }
 async function issuesPage(r, base, ap, sub, version) {
@@ -402,7 +426,7 @@ async function settingsPage(r, base, ap, version) {
   repoLayout(
     r,
     "settings",
-    `<div class="stack"><div class="panel"><form class="form" id="repo-settings"><h2>项目设置</h2>${textarea("项目描述", "description", r.description)}<div class="field"><label for="visibility">可见性</label><select name="visibility" id="visibility"><option value="private" ${r.visibility === "private" ? "selected" : ""}>私有 · 仅成员可访问</option><option value="public" ${r.visibility === "public" ? "selected" : ""}>公开 · 所有人可读取</option></select></div><button class="btn primary" type="submit">保存设置</button></form></div><div class="panel"><div class="panelhead"><strong>Webhook</strong><span class="muted">${webhooks.length} / 10</span></div>${webhooks.map((h) => `<div class="token-row"><span>${esc(h.url)}</span><button class="btn small danger" data-hook="${h.id}">移除</button></div>`).join("")}<form class="form" id="webhook"><p class="muted">接收地址须为管理员已允许的 HTTPS 主机。签名密钥仅在创建时显示一次。</p>${field("接收地址", "url", "url")}<button class="btn primary" type="submit">添加 Webhook</button><div id="hook-result"></div></form></div><div class="panel"><div class="panelhead"><strong>最近投递</strong></div>${deliveries.length ? deliveries.map((d) => `<div class="token-row"><code>${esc(d.id.slice(0, 8))}</code><span class="pill">${esc(d.state)}</span><span class="muted">${d.attempts} 次尝试 · HTTP ${d.last_status || "—"}</span></div>`).join("") : '<div class="empty"><p>暂无投递记录。</p></div>'}</div><div class="panel"><div class="panelhead"><strong>审计记录</strong><span class="muted">最近 100 条</span></div>${events.map((e) => `<div class="token-row"><div><strong>${esc(e.action)}</strong><p class="muted">${esc(e.actor || "system")} · ${esc(e.detail)}</p></div><span class="muted">${date(e.created_at)}</span></div>`).join("")}</div></div>`,
+    `<div class="stack"><div class="panel"><form class="form" id="repo-settings"><h2>项目设置</h2>${textarea("项目描述", "description", r.description)}${field("默认分支", "default_branch", "text", r.default_branch)}<div class="field"><label for="visibility">可见性</label><select name="visibility" id="visibility"><option value="private" ${r.visibility === "private" ? "selected" : ""}>私有 · 仅成员可访问</option><option value="public" ${r.visibility === "public" ? "selected" : ""}>公开 · 所有人可读取</option></select></div><button class="btn primary" type="submit">保存设置</button></form></div><div class="panel"><div class="panelhead"><strong>Webhook</strong><span class="muted">${webhooks.length} / 10</span></div>${webhooks.map((h) => `<div class="token-row"><span>${esc(h.url)}</span><button class="btn small danger" data-hook="${h.id}">移除</button></div>`).join("")}<form class="form" id="webhook"><p class="muted">接收地址须为管理员已允许的 HTTPS 主机。签名密钥仅在创建时显示一次。</p>${field("接收地址", "url", "url")}<button class="btn primary" type="submit">添加 Webhook</button><div id="hook-result"></div></form></div><div class="panel"><div class="panelhead"><strong>最近投递</strong></div>${deliveries.length ? deliveries.map((d) => `<div class="token-row"><code>${esc(d.id.slice(0, 8))}</code><span class="pill">${esc(d.state)}</span><span class="muted">${d.attempts} 次尝试 · HTTP ${d.last_status || "—"}</span></div>`).join("") : '<div class="empty"><p>暂无投递记录。</p></div>'}</div><div class="panel"><div class="panelhead"><strong>审计记录</strong><span class="muted">最近 100 条</span></div>${events.map((e) => `<div class="token-row"><div><strong>${esc(e.action)}</strong><p class="muted">${esc(e.actor || "system")} · ${esc(e.detail)}</p></div><span class="muted">${date(e.created_at)}</span></div>`).join("")}</div></div>`,
   );
   bindForm("#webhook", async (data) => {
     const result = await api(ap + "/webhooks", { method: "POST", body: data });
@@ -493,6 +517,24 @@ async function render() {
       adminPage();
       return;
     }
+    const helpers = {
+      api,
+      layout,
+      repoLayout,
+      esc,
+      field,
+      textarea,
+      bindForm,
+      notice,
+      render,
+      go,
+      current: () => version === routeVersion,
+    };
+    if (path === "/settings/keys") {
+      if (!user) return go("/login");
+      await keyPage(helpers);
+      return;
+    }
     if (path === "/settings/tokens") {
       await tokensPage(version);
       return;
@@ -510,6 +552,8 @@ async function render() {
     if (version !== routeVersion) return;
     document.title = `${r.namespace} / ${r.name} · OneStorage`;
     if (!tab) await codePage(r, base, ap, version);
+    else if (tab === "forge") await forgePage(r, base, ap, helpers);
+    else if (tab === "upstream") await upstreamPage(r, base, ap, helpers);
     else if (tab === "search") await searchPage(r, base, ap, version);
     else if (tab === "edit") await editPage(r, base, ap, version);
     else if (tab === "commits") await commitsPage(r, base, ap, version);

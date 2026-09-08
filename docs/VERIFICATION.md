@@ -1,53 +1,40 @@
-# Verification record — v0.2.0
+# Verification — v0.3.0
 
-Date: 2026-09-08 (Asia/Singapore). Development: macOS, Node 26, native Git, Wrangler 4.129.1. Service execution: Cloudflare workerd locally and Cloudflare Workers/Durable Objects remotely, with the same JavaScript Git engine. No native Git subprocess or Container runs on the server.
+Date: 2026-09-08, Asia/Singapore. Baseline v0.2 commit `e72e52d`. Runtime: local workerd and Cloudflare Workers, with the same container-free JavaScript Git engine. Native Git is a client/oracle only.
+
+## Reference and acceptance scope
+
+Reviewed the public Code Storage docs index, 101 unique Markdown pages and OpenAPI. `parity.json` maps 40 preferred operations and 11 cross-cutting capabilities to implementation files and test evidence. `test:parity` validates the manifest; it is not a substitute for behavioral tests or a claim of cloud verification. API paths, SDK packages, storage architecture and capacity differ from the reference.
 
 ## Local results
 
-- `npm run check`: TypeScript and **28 passing tests**.
-- `npm run test:e2e`: **43 API status assertions**, plus native Git/protocol/content/concurrency/LFS assertions. Final full fixture: `owner/e2e_2b6ac048`.
-- Production Worker build and deployment succeeded; bundle approximately 998 KiB / 173 KiB gzip, excluding static assets.
-- JavaScript source download archive uses an explicit file allowlist, includes source/config/tests/license and excludes local credentials/state.
+- `npm run check`: TypeScript and **57 passing tests**, including Git objects/protocol, corruption rejection, immutable storage/ref failures, signatures, merge/patch/blame, JWT/SDK, sync persistence, GitHub App crypto and LFS forwarding, deletion and webhook leases/outbox.
+- `npm run test:e2e`: **43 HTTP assertions** plus native Git v0/v2, binary/modes/tags/thin pushes, concurrent CAS, LFS, roles, Issues, pinned fast-forward MRs, CSRF and revocation. Fixture: `owner/e2e_f58f9952`.
+- `npm run test:features`: **65 advanced HTTP checks** against real workerd/D1/R2/DO: scopes/revocation, policy, namespace isolation, NDJSON, Notes/tags, raw ranges/conditions, fork/default branch/deletion, credentials, MCP permissions.
+- `npm run test:git-features`: actual native Git SSH-signed push accepted; unsigned and revoked-key pushes rejected; grouped repository names, ephemeral/import remotes and Git Notes interoperable.
+- `npm run test:sdks`: TypeScript, Python and Go use generated short-lived signing keys against workerd; binary streaming, Notes, ephemeral refs, fork, UUID URL resolution, archive sinks and seven agent workflows passed. Keys revoked after the run. Python 3.12.14/cryptography 50.0.1, Go 1.27.1; no external service credentials involved.
+- Native Git independently accepts generated text/binary patches, including literal/delta, mode changes, rename/copy and UTF-8 quoted paths. Merge fixtures cover three-way changes, conflicts, rename/edit and ambiguous multiple bases. Blame covers ranges and moved/copied blocks.
+- Public GitHub import has been exercised through the local Queue and JavaScript HTTP Git client against `octocat/Hello-World`; the final clean rerun also passed. One earlier rerun timed out after a dev hot reload interrupted queue work; no failing run is counted as a pass.
+- Browser: local key and Git workbench screens inspected; created `ui-check` in the ephemeral namespace from normal `main`, observed its real SHA, then deleted it and confirmed zero ephemeral branches. No full accessibility/cross-browser audit claimed.
 
-### Git compatibility and corruption cases
+## Failure and external-service coverage
 
-Canonical blob/tree IDs match native Git. Native OFS_DELTA and REF_DELTA packs decode to the exact expected object set. A native thin-pack fixture requires and resolves external bases. Native `git index-pack --strict --stdin` accepts generated packs. Forward REF deltas, annotated tags, multi-chunk incompressible data, binary blobs, symlinks and executable modes are covered.
+Injected R2/ref writes cannot publish missing objects. SQLite-backed tests exercise persistent sync jobs, leases, event projection/replay and deleted-repository cleanup. Fork copies while holding the destination queue so deletion cannot clean up before a late copy. Upstream-first publication retains its recovery marker until the following sync job is durable. Pending uncertain outcomes fail closed and retry actual upstream fetches.
 
-Regression tests reject corrupt/truncated packs, wrong SHA-1 trailer, invalid object type/size, trailing data, bad zlib checksum, expansion overflow, delta copy bounds/zero op, missing bases, excessive delta chain depth, malformed pkt-lines, unsorted trees and duplicate commit author headers. SHA1 collision detection and complete native fsck parity are not claimed.
+A local native Git HTTP backend is an independent upstream protocol fixture for bidirectional push/fetch. GitHub App token and signed incoming webhook tests use real RSA/HMAC cryptography with a simulated provider. LFS batch/action forwarding and cache digest checks are tested with a simulated provider. **No real private GitHub App installation or external private upstream credential was supplied**; that deployment-specific integration is not cloud verified. Outgoing Webhook tests use controlled receivers, not real third-party messages.
 
-Real native clients exercise v0/v2, clone/push/pull, incremental thin pushes, tags, branch creation and forced chunked HTTP (`http.postBuffer=128`). The flush-only authentication probe is accepted without modifying refs. Protocol v2 include-tag emits attached annotated tags.
+## Release verification
 
-### Persistence and upgrades
+Production runtime deployed as version `096eea88-8894-42e2-ae86-a0b6c8920240` on **https://git.1s.hk**. D1 migration 0004 applied after an operator-local D1 export; the existing `1shk/nb` mirror was backed up and passed native `git fsck --full --strict`. A fresh 32-byte credential-encryption secret was uploaded without including it in source. Existing account and repository identity were preserved.
 
-Injected R2 and DO write failures cannot advance refs; orphan uploads may remain. Atomic ref batches, stale compare-and-swap, missing graph targets, default-branch deletion, forbidden history rewrites, and unreachable/cross-repository wants are covered. Existing R2 objects with conflicting bytes reject publication.
+`node --import tsx scripts/verify-cloud.mjs` passed **14 groups of checks** on generated, operator-owned private repositories using a temporary process copy of the authorized PAT. It exercised all 40 mapped REST operations: grouped names, URL lookup/listing, streamed binary commits, raw GET/HEAD/Range/ETag, archive, files/metadata/history/grep/blame, branch and ephemeral refs, diff patch, merge preview/merge, restore/reset, Notes/tags CRUD, default branch/fork, encrypted credential CRUD/detach, and pull-upstream. MCP tools discovery and anonymous denial, llms.txt and the 40-operation OpenAPI also passed.
 
-Both packed test archives and the actual v0.1 local `owner/onestorage` snapshot migrate in JavaScript. macOS AppleDouble metadata is handled. The actual migrated main SHA is `da3fcc97ec2f4a2fab5618c2768fd64cafca06ae` and README content remained unchanged. After stopping/restarting the complete local workerd process, the migrated refs/content still matched, and a native clone plus `git fsck --full --strict` of the new-engine E2E repository passed.
+Public `octocat/Hello-World` import passed through **actual remote Queue, Worker Git client/pack parser, R2 and DO refs**. All generated acceptance repos were deleted, and reads confirmed tombstone/hidden state. Deletion schedules physical cleanup; unit tests separately cover its incremental algorithm. The original private `1shk/nb` was not used for destructive acceptance.
 
-### Existing collaboration and security
+The runtime received one subsequent bounded grep-cursor correction (covered by a new regression test); final asset/source publication and repository push use the same release workflow. `1s.hk` returned HTTP 200 with the Cubelink page after deployment. No root-domain route or Cubelink resource changed. Source archive audit excluded `.data`, `.wrangler`, dependencies, cached bytecode, PATs and embedded private keys.
 
-The E2E covers password login, scoped tokens, private/public access, membership lifecycle, reader write denial, issue discussions/states, immutable-SHA fast-forward merge and retry, simultaneous edits, stale edits, path traversal rejection, literal code search, CSRF, credential revocation and password-change invalidation. Browser HTML security headers and LFS SHA-256/binary/isolation endpoints are checked.
+`cloud_verified` means the listed acceptance cases passed, not that every local security fixture or all supported providers were repeated remotely. In particular, JWT/signature policies and generic bidirectional/GitHub App behavior retain their explicit local/mock verification scope. Historical v0.2 cloud/upgrade evidence remains in [VERIFICATION-v0.2.md](VERIFICATION-v0.2.md); its unclaimed-administrator statements are historical, not current state.
 
-Webhook tests independently verify HMAC, success/duplicate handling, failure cap, SQLite-backed delivery leases, outbox replay eligibility and revoked egress allowlist. No real third-party messages are sent.
+## Limits not validated as production guarantees
 
-## Cloud results
-
-Deployed **https://git.1s.hk**, also reachable at `https://onestorage.xbitfun.workers.dev`. Resources are real remote D1, R2, SQLite Durable Objects and Queues. All three D1 migrations applied remotely. No Container bindings/images exist. `1s.hk` still returns the Cubelink page.
-
-A dedicated temporary, non-admin account/PAT and repository exercised the custom domain:
-
-- HTTPS health and private authorization; administrator setup remains unclaimed for the operator.
-- Empty clone, push with forced HTTP chunking, incremental history and annotated tag push.
-- Protocol v0 and v2 clone; exact SHA/binary comparison and native `git fsck --full --strict`.
-- Concurrent API edits using the same old SHA: exactly one succeeded, the other returned 409.
-- Remote R2 LFS SHA-256 upload/download byte match.
-- Public anonymous clone and strict native integrity check.
-
-Acceptance revoked/deleted the temporary credentials, account and D1 repository metadata. Small unreachable R2 objects and DO refs remain because no GC exists. The private initialization secret was uploaded to Worker secrets and saved locally with mode 0600, outside source control. No production administrator/password was chosen on the operator's behalf.
-
-At initial validation, Cloudflare and Google public DNS resolved the new domain while the machine's local resolver retained NXDOMAIN. Cloud acceptance used the public DNS IP with the real hostname and **TLS verification enabled**; it did not disable certificate checks or change local DNS settings.
-
-## Not covered
-
-Production load and exhaustion testing; region failure; coordinated D1/R2/DO recovery; independent security review; live external Webhook deliveries; native `git-lfs` CLI (its HTTP endpoints were tested directly); shallow/partial clone, SSH, SHA-256 Git repositories or GitLab feature parity.
-
-The prior UI was manually exercised locally for login, private project creation, README editing and persisted content. This iteration changed the backend and domain/version/source links; a new remote browser interaction audit, mobile/cross-browser and accessibility audit are not claimed.
+No load/region-failure/complete disaster-recovery exercise, independent security audit, SHA1DC equivalence, native git-lfs CLI or TB-scale claim. No real private GitHub App installation test. The merge/blame/rename and protocol limits in README/API are intentional exposed boundaries; future scale, quotas, active-object GC, backup tooling and full GitLab organization/CI features are outside this Code Storage feature mapping.

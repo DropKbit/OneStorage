@@ -1,3 +1,4 @@
+import { enforceWritePolicy, type WritePolicy } from "./policy";
 import { fail } from "../security";
 import {
   ObjectStore,
@@ -35,8 +36,18 @@ export class GitRepository {
     readonly storage: RefStorage,
     public refs: Refs,
     readonly defaultBranch: string,
+    readonly policy: WritePolicy = { rules: [] },
   ) {}
   async publish(refs: Refs) {
+    await enforceWritePolicy(this.store, this.refs, refs, this.policy);
+    if (this.policy.beforePublish) {
+      await this.store.flush();
+      refs = await this.policy.beforePublish(
+        this.refs,
+        refs,
+        this.policy.namespace === "ephemeral",
+      );
+    }
     await publishRefs(this.store, this.storage, refs);
     this.refs = refs;
   }
@@ -70,6 +81,7 @@ export class GitRepository {
   }
   path(path: string) {
     if (
+      typeof path !== "string" ||
       !path ||
       bytes(path).length > 1000 ||
       path.startsWith("/") ||
@@ -84,7 +96,8 @@ export class GitRepository {
     return path;
   }
   branch(name: string) {
-    if (!validRef("refs/heads/" + name)) fail(400, "Invalid branch");
+    if (typeof name !== "string" || !name || !validRef("refs/heads/" + name))
+      fail(400, "Invalid branch");
     return name;
   }
   async tree(ref: string, path: string) {
@@ -339,6 +352,7 @@ export class GitRepository {
     for (const command of commands) {
       if (
         !validRef(command.ref) ||
+        !/^refs\/(heads|tags|notes)\//.test(command.ref) ||
         !isOid(command.old) ||
         !isOid(command.next) ||
         seen.has(command.ref)
@@ -358,10 +372,16 @@ export class GitRepository {
         if (o.type !== "commit") fail(400, "Branch must point to a commit");
         if (
           this.refs[command.ref] &&
+          !this.policy.allowForce &&
           !(await this.store.ancestor(old, command.next))
         )
           fail(409, "Non-fast-forward push rejected");
-      } else if (this.refs[command.ref] && old !== command.next)
+      } else if (
+        command.ref.startsWith("refs/tags/") &&
+        this.refs[command.ref] &&
+        old !== command.next &&
+        !this.policy.allowForce
+      )
         fail(409, "Existing tags cannot be rewritten");
       next[command.ref] = command.next;
     }

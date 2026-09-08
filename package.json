@@ -1,6 +1,6 @@
 {
   "name": "onestorage",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
   "license": "AGPL-3.0-only",
@@ -24,12 +24,21 @@
     "source": "node scripts/source.mjs",
     "predeploy": "npm run source",
     "prebuild": "npm run source",
-    "prebuild:production": "npm run source"
+    "prebuild:production": "npm run source",
+    "test:features": "node scripts/e2e-features.mjs",
+    "test:git-features": "node scripts/e2e-git-features.mjs",
+    "test:sync": "node scripts/e2e-sync.mjs",
+    "test:sdks": "node scripts/e2e-sdks.mjs",
+    "test:parity": "node scripts/parity.mjs"
   },
   "dependencies": {
+    "diff": "9.0.0",
     "hono": "^4.13.7",
     "jose": "^6.2.12",
+    "node-diff3": "3.2.1",
+    "openpgp": "6.3.1",
     "pako": "2.2.0",
+    "re2js": "2.8.6",
     "zod": "^4.5.4"
   },
   "devDependencies": {

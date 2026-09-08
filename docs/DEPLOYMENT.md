@@ -29,6 +29,7 @@ npm run build:production
 npm run db:remote
 npm run deploy
 npx wrangler secret put BOOTSTRAP_SECRET
+npx wrangler secret put CREDENTIAL_ENCRYPTION_KEY
 ```
 
 `deploy` 与打包命令会先从明确的源码目录生成 `public/source.tar.gz`，通过页面提供 AGPL 源码下载。不要将私有文件放入这些源码目录；`.data`、`.wrangler` 和环境密钥文件不在打包白名单。
@@ -49,7 +50,7 @@ npx wrangler secret put BOOTSTRAP_SECRET
 
 维护者通过 API 创建 `{url}`，得到一次性显示的签名 secret。事件仅包含事件名、仓库 UUID、actor、detail 和时间，不含代码或凭证。操作记录与 outbox 在 D1 同一 batch；Queue 调用失败由五分钟 Cron 补发。投递最多五次，失败状态可通过 deliveries API 查询。接收端校验时间戳/HMAC，并以 `X-OneStorage-Delivery` 去重。
 
-Git ref 提交与 D1 outbox 不是原子事务；极端情况下 Git 已持久化但事件未生成。Webhook 不能作为唯一同步账本，需定期比较 refs。
+Git ref 与 push 事件现在在 DO 中原子写入，再由 alarm 幂等投影至 D1 outbox。接收端仍需处理重复/延迟，并定期比较 refs；协作元数据与 Git 不是分布式事务。
 
 ## 运行与成本
 
@@ -57,7 +58,7 @@ Git ref 提交与 D1 outbox 不是原子事务；极端情况下 Git 已持久�
 - 每仓库一个 DO，最多 16 个请求排队；操作串行执行。没有 Container 实例数/启动延迟。
 - R2 逐对象保存 canonical 数据；传输时重新生成 pack。每次请求的 R2 读取数量和历史大小会影响延迟与成本。
 - 应用限额见 README；Worker/DO CPU、内存、子请求等平台限额仍独立生效。大仓库尚不适用。
-- 没有自动 GC 或总存储配额；失败提交及删除引用后可能留下不可达对象。
+- 删除整个仓库会通过 DO alarm 清理对象；活跃仓库没有不可达对象 GC 或总存储配额。
 - 监控 Worker 错误、DO 请求饱和、R2 用量和缺失对象、D1/Queue 失败。不要把成功健康检查视为持久化或恢复测试。
 
 ## 备份和恢复
@@ -69,4 +70,20 @@ Git ref 提交与 D1 outbox 不是原子事务；极端情况下 Git 已持久�
 - 误删：停止该仓库写入，从一致备份恢复必要组件。
 - 不为 Git 对象配置盲目到期策略。任何 GC 必须先枚举可靠的活动 refs、计算可达性，并设置保留期和并发保护。
 
-云端验收脚本使用独立临时账号/PAT和仓库，结束时删除其凭证、账号及 D1 仓库元数据。少量测试 R2 对象与 DO refs 作为不可达数据保留，当前没有 GC；未向第三方发送 Webhook。具体通过和未覆盖的检查见 [验证记录](VERIFICATION.md)。
+## v0.3 升级与连接配置
+
+先备份 D1/对象/引用，应用 `0004_forge_features.sql`，再发布 v0.3 Worker。为 `CREDENTIAL_ENCRYPTION_KEY` 配置 **32 随机字节的 base64**，例如在安全终端用 `openssl rand -base64 32` 生成，通过 Wrangler secret 提示输入。不要输出到日志、提交源码或使用本地测试值。已存在加密数据时必须保留原密钥；直接替换会使凭证无法解密。新实例可以先设置 secrets，或先部署空实例再设置；未配置时连接管理明确返回 503。
+
+`SYNC_ALLOWED_HOSTS` 可选，逗号分隔，用于自托管 Gitea/Forgejo/GitLab 主机；只填可信公网 HTTPS 主机名，无端口/路径/IP。常见公共提供方已内置允许。`WEBHOOK_ALLOWED_HOSTS` 仍默认空。
+
+GitHub App 在网页“密钥与连接”配置 app_id、installation_id、RSA private_key 与至少 16 字符 webhook_secret；为 App 授予 Contents read/write，并订阅 push，Webhook URL 为 `/webhooks/github/<用户名>`。私钥只保存为 D1 密文。公有 GitHub 仓库可用 public 模式，无 App；generic 模式需先保存 HTTPS 凭证再请求同步。外部 App 未配置时不会返回假成功。
+
+同步状态页可查询持久任务/错误并手动重试。上游推送结果不确定时普通操作会暂时返回 409，后台实际拉取后解除。自动重试最多五次，修复权限/网络后使用手动 pull。勿直接删除 DO reconcile marker 绕过恢复。
+
+`npm run test:sync` 只对本地实例拉取公共 GitHub，不修改该外部仓库。SDK 验收需要 Python ≥3.10 + cryptography 和 Go ≥1.24；CI 已包含本地 HTTP/native Git/SDK 组合。真实私有 App 安装的验收需操作者自身配置，区别于可重复的提供方模拟测试。
+
+历史验收见 [v0.2 记录](VERIFICATION-v0.2.md)，当前验证见 [VERIFICATION.md](VERIFICATION.md)。历史文档中的“未初始化/无删除 GC”描述仅针对当时版本，不能用于当前实例的操作判断。
+
+## 可重复的云端验收
+
+`scripts/verify-cloud.mjs` 默认拒绝执行。操作者确认使用自己的测试实例后，设置 `ALLOW_REMOTE_ACCEPTANCE=1`、`ONESTORAGE_ORIGIN`、`ONESTORAGE_NAMESPACE`、`ONESTORAGE_TOKEN`，运行 `node --import tsx scripts/verify-cloud.mjs`。令牌通过安全环境注入，不写入命令行或配置。脚本只创建随机 `accept_v03_` 私有仓库，并在 finally 中删除；读取公开 GitHub，不写外部上游。可设置 `ACCEPTANCE_REPORT` 将无凭证的结果保存至忽略目录。

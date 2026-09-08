@@ -9,3 +9,6 @@ dist/
 .DS_Store
 coverage/
 public/source.tar.gz
+__pycache__/
+*.pyc
+*.egg-info/
