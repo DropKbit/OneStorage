@@ -1,3 +1,6 @@
+import { normalizePath } from "./build-path";
+import { tsconfigCandidates } from "./build-aliases";
+import type { BuildTSConfig } from "./build-tsconfig";
 import { Inflate } from "pako";
 import { exports as packageExports } from "resolve.exports";
 import { BUILD_LIMIT } from "./ci-build-schema";
@@ -7,18 +10,7 @@ import type { PublicPackageCache } from "./build-package-cache";
 const encoder = new TextEncoder(),
   decoder = new TextDecoder("utf-8", { fatal: true });
 const packageName = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/;
-export function normalizePath(value: string) {
-  if (value.startsWith("/") || /[\\\x00-\x1f]/.test(value))
-    throw Error("Invalid build path");
-  const parts: string[] = [];
-  for (const part of value.split("/")) {
-    if (part === "..") {
-      if (!parts.length) throw Error("Build path escapes root");
-      parts.pop();
-    } else if (part && part !== ".") parts.push(part);
-  }
-  return parts.join("/");
-}
+export { normalizePath } from "./build-path";
 export function lockPackages(
   files: Record<string, string>,
   privateURL: (url: URL) => boolean = () => false,
@@ -222,6 +214,7 @@ export class BuildFileSystem {
     private signal: AbortSignal = new AbortController().signal,
     private supplied: Record<string, string> = {},
     private cache?: PublicPackageCache,
+    private config?: BuildTSConfig,
   ) {
     this.cacheStats.enabled = !!cache;
     if (Object.keys(supplied).length > BUILD_LIMIT.packages)
@@ -374,6 +367,15 @@ export class BuildFileSystem {
     return task;
   }
   private file(path: string): string | null {
+    if (!path.includes("node_modules/") && /\.(?:js|jsx|mjs|cjs)$/.test(path)) {
+      const candidates = path.endsWith(".mjs")
+        ? [path.slice(0, -4) + ".mts"]
+        : path.endsWith(".cjs")
+          ? [path.slice(0, -4) + ".cts"]
+          : [path.replace(/\.jsx?$/, ".ts"), path.replace(/\.jsx?$/, ".tsx")];
+      for (const candidate of candidates)
+        if (Object.hasOwn(this.files, candidate)) return candidate;
+    }
     for (const suffix of [
       "",
       ".ts",
@@ -410,6 +412,17 @@ export class BuildFileSystem {
       const found = this.file(path);
       if (found) return found;
       throw Error("Cannot resolve source import: " + specifier);
+    }
+    if (
+      !/[:\\\x00-\x1f]/.test(specifier) &&
+      !specifier.startsWith("/") &&
+      !specifier.split("/").some((p) => p === "." || p === ".." || !p) &&
+      !importer.includes("node_modules/")
+    ) {
+      for (const candidate of tsconfigCandidates(this.config, specifier)) {
+        const found = this.file(candidate);
+        if (found) return found;
+      }
     }
     const pieces = specifier.split("/"),
       name = pieces.slice(0, specifier.startsWith("@") ? 2 : 1).join("/");

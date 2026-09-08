@@ -155,3 +155,7 @@ Workers/DO 分批读取 R2 Git 快照，使用主 D1 普通倒排表、持久游
 ## v0.35 公共 npm 下载缓存
 
 独立编译 Worker 使用专用 R2 桶复用锁定公共 tarball，命中仍校验 SHA-512，损坏/过期/缓存故障回退至 registry。私有包不入缓存，原有压缩/展开预算保留；构建日志包含命中、写入、异常及下载量。部署、过期和边界见 [缓存说明](CI-NPM-CACHE-v35.md)。原生 Git、大仓库、完整 CI 工具链及其他 GitLab/Gogs 差距继续推进。
+
+## v0.36 TypeScript 构建配置
+
+Worker WASM 编译支持所选 tsconfig/JSONC、相对配置继承、baseUrl/paths、JSX 设置及项目源码扩展名替换；重复配置只解析一次。边界和配置见 [构建配置](CI-TSCONFIG-v36.md)。完整前端工具链、项目引用构建、类型检查和其他平台能力仍继续推进。

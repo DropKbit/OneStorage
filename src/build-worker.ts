@@ -1,6 +1,7 @@
 import * as esbuild from "esbuild-wasm/lib/browser.js";
 import wasmModule from "esbuild-wasm/esbuild.wasm";
 import { R2PublicPackageCache } from "./build-package-cache";
+import { loadBuildTSConfig } from "./build-tsconfig";
 import { BuildFileSystem } from "./build-packages";
 import { buildRequest, BUILD_LIMIT } from "./ci-build-schema";
 
@@ -57,6 +58,7 @@ export default {
         throw Error("Cloud build source limit exceeded");
       if (!Object.hasOwn(files, step.entry))
         throw Error("Build entry missing from source selection");
+      const config = loadBuildTSConfig(files, step.tsconfig);
       const fs = new BuildFileSystem(
         files,
         step.platform,
@@ -64,6 +66,7 @@ export default {
         controller.signal,
         packages,
         env.NPM_CACHE ? new R2PublicPackageCache(env.NPM_CACHE) : undefined,
+        config,
       );
       initialization ??= esbuild
         .initialize({ wasmModule, worker: false })
@@ -82,8 +85,13 @@ export default {
         target: "es2022",
         minify: step.minify,
         sourcemap: step.sourcemap ? "inline" : false,
-        jsx: step.jsx,
-        jsxImportSource: step.jsx_import_source,
+        tsconfigRaw: config ? { compilerOptions: config.options } : undefined,
+        jsx:
+          step.jsx ??
+          (config?.options.jsx === "react" ? "transform" : "automatic"),
+        jsxDev: !step.jsx && config?.options.jsx === "react-jsxdev",
+        jsxImportSource:
+          step.jsx_import_source ?? config?.options.jsxImportSource ?? "react",
         logLevel: "silent",
         metafile: true,
         plugins: [

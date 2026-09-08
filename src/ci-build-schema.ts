@@ -39,6 +39,7 @@ export const buildStep = z
       )
       .optional(),
     entry: buildPath,
+    tsconfig: buildPath.optional(),
     sources: z
       .array(buildPath)
       .min(1)
@@ -50,11 +51,11 @@ export const buildStep = z
     platform: z.enum(["worker", "browser"]).default("worker"),
     minify: z.boolean().default(true),
     sourcemap: z.boolean().default(false),
-    jsx: z.enum(["transform", "automatic"]).default("automatic"),
+    jsx: z.enum(["transform", "automatic"]).optional(),
     jsx_import_source: z
       .string()
       .regex(/^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/)
-      .default("react"),
+      .optional(),
   })
   .strict();
 export type BuildStep = z.infer<typeof buildStep>;

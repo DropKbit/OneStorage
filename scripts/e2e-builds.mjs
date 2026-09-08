@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+const verifyTS = process.env.ONESTORAGE_TSCONFIG === "1";
 const verifyCache = process.env.ONESTORAGE_NPM_CACHE === "1";
 const cacheReports = [];
 const origin = process.env.TEST_ORIGIN || "http://localhost:8787";
@@ -107,7 +108,7 @@ const lock = {
   },
 };
 const source = (version) =>
-  `import {label} from './label'; const title: string = label + '${version}'; export default {fetch(){const v = <h1>{title}</h1>; return Response.json({type: v.type, text: v.props.children})}}`;
+  `import {label} from '${verifyTS ? "@app/label.js" : "./label"}'; const title: string = label + '${version}'; export default {fetch(){const v = <h1>{title}</h1>; return Response.json({type: v.type, text: v.props.children})}}`;
 const build = {
   runner: "worker",
   timeout_seconds: 110,
@@ -170,13 +171,40 @@ try {
     201,
   );
   await writeFile(
-    verifyCache
-      ? `.data/v35-${remote ? "production" : "local"}-fixture.json`
+    verifyCache || verifyTS
+      ? `.data/${verifyTS ? "v36" : "v35"}-${remote ? "production" : "local"}-fixture.json`
       : ".data/v22-last-fixture.json",
     JSON.stringify({ name, repoId: repo.id, ap }),
     { mode: 0o600 },
   );
+  const configFiles = verifyTS
+    ? {
+        "tsconfig.json":
+          '// JSONC configuration\n{"extends":"./config/base", "compilerOptions":{"strict":true,},}',
+        "config/base.json": JSON.stringify({
+          compilerOptions: {
+            baseUrl: "..",
+            paths: { "@app/*": ["missing/*", "src/*"] },
+            jsx: "react-jsx",
+            jsxImportSource: "preact",
+            useDefineForClassFields: false,
+          },
+        }),
+      }
+    : {};
+  if (verifyTS) {
+    build.steps[0].tsconfig = "tsconfig.json";
+    build.steps[0].sources = [
+      "src",
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "config",
+    ];
+    delete build.steps[0].jsx_import_source;
+  }
   const initial = await commit({
+    ...configFiles,
     "src/index.tsx": source("one"),
     "src/label.ts": "export const label: string = 'Cloud npm ';",
     "package.json": JSON.stringify(manifest),
@@ -233,6 +261,17 @@ try {
   );
   check(true, "Stale activation rejected");
 
+  if (verifyTS) {
+    await commit({ "tsconfig.json": '{"extends":"./tsconfig.json"}' });
+    const invalidConfig = await waitRun((await start()).id);
+    check(
+      invalidConfig.status === "failed" &&
+        /cyclic/.test(invalidConfig.error) &&
+        !invalidConfig.artifacts.length,
+      "Cyclic tsconfig fails without publishing artifacts",
+    );
+    await commit(configFiles);
+  }
   const badLock = structuredClone(lock);
   badLock.packages["node_modules/preact"].integrity =
     "sha512-" + "A".repeat(86) + "==";
