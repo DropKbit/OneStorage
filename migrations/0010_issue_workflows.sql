@@ -1,0 +1,13 @@
+ALTER TABLE issues ADD COLUMN revision INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE issues ADD COLUMN updated_at TEXT NOT NULL DEFAULT '';
+UPDATE issues SET updated_at=strftime('%Y-%m-%dT%H:%M:%fZ',created_at);
+CREATE INDEX issues_state_page ON issues(repo_id,state,id);
+CREATE INDEX issues_updated_page ON issues(repo_id,updated_at,id);
+CREATE INDEX issues_assigned_page ON issues(repo_id,assignee_id,id);
+CREATE TRIGGER issue_created_time AFTER INSERT ON issues BEGIN UPDATE issues SET updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=new.id; END;
+CREATE TRIGGER issue_version AFTER UPDATE OF title,body,state,assignee_id,milestone_id ON issues BEGIN UPDATE issues SET revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=new.id; END;
+CREATE TRIGGER issue_label_added AFTER INSERT ON issue_labels BEGIN UPDATE issues SET revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=new.issue_id; END;
+CREATE TRIGGER issue_label_removed AFTER DELETE ON issue_labels BEGIN UPDATE issues SET revision=revision+1,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=old.issue_id; END;
+CREATE TABLE mutation_guards (id TEXT PRIMARY KEY, accepted INTEGER NOT NULL CHECK(accepted=1));
+CREATE TABLE issue_boards (id TEXT PRIMARY KEY,repo_id TEXT NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,name TEXT NOT NULL,label_ids TEXT NOT NULL DEFAULT '[]',revision INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX issue_boards_repo ON issue_boards(repo_id,id);

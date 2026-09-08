@@ -1287,3 +1287,73 @@ button.text {
 .discussion {
   border-top: 1px solid var(--border);
 }
+
+/* Issue workflows */
+.issue-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border, #ddd);
+  min-width: 0;
+}
+.issue-card > div {
+  min-width: 0;
+  flex: 1;
+}
+.issue-card .subject {
+  overflow-wrap: anywhere;
+}
+.issue-card p {
+  font-size: 12px;
+  margin: 8px 0;
+}
+.issue-labels {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.issue-filters .inline {
+  flex-wrap: wrap;
+  align-items: end;
+}
+.issue-filters .inline > label {
+  flex: 1;
+  min-width: 140px;
+}
+.issue-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  align-items: flex-start;
+  padding-bottom: 20px;
+}
+.board-column {
+  flex: 0 0 290px;
+  background: var(--panel, #f6f6f6);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 200px;
+}
+.board-column h3 {
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+}
+.board-cards .issue-card {
+  border: 1px solid var(--border, #ddd);
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  margin-bottom: 10px;
+  padding: 12px;
+}
+.board-cards [draggable="true"] {
+  cursor: grab;
+}
+.board-cards select {
+  width: 100%;
+  margin-top: 5px;
+}
+.issue-card input[type="checkbox"] {
+  align-self: flex-start;
+}

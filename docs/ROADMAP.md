@@ -55,3 +55,8 @@ v0.2 只有 PAT/会话鉴权、heads/tags、基本读写、快进合并、文本
 ## v0.8 代码负责人及 Issue 联动
 
 见 [REVIEWS-v08.md](REVIEWS-v08.md)：目标快照 CODEOWNERS、分节和独立负责人门禁、默认分支自动关闭 Issue、持久化重试恢复与 R2 双路 I/O。完整 GitLab/Gogs 目标仍进行中。
+
+
+## v0.9 Issue 工作流
+
+见 [ISSUES-v09.md](ISSUES-v09.md)：项目 Issue 筛选与游标、可保存的标签看板、事务批量操作、版本化编辑及评论分页。项目归档/转移和大仓库能力继续开发，不以本轮交付替代完整目标。

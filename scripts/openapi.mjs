@@ -1,3 +1,4 @@
+import { addIssuePaths } from "./issue-openapi.mjs";
 import { addReviewPaths } from "./review-openapi.mjs";
 import { addAccountPaths } from "./account-openapi.mjs";
 import { addPlatformPaths } from "./platform-openapi.mjs";
@@ -278,6 +279,7 @@ for (const feature of parity.features) {
 addPlatformPaths(paths);
 addAccountPaths(paths);
 addReviewPaths(paths);
+addIssuePaths(paths);
 await writeFile(
   new URL("../public/openapi.json", import.meta.url),
   JSON.stringify(
@@ -285,7 +287,7 @@ await writeFile(
       openapi: "3.1.0",
       info: {
         title: "OneStorage",
-        version: "0.8.0",
+        version: "0.9.0",
         description:
           "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs.",
       },

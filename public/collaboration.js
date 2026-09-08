@@ -259,6 +259,7 @@ export async function issuePlanning(r, ap, h, issue) {
     await api(ap + "/issues/" + issue.id + "/planning", {
       method: "PUT",
       body: {
+        revision: issue.revision,
         assignee: b.assignee || null,
         milestone_id: b.milestone_id || null,
         labels: Object.keys(b)

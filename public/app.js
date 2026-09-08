@@ -1,5 +1,5 @@
 const account = () => import("./account.js?v=1efd29f8c34c0b77");
-const collaboration = () => import("./collaboration.js?v=8d44ee78d3358bd6");
+const collaboration = () => import("./collaboration.js?v=4350916dab45d6b6");
 const platform = () => import("./manage.js?v=7bf783bc42bd4ec0");
 import {
   keyPage,
@@ -232,7 +232,34 @@ function primeRoute() {
     const ap = "/repos/" + parts[0] + "/" + parts[1];
     reads.push(ap);
     if (!parts[2]) reads.push(browseURL(ap));
-    else if (["commits", "members", "issues", "merges"].includes(parts[2]))
+    else if (parts[2] === "issues" && !parts[3]) {
+      const q = new URLSearchParams(location.search);
+      reads.push(ap + "/planning", ap + "/issue-boards");
+      if (q.get("view") === "board")
+        reads.push(
+          ap +
+            "/issue-boards/" +
+            encodeURIComponent(q.get("board") || "default"),
+        );
+      else {
+        q.set("limit", "50");
+        reads.push(ap + "/issues?" + q);
+      }
+    } else if (
+      parts[2] === "issues" &&
+      parts[3] &&
+      new URLSearchParams(location.search).get("comments_after")
+    ) {
+      reads.push(
+        ap +
+          "/issues/" +
+          parts[3] +
+          "?comments_after=" +
+          encodeURIComponent(
+            new URLSearchParams(location.search).get("comments_after"),
+          ),
+      );
+    } else if (["commits", "members", "issues", "merges"].includes(parts[2]))
       reads.push(ap + "/" + parts[2] + (parts[3] ? "/" + parts[3] : ""));
   }
   // Attach rejection handlers immediately; the page awaits the same in-flight reads.
@@ -545,25 +572,41 @@ async function commitsPage(r, base, ap, version) {
     `<div class="panel"><div class="panelhead"><strong>最近提交</strong><span class="muted">${esc(r.default_branch)}</span></div>${commits.map((c) => `<div class="repo-row"><span class="avatar">${esc(c.author[0])}</span><div class="repo-info"><strong>${esc(c.message)}</strong><p>${esc(c.author)} · ${date(c.date)}</p></div><code>${c.sha.slice(0, 8)}</code></div>`).join("")}</div>`,
   );
 }
-async function issuesPage(r, base, ap, sub, version) {
+async function issuesPage(r, base, ap, sub, version, helpers) {
   if (sub) {
-    const i = await api(ap + "/issues/" + sub);
+    const after = new URLSearchParams(location.search).get("comments_after");
+    const i = await api(
+      ap +
+        "/issues/" +
+        sub +
+        (after ? "?comments_after=" + encodeURIComponent(after) : ""),
+    );
     if (version !== routeVersion) return;
     repoLayout(
       r,
       "issues",
-      `<div class="titlebar"><div><h2>#${i.id} ${esc(i.title)}</h2><span class="pill ${i.state === "open" ? "green" : "purple"}">${i.state === "open" ? "开放中" : "已关闭"}</span> <span class="muted">${esc(i.author)} · ${date(i.created_at)}</span></div>${user && (user.id === i.author_id || ["owner", "maintainer"].includes(r.role)) ? '<button class="btn" id="toggle">' + (i.state === "open" ? "关闭 Issue" : "重新打开") + "</button>" : ""}</div><div class="panel"><div class="detail-body markdown" data-markdown>${esc(i.body || "暂无描述。")}</div>${i.comments.map((c) => `<div class="comment"><strong>${esc(c.author)}</strong> <span class="muted">${date(c.created_at)}</span><div class="markdown" data-markdown>${esc(c.body)}</div></div>`).join("")}${user ? `<form class="form" id="comment">${textarea("参与讨论", "body")}<button class="btn primary" type="submit">发表评论</button></form>` : ""}</div>`,
+      `<div class="titlebar"><div><h2>#${i.id} ${esc(i.title)}</h2><span class="pill ${i.state === "open" ? "green" : "purple"}">${i.state === "open" ? "开放中" : "已关闭"}</span> <span class="muted">${esc(i.author)} · ${date(i.created_at)}</span></div>${user && (user.id === i.author_id || ["owner", "maintainer", "developer"].includes(r.role)) ? '<button class="btn" id="toggle">' + (i.state === "open" ? "关闭 Issue" : "重新打开") + "</button>" : ""}</div>${user && (user.id === i.author_id || ["owner", "maintainer", "developer"].includes(r.role)) ? `<details class="panel"><summary class="panelhead">编辑标题与描述</summary><form class="form" id="edit-issue">${field("标题", "title", "text", i.title)}${textarea("描述", "body", i.body)}<button class="btn primary" type="submit">保存</button></form></details>` : ""}<div class="panel"><div class="detail-body markdown" data-markdown>${esc(i.body || "暂无描述。")}</div>${i.comments.map((c) => `<div class="comment"><strong>${esc(c.author)}</strong> <span class="muted">${date(c.created_at)}</span><div class="markdown" data-markdown>${esc(c.body)}</div></div>`).join("")}${i.comments_next ? `<a data-link class="btn" href="${base}/issues/${i.id}?comments_after=${i.comments_next}">更多评论 →</a>` : ""}${user ? `<form class="form" id="comment">${textarea("参与讨论", "body")}<button class="btn primary" type="submit">发表评论</button></form>` : ""}</div>`,
     );
     document.querySelector("#toggle")?.addEventListener("click", async () => {
       try {
         await api(ap + "/issues/" + sub, {
           method: "PATCH",
-          body: { state: i.state === "open" ? "closed" : "open" },
+          body: {
+            state: i.state === "open" ? "closed" : "open",
+            revision: i.revision,
+          },
         });
         render();
       } catch (e) {
         notice(e.message);
       }
+    });
+    bindForm("#edit-issue", async (b) => {
+      await api(ap + "/issues/" + sub, {
+        method: "PATCH",
+        body: { ...b, revision: i.revision },
+      });
+      render();
     });
     bindForm("#comment", async (data) => {
       await api(ap + "/issues/" + sub + "/comments", {
@@ -572,19 +615,14 @@ async function issuesPage(r, base, ap, sub, version) {
       });
       render();
     });
-    return;
+    return i;
   }
-  const { issues } = await api(ap + "/issues");
-  if (version !== routeVersion) return;
-  repoLayout(
+  return (await import("./issues.js?v=aa1fbaf368d46730")).issuesPage(
     r,
-    "issues",
-    `<div class="stack">${user ? `<details class="panel"><summary class="panelhead">＋ 新建 Issue</summary><form class="form" id="new-issue">${field("标题", "title")}${textarea("描述", "body")}<button class="btn primary" type="submit">创建 Issue</button></form></details>` : ""}<div class="panel"><div class="panelhead"><strong>${issues.filter((i) => i.state === "open").length} 个开放 Issue</strong><span class="muted">最近 100 条</span></div>${issues.length ? issues.map((i) => `<div class="issue-row"><span class="status-icon ${i.state === "closed" ? "closed" : ""}">◎</span><div>${link(base + "/issues/" + i.id, esc(i.title), "subject")}<div class="muted">#${i.id} · ${esc(i.author)} · ${date(i.created_at)} · ${i.state === "open" ? "开放中" : "已关闭"}</div></div></div>`).join("") : '<div class="empty"><h2>把问题变成下一步</h2><p>记录 Bug、讨论想法、规划待办。</p></div>'}</div></div>`,
+    base,
+    ap,
+    helpers,
   );
-  bindForm("#new-issue", async (data) => {
-    const i = await api(ap + "/issues", { method: "POST", body: data });
-    go(base + "/issues/" + i.id);
-  });
 }
 async function mergesPage(r, base, ap, sub, version) {
   return (await collaboration()).mergesPage(r, base, ap, {
@@ -829,11 +867,9 @@ async function render() {
     else if (tab === "edit") await editPage(r, base, ap, version);
     else if (tab === "commits") await commitsPage(r, base, ap, version);
     else if (tab === "issues") {
-      await issuesPage(r, base, ap, sub, version);
-      if (sub && version === routeVersion)
-        await (
-          await collaboration()
-        ).issuePlanning(r, ap, helpers, await api(ap + "/issues/" + sub));
+      const issue = await issuesPage(r, base, ap, sub, version, helpers);
+      if (sub && issue && version === routeVersion)
+        await (await collaboration()).issuePlanning(r, ap, helpers, issue);
     } else if (tab === "merges") await mergesPage(r, base, ap, sub, version);
     else if (tab === "members") await membersPage(r, base, ap, version);
     else if (tab === "settings") await settingsPage(r, base, ap, version);

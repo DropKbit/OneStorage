@@ -1,4 +1,9 @@
 import {
+  registerIssueWorkflows,
+  createIssue,
+  createIssueComment,
+} from "./issue-workflows";
+import {
   registerAccount,
   mfaState,
   consumeFactor,
@@ -249,6 +254,7 @@ const staticPaths = new Set([
   "/forge.js",
   "/manage.js",
   "/collaboration.js",
+  "/issues.js",
   "/account.js",
   "/markdown.js",
   "/qr.js",
@@ -365,7 +371,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.8.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.9.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -864,6 +870,7 @@ app.get("/api/repo-url/:id", async (c) => {
   });
 });
 registerCIRoutes(app, { access: repoAccess, audit });
+registerIssueWorkflows(app, { access: repoAccess });
 registerCollaboration(app, { access: repoAccess, engine: engineJSON, audit });
 app.get("/api/repos/:namespace/:repo/preview", async (c) => {
   const r = await repoAccess(c),
@@ -991,91 +998,13 @@ app.delete("/api/repos/:namespace/:repo/members/:username", async (c) => {
   await audit(c, "member.remove", r.id, c.req.param("username"));
   return c.json({ ok: true });
 });
-app.get("/api/repos/:namespace/:repo/issues", async (c) => {
-  const r = await repoAccess(c);
-  return c.json({
-    issues: (
-      await c.env.DB.prepare(
-        "SELECT i.*,u.username AS author FROM issues i JOIN users u ON u.id=i.author_id WHERE repo_id=? ORDER BY i.id DESC LIMIT 100",
-      )
-        .bind(r.id)
-        .all()
-    ).results,
-  });
-});
 app.post("/api/repos/:namespace/:repo/issues", async (c) => {
   const r = await repoAccess(c),
     u = requireUser(c),
     b = await input(c, issueInput);
-  const result = await c.env.DB.prepare(
-    "INSERT INTO issues(repo_id,author_id,title,body) VALUES(?,?,?,?) RETURNING *",
-  )
-    .bind(r.id, u.id, b.title, b.body)
-    .first();
+  const result = await createIssue(c.env, r, u, b.title, b.body);
   await audit(c, "issue.create", r.id, b.title);
   return c.json(result, 201);
-});
-app.get("/api/repos/:namespace/:repo/issues/:id", async (c) => {
-  const r = await repoAccess(c);
-  const issue = await c.env.DB.prepare(
-    "SELECT i.*,u.username AS author FROM issues i JOIN users u ON u.id=i.author_id WHERE i.id=? AND repo_id=?",
-  )
-    .bind(c.req.param("id"), r.id)
-    .first();
-  if (!issue) fail(404, "Issue not found");
-  const comments = await c.env.DB.prepare(
-    "SELECT c.*,u.username AS author FROM comments c JOIN users u ON u.id=c.author_id WHERE issue_id=? ORDER BY c.id LIMIT 200",
-  )
-    .bind(c.req.param("id"))
-    .all();
-  const labels = await c.env.DB.prepare(
-    "SELECT l.* FROM labels l JOIN issue_labels il ON il.label_id=l.id WHERE il.issue_id=?",
-  )
-    .bind(c.req.param("id"))
-    .all();
-  const assigned = await c.env.DB.prepare(
-    "SELECT u.username AS assignee,m.title AS milestone FROM issues i LEFT JOIN users u ON u.id=i.assignee_id LEFT JOIN milestones m ON m.id=i.milestone_id WHERE i.id=?",
-  )
-    .bind(c.req.param("id"))
-    .first();
-  return c.json({
-    ...issue,
-    ...assigned,
-    labels: labels.results,
-    comments: comments.results,
-  });
-});
-app.patch("/api/repos/:namespace/:repo/issues/:id", async (c) => {
-  const r = await repoAccess(c),
-    u = requireUser(c),
-    b = await input(
-      c,
-      z.object({
-        state: z.enum(["open", "closed"]).optional(),
-        title: z.string().trim().min(1).max(240).optional(),
-        body: z.string().max(20000).optional(),
-      }),
-    );
-  const issue = await c.env.DB.prepare(
-    "SELECT author_id FROM issues WHERE id=? AND repo_id=?",
-  )
-    .bind(c.req.param("id"), r.id)
-    .first<{ author_id: string }>();
-  if (!issue) fail(404, "Issue not found");
-  if (issue.author_id !== u.id) await repoAccess(c, "maintain");
-  await c.env.DB.prepare(
-    "UPDATE issues SET state=COALESCE(?,state),title=COALESCE(?,title),body=COALESCE(?,body) WHERE id=? AND repo_id=?",
-  )
-    .bind(
-      b.state ?? null,
-      b.title ?? null,
-      b.body ?? null,
-      c.req.param("id"),
-      r.id,
-    )
-    .run();
-  await audit(c, "issue." + b.state, r.id, c.req.param("id"));
-  return c.json({ ok: true });
 });
 app.post("/api/repos/:namespace/:repo/issues/:id/comments", async (c) => {
   const r = await repoAccess(c),
@@ -1087,11 +1016,13 @@ app.post("/api/repos/:namespace/:repo/issues/:id/comments", async (c) => {
       .first())
   )
     fail(404, "Issue not found");
-  const comment = await c.env.DB.prepare(
-    "INSERT INTO comments(issue_id,author_id,body) VALUES(?,?,?) RETURNING *",
-  )
-    .bind(c.req.param("id"), u.id, b.body)
-    .first();
+  const comment = await createIssueComment(
+    c.env,
+    r,
+    u,
+    z.coerce.number().int().positive().parse(c.req.param("id")),
+    b.body,
+  );
   return c.json(comment, 201);
 });
 app.get("/api/repos/:namespace/:repo/merges", async (c) => {
