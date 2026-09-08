@@ -1,4 +1,5 @@
 import { registerSearch } from "./search";
+import { confirmGitResponse } from "./git/confirmation";
 import { registerDeployTokenRoutes } from "./deploy-token-routes";
 import {
   assertDeployAccess,
@@ -244,6 +245,7 @@ async function engine(
   headers.set("x-lifecycle-revision", String(repo.lifecycle_revision || 0));
   headers.set("x-default-branch", repo.default_branch);
   headers.set("x-repo-owner-id", repo.owner_id);
+  headers.set("x-actor-id", c.get("user")?.id || "");
   headers.set(
     "x-actor",
     deploy?.username ||
@@ -497,7 +499,7 @@ registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.28.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.29.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -1448,20 +1450,20 @@ app.all("/:namespace/:git/*", async (c, next) => {
     const v = c.req.header(h);
     if (v) headers.set(h, v);
   }
-  const response = await engine(
-    c,
-    r,
-    `/git/${suffix}${new URL(c.req.url).search}`,
-    {
+  const forward = () =>
+    engine(c, r, `/git/${suffix}${new URL(c.req.url).search}`, {
       method: c.req.method,
       headers,
       body: c.req.raw.body,
       mutation: c.req.method === "POST" && suffix === "git-receive-pack",
       namespace: gitNamespace,
-    },
-  );
-  if (response.ok && c.req.method === "POST" && suffix === "git-receive-pack")
-    await audit(c, "git.receive_pack", r.id);
+    });
+  const response =
+    c.req.method === "POST" && suffix === "git-receive-pack"
+      ? await confirmGitResponse(r.id, forward)
+      : await forward();
+  // Successful native ref updates carry a durable audit event in the same DO
+  // storage write. Never turn an accepted push into HTTP 500 with post-commit D1 I/O.
   return response;
 });
 app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));

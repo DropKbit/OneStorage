@@ -64,7 +64,7 @@ export function gitFailureDetails(error: unknown) {
 export function reportGitFailure(
   error: unknown,
   repoId: string,
-  operation: "repository" | "receive-pack",
+  operation: "repository" | "receive-pack" | "gateway-receive",
 ) {
   const incident = crypto.randomUUID();
   console.error("Git operation failed", {

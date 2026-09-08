@@ -40,6 +40,12 @@ import type { RefStorage } from "./git/repository";
 import { lifecycle, collectDeleted } from "./lifecycle";
 import { DurableObject } from "cloudflare:workers";
 import { HTTPException } from "hono/http-exception";
+import {
+  assertGitReceiptCapacity,
+  drainGitReceipts,
+  stageGitReceipt,
+  putRefPublication,
+} from "./git/receipts";
 import type { Env } from "./types";
 import { boundedBody, fail, branch, slug, repoName } from "./security";
 import { ObjectStore, Refs, LIMITS, text } from "./git/objects";
@@ -113,6 +119,7 @@ export class Repository extends DurableObject<Env> {
         await collectDeleted(this.env, this.ctx.storage);
         return new Response(null, { status: 204 });
       }
+      const receipts = await drainGitReceipts(this.env, this.ctx.storage);
       try {
         await collectPackCache(this.env.OBJECTS, this.ctx.storage);
       } catch {
@@ -171,12 +178,15 @@ export class Repository extends DurableObject<Env> {
         }
       }
       if (
+        receipts.pending ||
         incomingPending ||
         (await this.ctx.storage.list({ prefix: "event:", limit: 1 })).size ||
         (await this.ctx.storage.list({ prefix: "merge-projection:", limit: 1 }))
           .size
       )
-        await this.ctx.storage.setAlarm(Date.now() + 1000);
+        await this.ctx.storage.setAlarm(
+          Date.now() + (receipts.failed ? 30000 : 1000),
+        );
       return new Response(null, { status: 204 });
     });
   }
@@ -421,11 +431,13 @@ export class Repository extends DurableObject<Env> {
             result: values["merge-result:" + reviewedMerge.id],
           };
         }
+        let refsUpdated = 0;
         for (const ref of new Set([
           ...Object.keys(before),
           ...Object.keys(next),
         ]))
           if (before[ref] !== next[ref]) {
+            refsUpdated++;
             const event = forgeEvent(id, "push", {
               ref,
               before: before[ref] || "0".repeat(40),
@@ -434,8 +446,21 @@ export class Repository extends DurableObject<Env> {
             });
             values["event:" + event.id] = event;
           }
+        if (
+          request.method === "POST" &&
+          url.pathname === "/git/git-receive-pack"
+        )
+          await stageGitReceipt(
+            this.ctx.storage,
+            values,
+            {
+              repository_id: id,
+              actor_id: request.headers.get("x-actor-id") || null,
+            },
+            refsUpdated,
+          );
         await this.ctx.storage.setAlarm(Date.now() + 1000);
-        await this.ctx.storage.put(values);
+        await putRefPublication(this.ctx.storage, values);
         if (forwarded) {
           await scheduleSync(this.env, metadata!);
           await this.ctx.storage.delete(["sync-reconcile", "sync-retries"]);
@@ -792,8 +817,12 @@ export class Repository extends DurableObject<Env> {
           .includes("version=2"),
       );
     }
-    if (path === "/git/git-receive-pack" && request.method === "POST")
+    if (path === "/git/git-receive-pack" && request.method === "POST") {
+      // Check before ingestion and before a possible upstream push. The request
+      // gate serializes writers through atomic publication.
+      await assertGitReceiptCapacity(this.ctx.storage);
       return receiveStream(repo, request, this.env.OBJECTS, this.ctx.storage);
+    }
     if (path === "/git/git-upload-pack" && request.method === "POST") {
       const packCache = new PackCache(id, this.env.OBJECTS, this.ctx.storage);
       const response = await upload(
