@@ -32,15 +32,14 @@ async function api(path, method = "GET", body, status = 200) {
     signal: AbortSignal.timeout(120000),
   });
   const data = await r.json();
-  assert.equal(
-    r.status,
-    status,
+  assert.ok(
+    (Array.isArray(status) ? status : [status]).includes(r.status),
     method + " " + path + " " + JSON.stringify(data),
   );
   checks++;
   if (path === "/api/login")
     cookie = r.headers.get("set-cookie")?.split(";")[0] || "";
-  return data;
+  return Array.isArray(status) ? { ...data, httpStatus: r.status } : data;
 }
 let gitEnv;
 async function git(args) {
@@ -151,7 +150,7 @@ try {
   await git(["config", "user.email", "ci@example.invalid"]);
   await git(["add", "."]);
   await git(["commit", "-m", "Native workflow config"]);
-  const sha = await git(["rev-parse", "HEAD"]);
+  let sha = await git(["rev-parse", "HEAD"]);
   await git([
     "push",
     origin + "/" + space + "/project.git",
@@ -175,6 +174,78 @@ try {
     detail.jobs.every((j) => j.sha === sha && j.status === "succeeded"),
   );
   checks += 2;
+  let writes;
+  if (process.env.ONESTORAGE_WRITE_ACCEPTANCE === "1") {
+    await api(ap + "/ci/config", "PUT", {
+      source_path: ".onestorage-ci.json",
+      enabled: false,
+    });
+    const commit = (content, expected) => ({
+      target_branch: "main",
+      expected_target_sha: expected,
+      commit_message: "Write reliability",
+      files: [
+        { path: "README.md", content },
+        { path: "nested/reused.txt", content: "unchanged object" },
+      ],
+    });
+    for (let i = 0; i < 8; i++) {
+      const result = await api(
+        ap + "/commit-files",
+        "POST",
+        commit("Revision " + (i % 2), sha),
+        201,
+      );
+      assert.notEqual(result.sha, sha);
+      sha = result.sha;
+      checks++;
+    }
+    // Exactly one writer can publish against the same expected reference, even with concurrent HTTP requests.
+    const expected = sha,
+      raced = await Promise.all(
+        ["A", "B"].map((value) =>
+          api(
+            ap + "/commit-files",
+            "POST",
+            commit("Racer " + value, expected),
+            [201, 409],
+          ),
+        ),
+      );
+    assert.deepEqual(raced.map((r) => r.httpStatus).sort(), [201, 409]);
+    checks++;
+    sha = raced.find((r) => r.httpStatus === 201).sha;
+    await api(
+      ap + "/commit-files",
+      "POST",
+      commit("stale retry", expected),
+      409,
+    );
+    await git(["fetch", origin + "/" + space + "/project.git", "main"]);
+    assert.equal(await git(["rev-parse", "FETCH_HEAD"]), sha);
+    checks++;
+    await git(["reset", "--hard", "FETCH_HEAD"]);
+    for (let i = 0; i < 2; i++) {
+      await writeFile(
+        join(work, "native.txt"),
+        "Repeated base content\n".repeat(4096) + "Native revision " + i,
+      );
+      await git(["add", "native.txt"]);
+      await git(["commit", "-m", "Native incremental " + i]);
+      sha = await git(["rev-parse", "HEAD"]);
+      await git([
+        "push",
+        origin + "/" + space + "/project.git",
+        "HEAD:refs/heads/main",
+      ]);
+    }
+    writes = {
+      apiCommits: 8,
+      concurrentCAS: "one accepted, one rejected",
+      staleRetry: "rejected",
+      nativeIncrementalPushes: 2,
+    };
+  }
   await git([
     "clone",
     "--bare",
@@ -202,6 +273,7 @@ try {
       workspace: space,
       sha,
       workflow: run.id,
+      ...(writes ? { writes } : {}),
       nativeGit: "push -> versioned DAG -> clone/fsck passed",
     }),
   );

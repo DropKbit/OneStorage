@@ -1,4 +1,5 @@
 import { responseCompletion } from "./git/pack-stream";
+import { gitStage, reportGitFailure } from "./git/diagnostics";
 import { GitObjectIndex } from "./git/object-index";
 import { checkProjectVersion, withProjectTransition } from "./project-version";
 import { transferProject } from "./project-transfer";
@@ -62,17 +63,19 @@ export class Repository extends DurableObject<Env> {
         return Response.json({ error: e.message }, { status: e.status });
       if (archiveError(e))
         return Response.json({ error: "Repository archived" }, { status: 409 });
-      console.error(
-        "Git transaction failed",
-        e instanceof Error
-          ? this.env.APP_ORIGIN.startsWith("http://localhost")
-            ? e.stack
-            : e.name
-          : "unknown",
+      const incident = reportGitFailure(
+        e,
+        request.headers.get("x-repo-id") || "",
+        "repository",
       );
       return Response.json(
-        { error: "Git transaction failed; inspect refs before retrying" },
-        { status: 503 },
+        {
+          error:
+            "Git transaction failed; inspect refs before retrying; incident " +
+            incident,
+          incident_id: incident,
+        },
+        { status: 503, headers: { "X-OneStorage-Incident": incident } },
       );
     }
   }
@@ -143,7 +146,9 @@ export class Repository extends DurableObject<Env> {
     const id = request.headers.get("x-repo-id") || "";
     if (!/^[0-9a-f-]{36}$/.test(id)) fail(400, "Invalid repository");
     if (await this.ctx.storage.get("deleted")) fail(404, "Repository deleted");
-    await checkProjectVersion(this.env, this.ctx.storage, id, request);
+    await gitStage("metadata", () =>
+      checkProjectVersion(this.env, this.ctx.storage, id, request),
+    );
     const defaultBranch = branch.parse(
       (await this.ctx.storage.get<string>("default-branch")) ||
         request.headers.get("x-default-branch") ||
@@ -154,7 +159,10 @@ export class Repository extends DurableObject<Env> {
         id,
         this.env.OBJECTS,
         this.objectCache,
-        (this.objectIndex ||= new GitObjectIndex(id, this.ctx.storage)),
+        (this.objectIndex ||= await gitStage(
+          "object-index",
+          async () => new GitObjectIndex(id, this.ctx.storage),
+        )),
       );
     // Public API access was checked against fresh D1 metadata by the outer Worker.
     // Reads use durable refs/tombstone and the recoverable version cache; mutations also load authoritative metadata.
@@ -162,11 +170,13 @@ export class Repository extends DurableObject<Env> {
       ["GET", "HEAD"].includes(request.method) &&
       url.searchParams.get("service") !== "git-receive-pack"
         ? null
-        : await this.env.DB.prepare(
-            "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
-          )
-            .bind(id)
-            .first<Repo>();
+        : await gitStage("metadata", () =>
+            this.env.DB.prepare(
+              "SELECT * FROM repositories WHERE id=? AND deleted_at IS NULL",
+            )
+              .bind(id)
+              .first<Repo>(),
+          );
     if (metadata || !["GET", "HEAD"].includes(request.method))
       assertProjectRevision(metadata, request);
     assertRepositoryWritable(metadata, request);

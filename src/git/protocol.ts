@@ -1,4 +1,5 @@
 import { HTTPException } from "hono/http-exception";
+import { reportGitFailure } from "./diagnostics";
 import { fail } from "../security";
 import { GitRepository } from "./repository";
 import {
@@ -129,23 +130,22 @@ export async function receive(repo: GitRepository, data: Uint8Array) {
     }
   } catch (e) {
     unpack = "invalid pack";
-    reason = e instanceof HTTPException ? e.message : "Invalid pack";
+    if (e instanceof HTTPException) reason = e.message;
+    else {
+      const incident = reportGitFailure(e, repo.store.repoId, "receive-pack");
+      unpack = "processing failed; incident " + incident;
+      reason = "Pack processing failed; incident " + incident;
+    }
   }
   if (!reason) {
     try {
       await repo.updates(commands);
     } catch (e) {
-      if (!(e instanceof HTTPException))
-        console.error(
-          "Git ref publication failed",
-          e instanceof Error
-            ? { name: e.name, message: e.message.slice(0, 500) }
-            : { type: typeof e },
-        );
       reason =
         e instanceof HTTPException
           ? e.message
-          : "Object persistence or reference update failed";
+          : "Object persistence or reference update failed; incident " +
+            reportGitFailure(e, repo.store.repoId, "receive-pack");
     }
   }
   // HTTP status stays 200 for ref rejection; the native client reads report-status pkt-lines.

@@ -1,4 +1,5 @@
 import { enforceWritePolicy, type WritePolicy } from "./policy";
+import { gitStage } from "./diagnostics";
 import { fail } from "../security";
 import {
   ObjectStore,
@@ -29,7 +30,7 @@ export async function publishRefs(
   checkRefs(refs);
   await store.flush();
   await store.validateClosure(Object.values(refs));
-  await storage.put("refs.v2", refs);
+  await gitStage("ref-publish", () => storage.put("refs.v2", refs));
 }
 export class GitRepository {
   constructor(

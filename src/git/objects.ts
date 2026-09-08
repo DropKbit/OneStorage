@@ -1,4 +1,5 @@
 import type { GitObjectIndex } from "./object-index";
+import { GitIO, gitStage } from "./diagnostics";
 import type { ObjectCache } from "./object-cache";
 import { fail } from "../security";
 export const LIMITS = {
@@ -229,6 +230,9 @@ export class ObjectStore {
     private bucket: Pick<R2Bucket, "get" | "put">,
     private shared?: ObjectCache,
     readonly index?: GitObjectIndex,
+    private io = new GitIO(undefined, (detail) =>
+      console.warn("Git object I/O retry", { repoId, ...detail }),
+    ),
   ) {
     if (index && index.repoId !== repoId)
       fail(409, "Git object index scope mismatch");
@@ -237,6 +241,7 @@ export class ObjectStore {
     return {
       r2Reads: this.r2Reads,
       r2Writes: this.r2Writes,
+      r2Retries: this.io.retries,
       readBytes: this.readBytes,
       peakStagedBytes: this.peakStaged,
       prefetchPeakBytes: this.prefetchPeakBytes,
@@ -285,13 +290,17 @@ export class ObjectStore {
     const inFlight = this.pending.get(oid);
     if (inFlight) return inFlight;
     const load = (async () => {
-      this.r2Reads++;
-      const r = await this.bucket.get(`repos/${this.repoId}/objects/${oid}`);
+      const r = await this.io.run("object-read", async () => {
+        this.r2Reads++;
+        return this.bucket.get(`repos/${this.repoId}/objects/${oid}`);
+      });
       if (!r) fail(409, "Missing Git object " + oid);
       if (r.size > LIMITS.object + 64) fail(413, "Stored object exceeds limit");
       this.readBytes += r.size;
-      const object = this.remember(
-        await readCanonical(new Uint8Array(await r.arrayBuffer()), oid),
+      const object = await gitStage("object-verify", async () =>
+        this.remember(
+          await readCanonical(new Uint8Array(await r.arrayBuffer()), oid),
+        ),
       );
       this.shared?.put(this.repoId, object);
       return object;
@@ -326,20 +335,26 @@ export class ObjectStore {
             data = canonical(o);
           if ((await sha1(data)) !== o.oid)
             fail(400, "Staged Git object hash mismatch");
-          this.r2Writes++;
-          const result = await this.bucket.put(key, data, {
-            onlyIf: { etagDoesNotMatch: "*" },
-            httpMetadata: { contentType: "application/octet-stream" },
+          const result = await this.io.run("object-write", async () => {
+            this.r2Writes++;
+            return this.bucket.put(key, data, {
+              onlyIf: { etagDoesNotMatch: "*" },
+              httpMetadata: { contentType: "application/octet-stream" },
+            });
           });
           if (result === null) {
-            this.r2Reads++;
-            const existing = await this.bucket.get(key);
-            if (
-              !existing ||
-              existing.size !== data.length ||
-              !sameBytes(new Uint8Array(await existing.arrayBuffer()), data)
-            )
-              fail(409, "Conflicting stored Git object; refs unchanged");
+            const existing = await this.io.run("object-read", async () => {
+              this.r2Reads++;
+              return this.bucket.get(key);
+            });
+            await gitStage("object-verify", async () => {
+              if (
+                !existing ||
+                existing.size !== data.length ||
+                !sameBytes(new Uint8Array(await existing.arrayBuffer()), data)
+              )
+                fail(409, "Conflicting stored Git object; refs unchanged");
+            });
           }
           this.shared?.put(this.repoId, o);
           this.staged.delete(o.oid);
@@ -354,12 +369,16 @@ export class ObjectStore {
     }
     if (this.staged.size)
       fail(409, "Persist staged Git objects before indexing");
-    await this.index.ensure(roots, (oid) => this.get(oid));
+    await gitStage("object-index", () =>
+      this.index!.ensure(roots, (oid) => this.get(oid)),
+    );
   }
   async walk(roots: string[], exclude = new Set<string>()) {
     if (this.index && !this.staged.size) {
       await this.validateClosure(roots);
-      return this.index.walk(roots, exclude);
+      return gitStage("object-index", async () =>
+        this.index!.walk(roots, exclude),
+      );
     }
     const seen = new Set<string>(),
       todo = roots.map((oid) => ({

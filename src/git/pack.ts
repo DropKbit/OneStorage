@@ -1,4 +1,5 @@
 import { Inflate, deflate } from "pako";
+import { HTTPException } from "hono/http-exception";
 import { fail } from "../security";
 import {
   LIMITS,
@@ -186,7 +187,8 @@ export async function parsePack(
   if (pos !== pack.length - 20) fail(400, "Trailing bytes in pack");
   let remaining = entries.filter((e) => !e.object);
   const externalCache = new Map<string, GitObject>(),
-    missingExternal = new Set<string>();
+    missingExternal = new Set<string>(),
+    externalFailures = new Map<string, unknown>();
   for (let pass = 0; remaining.length && pass <= LIMITS.depth; pass++) {
     let progress = false;
     for (const e of remaining) {
@@ -205,10 +207,16 @@ export async function parsePack(
             try {
               base = await external(e.baseOid!);
               externalCache.set(e.baseOid!, base);
-            } catch {
+            } catch (error) {
               missingExternal.add(
                 e.baseOid!,
               ); /* A REF_DELTA base may appear later in this pack. */
+              if (!(
+                error instanceof HTTPException &&
+                error.status === 409 &&
+                error.message === "Missing Git object " + e.baseOid
+              ))
+                externalFailures.set(e.baseOid!, error);
             }
           }
         }
@@ -225,7 +233,13 @@ export async function parsePack(
       progress = true;
     }
     remaining = remaining.filter((e) => !e.object);
-    if (!progress) fail(400, "Unresolved or cyclic delta base");
+    if (!progress) {
+      // First allow later deltas to supply a base. If still unresolved, retain infrastructure failures.
+      for (const entry of remaining)
+        if (entry.baseOid && externalFailures.has(entry.baseOid))
+          throw externalFailures.get(entry.baseOid);
+      fail(400, "Unresolved or cyclic delta base");
+    }
   }
   if (remaining.length) fail(400, "Delta chain too deep");
   return entries.map((e) => e.object!);
