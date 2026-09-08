@@ -1,3 +1,4 @@
+import packageInfo from "../package.json" with { type: "json" };
 import { registerSearch } from "./search";
 import { registerPasswordRecovery } from "./password-recovery";
 import { confirmGitResponse } from "./git/confirmation";
@@ -501,7 +502,7 @@ registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.30.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: packageInfo.version, status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
