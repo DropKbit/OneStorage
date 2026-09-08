@@ -365,7 +365,7 @@ registerAccount(app);
 registerWorkspaceRoutes(app, { engine });
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.6.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.7.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({
@@ -1105,33 +1105,6 @@ app.get("/api/repos/:namespace/:repo/merges", async (c) => {
         .all()
     ).results,
   });
-});
-app.post("/api/repos/:namespace/:repo/merges", async (c) => {
-  const r = await repoAccess(c, "write"),
-    u = requireUser(c),
-    b = await input(c, issueInput.extend({ source: branch, target: branch }));
-  if (b.source === b.target) fail(400, "Select different branches");
-  const comparison = await engineJSON(
-    c,
-    r,
-    `/compare?source=${encodeURIComponent("refs/heads/" + b.source)}&target=${encodeURIComponent("refs/heads/" + b.target)}`,
-  );
-  const result = await c.env.DB.prepare(
-    "INSERT INTO merge_requests(repo_id,author_id,title,body,source,target,source_sha,target_sha) VALUES(?,?,?,?,?,?,?,?) RETURNING *",
-  )
-    .bind(
-      r.id,
-      u.id,
-      b.title,
-      b.body,
-      b.source,
-      b.target,
-      comparison.source_sha,
-      comparison.target_sha,
-    )
-    .first();
-  await audit(c, "merge_request.create", r.id, b.title);
-  return c.json(result, 201);
 });
 app.get("/api/repos/:namespace/:repo/audit", async (c) => {
   const r = await repoAccess(c, "maintain");

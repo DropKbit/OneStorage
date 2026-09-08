@@ -1,3 +1,5 @@
+import { activeRepo, contributionSource, familySQL } from "./fork-reviews";
+import { enqueueRun, pipelineSchema } from "./ci";
 import type { Hono, Context } from "hono";
 import type { App, Repo } from "./types";
 import { z } from "zod";
@@ -44,6 +46,133 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     if (!mr) fail(404, "Merge request not found");
     return { repo, mr };
   };
+  const currentForkSHA = async (c: Context<App>, mr: any) => {
+    const source = await activeRepo(c.env, mr.source_repo_id);
+    if (!source)
+      fail(409, "Source fork unavailable; the reviewed snapshot is retained");
+    const tip = await h.engine(
+      c,
+      source,
+      "/resolve?ref=" + encodeURIComponent("refs/heads/" + mr.source),
+    );
+    return tip.sha;
+  };
+  const snapshotFor = async (
+    c: Context<App>,
+    target: Repo,
+    sourceBranch: string,
+    targetBranch: string,
+    sourceId?: string | null,
+    refresh = false,
+  ) => {
+    const user = identity(c),
+      source = sourceId ? await activeRepo(c.env, sourceId) : target;
+    if (!source) fail(404, "Source repository not found");
+    if (source.id === target.id) {
+      if (roleRank[await repositoryRole(c.env, target, user)] < 2)
+        fail(403, "Write access required");
+    } else await contributionSource(c.env, target, source, user, refresh);
+    if (source.id === target.id && sourceBranch === targetBranch)
+      fail(400, "Select different branches");
+    const [left, right] = await Promise.all([
+      h.engine(
+        c,
+        source,
+        "/resolve?ref=" + encodeURIComponent("refs/heads/" + sourceBranch),
+      ),
+      h.engine(
+        c,
+        target,
+        "/resolve?ref=" + encodeURIComponent("refs/heads/" + targetBranch),
+      ),
+    ]);
+    if (source.id !== target.id)
+      await h.engine(c, target, "/internal/merge-import", {
+        source_id: source.id,
+        source_sha: left.sha,
+        actor_id: user.id,
+        refresh,
+      });
+    return { source, source_sha: left.sha, target_sha: right.sha };
+  };
+  app.get(base + "/merge-sources", async (c) => {
+    const target = await access(c),
+      user = identity(c);
+    const rows = await c.env.DB.prepare(
+      familySQL +
+        " SELECT r.id,r.namespace,r.name,r.default_branch,r.visibility FROM repositories r JOIN family f ON f.id=r.id WHERE r.deleted_at IS NULL AND r.sync_status!='initializing' AND ((r.workspace_id IS NULL AND r.owner_id=?) OR EXISTS(SELECT 1 FROM members m WHERE m.repo_id=r.id AND m.user_id=? AND m.role IN('developer','maintainer','owner')) OR EXISTS(SELECT 1 FROM workspace_members w WHERE w.workspace_id=r.workspace_id AND w.user_id=? AND w.role IN('developer','maintainer','owner'))) ORDER BY r.namespace,r.name LIMIT 100",
+    )
+      .bind(target.id, user.id, user.id, user.id)
+      .all();
+    return c.json({ repositories: rows.results });
+  });
+  app.post(base + "/merges", async (c) => {
+    const target = await access(c),
+      user = identity(c),
+      b = z
+        .object({
+          title: z.string().trim().min(1).max(240),
+          body: z.string().max(20000).default(""),
+          source: branch,
+          target: branch,
+          source_repo: z.string().min(1).max(260).optional(),
+        })
+        .parse(await jsonInput(c));
+    const source = b.source_repo
+      ? await c.env.DB.prepare(
+          "SELECT * FROM repositories WHERE deleted_at IS NULL AND (id=? OR namespace||'/'||name=?)",
+        )
+          .bind(b.source_repo, b.source_repo)
+          .first<Repo>()
+      : target;
+    if (!source) fail(404, "Source repository not found");
+    const snapshot = await snapshotFor(
+      c,
+      target,
+      b.source,
+      b.target,
+      source.id,
+    );
+    const mr = await c.env.DB.prepare(
+      "INSERT INTO merge_requests(repo_id,author_id,title,body,source,target,source_sha,target_sha,source_repo_id,source_namespace,source_name) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM repositories WHERE id=? AND deleted_at IS NULL) RETURNING *",
+    )
+      .bind(
+        target.id,
+        user.id,
+        b.title,
+        b.body,
+        b.source,
+        b.target,
+        snapshot.source_sha,
+        snapshot.target_sha,
+        source.id === target.id ? null : source.id,
+        source.namespace,
+        source.name,
+        target.id,
+      )
+      .first();
+    if (!mr) fail(409, "Target repository changed");
+    await h.audit(c, "merge_request.create", target.id, b.title);
+    return c.json(mr, 201);
+  });
+  const discussionPage = async (
+    c: Context<App>,
+    mrId: number,
+    cursor: string | undefined,
+  ) => {
+    const after = Number(cursor || 0);
+    if (!Number.isSafeInteger(after) || after < 0)
+      fail(400, "Invalid discussion cursor");
+    const rows = await c.env.DB.prepare(
+      "SELECT d.rowid AS cursor,d.*,u.username AS author,(SELECT COUNT(*) FROM merge_discussion_comments WHERE discussion_id=d.id) AS comments_count FROM merge_discussions d JOIN users u ON u.id=d.author_id WHERE d.mr_id=? AND d.rowid>? ORDER BY d.rowid LIMIT 100",
+    )
+      .bind(mrId, after)
+      .all<any>();
+    return {
+      discussions: rows.results,
+      next: rows.results.length === 100 ? rows.results.at(-1).cursor : null,
+    };
+  };
   app.get(base + "/protections", async (c) => {
     const r = await access(c);
     return c.json({
@@ -64,12 +193,20 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
           require_mr: z.boolean().default(true),
           approvals: z.number().int().min(0).max(10).default(1),
           require_ci: z.boolean().default(false),
+          require_resolved: z.boolean().default(false),
         })
         .parse(await jsonInput(c));
     await c.env.DB.prepare(
-      "INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci) VALUES(?,?,?,?,?) ON CONFLICT(repo_id,branch) DO UPDATE SET require_mr=excluded.require_mr,approvals=excluded.approvals,require_ci=excluded.require_ci",
+      "INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci,require_resolved) VALUES(?,?,?,?,?,?) ON CONFLICT(repo_id,branch) DO UPDATE SET require_mr=excluded.require_mr,approvals=excluded.approvals,require_ci=excluded.require_ci,require_resolved=excluded.require_resolved",
     )
-      .bind(r.id, b.branch, +b.require_mr, b.approvals, +b.require_ci)
+      .bind(
+        r.id,
+        b.branch,
+        +b.require_mr,
+        b.approvals,
+        +b.require_ci,
+        +b.require_resolved,
+      )
       .run();
     await h.audit(c, "protection.update", r.id, b.branch);
     return c.json({ ok: true });
@@ -87,30 +224,42 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
   });
   app.get(base + "/merges/:id", async (c) => {
     const { repo, mr } = await mrFor(c);
-    const [comparison, gate] = await Promise.all([
+    const [comparison, gate, discussions] = await Promise.all([
       h.engine(
         c,
         repo,
         `/compare?source=${mr.source_sha}&target=${mr.target_sha}`,
       ),
       reviewGate(c.env, repo, mr),
+      discussionPage(c, mr.id, c.req.query("discussions_after")),
     ]);
     let stale = false;
     try {
-      const current = await h.engine(
-        c,
-        repo,
-        `/compare?source=${encodeURIComponent("refs/heads/" + mr.source)}&target=${encodeURIComponent("refs/heads/" + mr.target)}`,
-      );
-      stale =
-        current.source_sha !== mr.source_sha ||
-        current.target_sha !== mr.target_sha;
+      const sourceRepo = mr.source_repo_id
+        ? await activeRepo(c.env, mr.source_repo_id)
+        : repo;
+      if (!sourceRepo) throw Error("Source unavailable");
+      const [source, target] = await Promise.all([
+        h.engine(
+          c,
+          sourceRepo,
+          "/resolve?ref=" + encodeURIComponent("refs/heads/" + mr.source),
+        ),
+        h.engine(
+          c,
+          repo,
+          "/resolve?ref=" + encodeURIComponent("refs/heads/" + mr.target),
+        ),
+      ]);
+      stale = source.sha !== mr.source_sha || target.sha !== mr.target_sha;
     } catch {
       stale = true;
     }
     return c.json({
       ...mr,
       diff: comparison.diff,
+      discussions: discussions.discussions,
+      discussions_next: discussions.next,
       gate: { ...gate, allowed: gate.allowed && !stale },
       stale,
     });
@@ -126,35 +275,16 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
           target_sha: sha,
         })
         .parse(await jsonInput(c));
-    if (mr.state !== "open") fail(409, "Merge request is closed");
-    if (b.source_sha !== mr.source_sha || b.target_sha !== mr.target_sha)
-      fail(409, "Review version changed; refresh");
-    if (
-      b.verdict !== "comment" &&
-      (user.id === mr.author_id || roleRank[c.get("repoRole")] < 2)
-    )
-      fail(403, "An independent developer must review");
-    const row = await c.env.DB.prepare(
-      "INSERT INTO merge_reviews(mr_id,user_id,source_sha,target_sha,verdict,body) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM merge_requests WHERE id=? AND state='open' AND source_sha=? AND target_sha=?) RETURNING *",
-    )
-      .bind(
-        mr.id,
-        user.id,
-        b.source_sha,
-        b.target_sha,
-        b.verdict,
-        b.body,
-        mr.id,
-        b.source_sha,
-        b.target_sha,
-      )
-      .first();
-    if (!row) fail(409, "Merge request changed");
+    const row = await h.engine(c, repo, "/review-submit", {
+      ...b,
+      id: mr.id,
+      actor_id: user.id,
+    });
     await h.audit(c, "merge_request.review", repo.id, String(mr.id));
     return c.json(row, 201);
   });
   app.patch(base + "/merges/:id", async (c) => {
-    const { repo, mr } = await mrFor(c, "write"),
+    const { repo, mr } = await mrFor(c, "read"),
       u = identity(c);
     if (u.id !== mr.author_id && roleRank[c.get("repoRole")] < 3)
       fail(403, "Author or maintainer required");
@@ -163,6 +293,7 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
       .object({
         state: z.enum(["open", "closed"]).optional(),
         refresh: z.boolean().optional(),
+        revision: z.number().int().min(0).optional(),
         title: z.string().trim().min(1).max(240).optional(),
         body: z.string().max(20000).optional(),
       })
@@ -170,26 +301,25 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     let source = mr.source_sha,
       target = mr.target_sha;
     if (b.refresh) {
-      const cmp = await h.engine(
+      const snapshot = await snapshotFor(
         c,
         repo,
-        `/compare?source=${encodeURIComponent("refs/heads/" + mr.source)}&target=${encodeURIComponent("refs/heads/" + mr.target)}`,
+        mr.source,
+        mr.target,
+        mr.source_repo_id,
+        true,
       );
-      source = cmp.source_sha;
-      target = cmp.target_sha;
+      source = snapshot.source_sha;
+      target = snapshot.target_sha;
     }
-    await c.env.DB.prepare(
-      "UPDATE merge_requests SET state=?,source_sha=?,target_sha=?,title=?,body=? WHERE id=? AND state!='merged'",
-    )
-      .bind(
-        b.state || mr.state,
-        source,
-        target,
-        b.title ?? mr.title,
-        b.body ?? mr.body,
-        mr.id,
-      )
-      .run();
+    await h.engine(c, repo, "/review-update", {
+      id: mr.id,
+      actor_id: u.id,
+      ...b,
+      revision: b.revision ?? mr.revision,
+      source_sha: source,
+      target_sha: target,
+    });
     await h.audit(c, "merge_request.update", repo.id, String(mr.id));
     return c.json({ ok: true });
   });
@@ -210,10 +340,99 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     const result = await h.engine(c, repo, "/review-merge", {
       id: mr.id,
       ...options,
+      actor_id: identity(c).id,
+      source_sha:
+        mr.source_repo_id && mr.state === "open"
+          ? await currentForkSHA(c, mr)
+          : mr.source_sha,
     });
     await h.audit(c, "merge_request.merge", repo.id, String(mr.id));
     return c.json(result);
   });
+  app.post(base + "/merges/:id/pipeline", async (c) => {
+    const { repo, mr } = await mrFor(c, "maintain");
+    if (mr.state !== "open") fail(409, "Merge request is closed");
+    const saved = await c.env.DB.prepare(
+      "SELECT config FROM ci_pipelines WHERE repo_id=?",
+    )
+      .bind(repo.id)
+      .first<{ config: string }>();
+    if (!saved) fail(409, "Save a target repository pipeline first");
+    const run = await enqueueRun(
+      c.env,
+      repo,
+      "merge/" + mr.id,
+      mr.source_sha,
+      pipelineSchema.parse(JSON.parse(saved.config)),
+      "merge_request",
+      identity(c).id,
+    );
+    await h.audit(c, "ci.run.create", repo.id, run!.id);
+    return c.json(run, 201);
+  });
+  app.get(base + "/merges/:id/discussions", async (c) => {
+    const { mr } = await mrFor(c);
+    return c.json(await discussionPage(c, mr.id, c.req.query("after")));
+  });
+  app.post(base + "/merges/:id/discussions", async (c) => {
+    const { repo, mr } = await mrFor(c),
+      user = identity(c),
+      b = await jsonInput(c);
+    const result = await h.engine(c, repo, "/review-discussion", {
+      ...b,
+      id: mr.id,
+      actor_id: user.id,
+    });
+    await h.audit(c, "merge_request.discussion", repo.id, String(mr.id));
+    return c.json(result, 201);
+  });
+  app.get(base + "/merges/:id/discussions/:discussion", async (c) => {
+    const { mr } = await mrFor(c),
+      thread = await c.env.DB.prepare(
+        "SELECT * FROM merge_discussions WHERE id=? AND mr_id=?",
+      )
+        .bind(c.req.param("discussion"), mr.id)
+        .first();
+    if (!thread) fail(404, "Discussion not found");
+    const after = Number(c.req.query("after") || 0);
+    if (!Number.isSafeInteger(after) || after < 0)
+      fail(400, "Invalid comment cursor");
+    const comments = await c.env.DB.prepare(
+      "SELECT x.*,u.username AS author FROM merge_discussion_comments x JOIN users u ON u.id=x.author_id WHERE x.discussion_id=? AND x.id>? ORDER BY x.id LIMIT 100",
+    )
+      .bind(c.req.param("discussion"), after)
+      .all<any>();
+    return c.json({
+      thread,
+      comments: comments.results,
+      next: comments.results.length === 100 ? comments.results.at(-1).id : null,
+    });
+  });
+  for (const [method, suffix, operation] of [
+    ["post", "/comments", "/review-reply"],
+    ["patch", "", "/review-resolve"],
+  ] as const)
+    app[method](
+      base + "/merges/:id/discussions/:discussion" + suffix,
+      async (c) => {
+        const { repo, mr } = await mrFor(c),
+          user = identity(c),
+          b = await jsonInput(c);
+        const result = await h.engine(c, repo, operation, {
+          ...b,
+          id: mr.id,
+          actor_id: user.id,
+          discussion: c.req.param("discussion"),
+        });
+        await h.audit(
+          c,
+          "merge_request.discussion.update",
+          repo.id,
+          String(mr.id),
+        );
+        return c.json(result, method === "post" ? 201 : 200);
+      },
+    );
   app.get(base + "/planning", async (c) => {
     const r = await access(c);
     const [labels, milestones] = await Promise.all([

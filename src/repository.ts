@@ -1,3 +1,6 @@
+import { importContribution } from "./fork-reviews";
+import { reviewMutation, reviewActor } from "./review-mutations";
+import { z } from "zod";
 import { protectRefs, reviewGate } from "./review";
 import { ObjectCache } from "./git/object-cache";
 import { upstreamClient, pullRepository, scheduleSync } from "./sync";
@@ -227,6 +230,48 @@ export class Repository extends DurableObject<Env> {
     const ephemeral = request.headers.get("x-namespace") === "ephemeral",
       repo = select(ephemeral),
       path = url.pathname;
+    if (path === "/internal/merge-import" && request.method === "POST") {
+      if (!metadata) fail(404, "Repository unavailable");
+      const b = z
+        .object({
+          source_id: z.string().uuid(),
+          source_sha: z.string().regex(/^[a-f0-9]{40}$/),
+          actor_id: z.string(),
+          refresh: z.boolean().optional(),
+        })
+        .parse(JSON.parse(text(await boundedBody(request, 8192))));
+      return Response.json(
+        await importContribution(this.env, repo, metadata, b),
+      );
+    }
+    if (
+      [
+        "/review-update",
+        "/review-submit",
+        "/review-discussion",
+        "/review-reply",
+        "/review-resolve",
+      ].includes(path) &&
+      request.method === "POST"
+    ) {
+      if (!metadata) fail(404, "Repository unavailable");
+      const raw = JSON.parse(text(await boundedBody(request, 128 * 1024)));
+      const reviewId = z.coerce.number().int().positive().parse(raw.id);
+      const completed = await this.ctx.storage.get<{ sha: string }>(
+        "merge-result:" + reviewId,
+      );
+      if (completed) {
+        await this.env.DB.prepare(
+          "UPDATE merge_requests SET state='merged',merged_sha=? WHERE id=? AND repo_id=?",
+        )
+          .bind(completed.sha, reviewId, id)
+          .run();
+        fail(409, "Merge request already merged");
+      }
+      return Response.json(
+        await reviewMutation(this.env, repo, metadata, path, raw),
+      );
+    }
     if (path === "/review-merge" && request.method === "POST") {
       const body = JSON.parse(text(await boundedBody(request, 8192)));
       const mr = await this.env.DB.prepare(
@@ -235,6 +280,8 @@ export class Repository extends DurableObject<Env> {
         .bind(body.id, id)
         .first<any>();
       if (!mr || !metadata) fail(404, "Merge request not found");
+      if ((await reviewActor(this.env, metadata, body.actor_id)).rank < 3)
+        fail(403, "Maintainer required");
       const previous = await this.ctx.storage.get<{ sha: string }>(
         "merge-result:" + mr.id,
       );
@@ -249,7 +296,9 @@ export class Repository extends DurableObject<Env> {
       }
       if (mr.state !== "open") fail(409, "Merge request closed");
       if (
-        refs["refs/heads/" + mr.source] !== mr.source_sha ||
+        (mr.source_repo_id
+          ? body.source_sha !== mr.source_sha
+          : refs["refs/heads/" + mr.source] !== mr.source_sha) ||
         refs["refs/heads/" + mr.target] !== mr.target_sha
       )
         fail(409, "Branches moved; refresh the merge request and review again");

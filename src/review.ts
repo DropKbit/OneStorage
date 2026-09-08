@@ -7,6 +7,7 @@ export interface Protection {
   require_mr: number;
   approvals: number;
   require_ci: number;
+  require_resolved?: number;
 }
 export async function reviewGate(env: Env, repo: Repo, mr: any) {
   const rule = await env.DB.prepare(
@@ -60,7 +61,23 @@ export async function reviewGate(env: Env, repo: Repo, mr: any) {
   )
     .bind(repo.id, mr.source_sha)
     .first<any>();
+  const unresolved =
+    (
+      await env.DB.prepare(
+        "SELECT count(*) AS n FROM merge_discussions d JOIN users u ON u.id=d.author_id WHERE d.mr_id=? AND d.resolved=0 AND u.disabled=0 AND ((? IS NULL AND u.id=?) OR EXISTS(SELECT 1 FROM members m WHERE m.repo_id=? AND m.user_id=u.id AND m.role IN('developer','maintainer','owner')) OR EXISTS(SELECT 1 FROM workspace_members w WHERE w.workspace_id=? AND w.user_id=u.id AND w.role IN('developer','maintainer','owner')))",
+      )
+        .bind(
+          mr.id,
+          repo.workspace_id || null,
+          repo.owner_id,
+          repo.id,
+          repo.workspace_id || null,
+        )
+        .first<{ n: number }>()
+    )?.n || 0;
   const reasons: string[] = [];
+  if (rule?.require_resolved && unresolved)
+    reasons.push("Unresolved discussions: " + unresolved);
   if (changes) reasons.push("Reviewer requested changes");
   if (approvals < (rule?.approvals || 0))
     reasons.push("Required approvals: " + rule!.approvals);
@@ -68,6 +85,7 @@ export async function reviewGate(env: Env, repo: Repo, mr: any) {
     reasons.push("Latest pipeline for this source commit must succeed");
   return {
     rule,
+    unresolved,
     approvals,
     changes,
     ci,
@@ -97,7 +115,12 @@ export async function protectRefs(
     if (!next) fail(403, "Protected branch cannot be deleted: " + rule.branch);
     if (old && !(await store.ancestor(old, next)))
       fail(403, "Protected branch rejects force push: " + rule.branch);
-    if (rule.require_mr || rule.approvals || rule.require_ci) {
+    if (
+      rule.require_mr ||
+      rule.approvals ||
+      rule.require_ci ||
+      rule.require_resolved
+    ) {
       if (!merge || merge.target !== rule.branch)
         fail(
           403,

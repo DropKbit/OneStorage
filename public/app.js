@@ -1,5 +1,5 @@
 const account = () => import("./account.js?v=1efd29f8c34c0b77");
-const collaboration = () => import("./collaboration.js?v=a7655626e4eb214d");
+const collaboration = () => import("./collaboration.js?v=5884659dbf419525");
 const platform = () => import("./manage.js?v=7bf783bc42bd4ec0");
 import {
   keyPage,
@@ -587,40 +587,16 @@ async function issuesPage(r, base, ap, sub, version) {
   });
 }
 async function mergesPage(r, base, ap, sub, version) {
-  if (sub) {
-    const m = await api(ap + "/merges/" + sub);
-    if (version !== routeVersion) return;
-    repoLayout(
-      r,
-      "merges",
-      `<div class="titlebar"><div><h2>!${m.id} ${esc(m.title)}</h2><p class="muted">${esc(m.source)} → ${esc(m.target)} · ${esc(m.author)}</p></div><span class="pill ${m.state === "merged" ? "purple" : "green"}">${m.state === "merged" ? "已合并" : "待合并"}</span></div><div class="info">合并采用 fast-forward，并校验创建时的源、目标提交。分支变化后请重新创建合并请求。</div><div class="panel"><div class="detail-body">${esc(m.body || "暂无描述。")}</div><div class="panelhead"><strong>代码变更</strong><code>${m.target_sha.slice(0, 8)} → ${m.source_sha.slice(0, 8)}</code></div><pre class="diff">${esc(m.diff || "没有文件差异。")}</pre></div>${m.state === "open" && ["owner", "maintainer"].includes(r.role) ? '<div class="toolbar"><button class="btn primary" id="merge">合并请求</button></div>' : ""}`,
-    );
-    document.querySelector("#merge")?.addEventListener("click", async (e) => {
-      e.target.disabled = true;
-      try {
-        await api(ap + "/merges/" + sub + "/merge", { method: "POST" });
-        notice("合并成功");
-        render();
-      } catch (err) {
-        notice(err.message);
-        e.target.disabled = false;
-      }
-    });
-    return;
-  }
-  const [{ merges }, { branches }] = await Promise.all([
-    api(ap + "/merges"),
-    api(ap + "/branches"),
-  ]);
-  if (version !== routeVersion) return;
-  repoLayout(
-    r,
-    "merges",
-    `<div class="stack">${writeable(r) && branches.length > 1 ? `<details class="panel"><summary class="panelhead">＋ 新建合并请求</summary><form class="form" id="new-merge">${field("标题", "title")}<div class="inline">${["source", "target"].map((name, i) => `<div class="field"><label for="${name}">${i ? "目标分支" : "源分支"}</label><select name="${name}" id="${name}">${branches.map((b) => `<option value="${esc(b.name)}" ${i && b.name === r.default_branch ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></div>`).join("")}</div>${textarea("描述", "body")}<button type="submit" class="btn primary">创建合并请求</button></form></details>` : ""}<div class="panel"><div class="panelhead"><strong>合并请求</strong><span class="muted">最近 100 条</span></div>${merges.length ? merges.map((m) => `<div class="issue-row"><span class="status-icon ${m.state === "merged" ? "closed" : ""}">⑂</span><div>${link(base + "/merges/" + m.id, esc(m.title), "subject")}<div class="muted">!${m.id} · ${esc(m.source)} → ${esc(m.target)} · ${m.state === "merged" ? "已合并" : "待合并"}</div></div></div>`).join("") : '<div class="empty"><h2>一起把代码变得更好</h2><p>推送一个功能分支，然后在这里发起合并请求。</p></div>'}</div></div>`,
-  );
-  bindForm("#new-merge", async (data) => {
-    const m = await api(ap + "/merges", { method: "POST", body: data });
-    go(base + "/merges/" + m.id);
+  return (await collaboration()).mergesPage(r, base, ap, {
+    api,
+    repoLayout,
+    esc,
+    field,
+    textarea,
+    bindForm,
+    go,
+    user,
+    current: () => version === routeVersion,
   });
 }
 async function membersPage(r, base, ap, version) {

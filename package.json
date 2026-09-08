@@ -1,6 +1,6 @@
 {
   "name": "onestorage",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
   "license": "AGPL-3.0-only",
@@ -34,7 +34,8 @@
     "runner": "node scripts/runner.mjs",
     "test:collaboration": "node scripts/e2e-collaboration.mjs",
     "deploy:apps": "wrangler deploy --config wrangler.apps.jsonc",
-    "test:account": "node scripts/e2e-account.mjs"
+    "test:account": "node scripts/e2e-account.mjs",
+    "test:reviews": "node scripts/e2e-fork-reviews.mjs"
   },
   "dependencies": {
     "diff": "9.0.0",

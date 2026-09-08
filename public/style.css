@@ -1248,3 +1248,42 @@ button.text {
   max-height: 75vh;
   object-fit: contain;
 }
+.review-diff {
+  overflow: auto;
+  font: 12px/1.7 var(--font-mono, monospace);
+}
+.review-diff-row {
+  display: grid;
+  grid-template-columns: 42px 42px minmax(max-content, 1fr);
+}
+.review-diff-row > span {
+  text-align: right;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  padding-right: 6px;
+}
+.review-diff-row code {
+  padding: 0 10px;
+  white-space: pre;
+}
+.review-diff-row.added {
+  background: #d6f8df66;
+}
+.review-diff-row.removed {
+  background: #ffdfdf66;
+}
+.diff-line-number {
+  border: 0;
+  padding: 0 2px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.diff-line-number:hover {
+  color: #6d46cc;
+  text-decoration: underline;
+}
+.discussion {
+  border-top: 1px solid var(--border);
+}

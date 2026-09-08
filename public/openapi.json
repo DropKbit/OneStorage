@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -5043,6 +5043,39 @@
           "409": {
             "description": "State conflict"
           }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "branch": {
+                    "type": "string"
+                  },
+                  "require_mr": {
+                    "type": "boolean"
+                  },
+                  "approvals": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10
+                  },
+                  "require_ci": {
+                    "type": "boolean"
+                  },
+                  "require_resolved": {
+                    "type": "boolean",
+                    "description": "Require all unresolved discussions by current target developers to be resolved, including older versions."
+                  }
+                },
+                "required": [
+                  "branch"
+                ]
+              }
+            }
+          }
         }
       },
       "delete": {
@@ -5131,6 +5164,14 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "discussions_after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
             }
           }
         ],
@@ -5222,6 +5263,39 @@
           },
           "409": {
             "description": "State conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "enum": [
+                      "open",
+                      "closed"
+                    ]
+                  },
+                  "refresh": {
+                    "type": "boolean"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": []
+              }
+            }
           }
         }
       }
@@ -7156,6 +7230,764 @@
           },
           "429": {
             "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merge-sources": {
+      "get": {
+        "operationId": "list_merge_sources",
+        "summary": "list merge sources",
+        "description": "List up to 100 writable repositories in the same fork family. Requires sign-in and target read access. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges": {
+      "get": {
+        "operationId": "list_merge_requests",
+        "summary": "list merge requests",
+        "description": "List the latest 100 merge requests visible in the target repository. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_merge_request",
+        "summary": "create merge request",
+        "description": "Publish a fixed source branch snapshot into the target. Requires source write and target read permission. Cross-fork requests must share fork ancestry. Source history and reachable LFS objects are disclosed to target readers. Other source branches remain private. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "target": {
+                    "type": "string"
+                  },
+                  "source_repo": {
+                    "type": "string",
+                    "description": "Source repository ID or namespace/name; omit for same-repository branches."
+                  }
+                },
+                "required": [
+                  "title",
+                  "source",
+                  "target"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/pipeline": {
+      "post": {
+        "operationId": "run_merge_pipeline",
+        "summary": "run merge pipeline",
+        "description": "Target maintainer explicitly runs the target configuration against the reviewed source SHA. Source pipeline settings are not copied. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/discussions": {
+      "get": {
+        "operationId": "list_merge_discussions",
+        "summary": "list merge discussions",
+        "description": "Page discussions by numeric after cursor; 100 per page. Unresolved review gates consider all discussions regardless of pagination. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      },
+      "post": {
+        "operationId": "create_merge_discussion",
+        "summary": "create merge discussion",
+        "description": "Create a general or file-line discussion bound to both reviewed SHAs. Path, side and line must be supplied together. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "source_sha": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{40}$"
+                  },
+                  "target_sha": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{40}$"
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 20000
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "side": {
+                    "enum": [
+                      "old",
+                      "new"
+                    ]
+                  },
+                  "line": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "source_sha",
+                  "target_sha",
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/discussions/{discussion}": {
+      "get": {
+        "operationId": "read_merge_discussion",
+        "summary": "read merge discussion",
+        "description": "Read discussion and up to 100 comments; numeric after cursor retrieves subsequent comments. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "discussion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "security": [
+          {},
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "resolve_merge_discussion",
+        "summary": "resolve merge discussion",
+        "description": "Resolve or reopen a thread. Requires discussion author, merge author or target developer. Serialized with merge publication. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "discussion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resolved": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "resolved"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/merges/{id}/discussions/{discussion}/comments": {
+      "post": {
+        "operationId": "reply_merge_discussion",
+        "summary": "reply merge discussion",
+        "description": "Reply to an open merge request discussion. See docs/REVIEWS-v07.md.",
+        "tags": [
+          "Merge requests"
+        ],
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "discussion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Sign in required"
+          },
+          "403": {
+            "description": "Insufficient role or read-only token"
+          },
+          "404": {
+            "description": "Not found or inaccessible"
+          },
+          "409": {
+            "description": "Review version, branch or discussion state conflict"
+          },
+          "429": {
+            "description": "Pipeline capacity exceeded"
           }
         }
       }

@@ -11,7 +11,7 @@ function fixture() {
   for (const f of readdirSync("migrations").sort())
     db.exec(readFileSync("migrations/" + f, "utf8"));
   db.exec(
-    "INSERT INTO users(id,username,password) VALUES('o','owner','x'),('a','author','x'),('d','dev','x');INSERT INTO repositories(id,owner_id,namespace,name,visibility) VALUES('r','o','owner','repo','private');INSERT INTO members VALUES('r','a','developer'),('r','d','developer');INSERT INTO merge_requests(id,repo_id,author_id,title,source,target,source_sha,target_sha) VALUES(1,'r','a','MR','feature','main','src','dst');INSERT INTO branch_protections VALUES('r','main',1,1,1);",
+    "INSERT INTO users(id,username,password) VALUES('o','owner','x'),('a','author','x'),('d','dev','x');INSERT INTO repositories(id,owner_id,namespace,name,visibility) VALUES('r','o','owner','repo','private');INSERT INTO members VALUES('r','a','developer'),('r','d','developer');INSERT INTO merge_requests(id,repo_id,author_id,title,source,target,source_sha,target_sha) VALUES(1,'r','a','MR','feature','main','src','dst');INSERT INTO branch_protections(repo_id,branch,require_mr,approvals,require_ci) VALUES('r','main',1,1,1);",
   );
   const DB = {
     prepare(sql: string) {
@@ -253,4 +253,21 @@ test("comment pagination cannot hide an unresolved changes request", async () =>
   assert.equal(gate.reviews.length, 200);
   assert.equal(gate.changes, 1);
   assert.equal(gate.allowed, false);
+});
+test("unresolved developer discussions block across review versions while public guest feedback cannot veto a merge", async () => {
+  const { env, repo, mr, db } = fixture();
+  db.exec(
+    "UPDATE repositories SET visibility='public';INSERT INTO users(id,username,password) VALUES('g','guest','x');UPDATE branch_protections SET approvals=0,require_ci=0,require_resolved=1;INSERT INTO merge_discussions(id,mr_id,author_id,source_sha,target_sha) VALUES('dev-thread',1,'d','older','dst'),('guest-thread',1,'g','src','dst')",
+  );
+  let gate = await reviewGate(env, repo, mr);
+  assert.equal(gate.unresolved, 1);
+  assert.equal(gate.allowed, false);
+  db.exec("UPDATE merge_discussions SET resolved=1 WHERE id='dev-thread'");
+  gate = await reviewGate(env, repo, mr);
+  assert.equal(gate.unresolved, 0);
+  assert.equal(gate.allowed, true);
+  db.exec(
+    "UPDATE merge_discussions SET resolved=0 WHERE id='dev-thread';DELETE FROM members WHERE user_id='d'",
+  );
+  assert.equal((await reviewGate(env, repo, mr)).unresolved, 0);
 });
