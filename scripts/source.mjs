@@ -1,3 +1,4 @@
+import "./docs.mjs";
 import "./openapi.mjs";
 import "./assets.mjs";
 // Build-time only: publish an explicit allowlist of source files, never local state/secrets.
@@ -13,6 +14,9 @@ const files = [
   "wrangler.apps.jsonc",
   "wrangler.build.jsonc",
   "README.md",
+  "README.en.md",
+  "CONTRIBUTING.en.md",
+  "SECURITY.en.md",
   "LICENSE",
   "SECURITY.md",
   "CONTRIBUTING.md",

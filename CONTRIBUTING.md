@@ -1,29 +1,31 @@
-# Contributing
+# 参与贡献
 
-OneStorage accepts contributions under AGPL-3.0-only.
+**简体中文** · [English](CONTRIBUTING.en.md)
 
-1. Read `docs/ARCHITECTURE.md`, particularly R2-before-refs ordering and authorization.
-2. Install Node.js 22.13+ and npm. Native Git and tar are required for tests, not the service runtime.
-3. Run `npm ci` and `npm run dev`. Wrangler starts the Git service on 8787 and the private WASM compiler service together. `npm run dev:build` can run the compiler separately on 8788.
-4. For protocol/storage/auth changes, run `npm run check`, `npm run test:e2e` and `npm run build:production`. Use native Git as an independent compatibility oracle and add focused failure regressions.
-5. Format with `npm run format`. Describe behavior, verification and migration impact. Add numbered SQL migrations instead of editing applied ones.
+OneStorage 按 AGPL-3.0-only 接收贡献。
 
-Do not introduce Containers, shell processes or a native Git dependency into the service runtime. Do not execute repository code/hooks, trust caller-selected storage IDs, acknowledge writes before persistence, bypass role checks or store raw passwords/tokens. Only operator-approved webhook receivers may receive events.
+1. 阅读 [架构设计](docs/ARCHITECTURE.md)，尤其是先写 R2、后发布引用的顺序以及授权检查。
+2. 安装 Node.js 22.13+ 和 npm。原生 Git、tar 仅供测试使用，不是服务运行时依赖。
+3. 运行 `npm ci`、`npm run dev`。Wrangler 同时启动 8787 上的 Git 服务与私有 WASM 编译服务；`npm run dev:build` 可单独在 8788 启动编译服务。
+4. 协议、存储或鉴权变更需运行 `npm run check`、`npm run test:e2e`、`npm run build:production`。用原生 Git 作独立兼容性对照，为实际失败补充有针对性的回归检查。
+5. 使用 `npm run format` 格式化；说明最终行为、验证结果和迁移影响。新增编号 SQL migration，不修改已应用的迁移。
 
-Local E2E creates `e2e_` fixtures and refuses non-loopback hosts. Do not weaken that guard to run against a production database. Cloud acceptance must use a separate, narrowly scoped script and temporary credentials/fixtures. Keep `.data`, `.wrangler`, `.dev.vars` and all credentials out of source control.
+不要在服务运行时引入 Containers、shell 进程或原生 Git；不要在 Git 接收路径执行仓库代码/Hook、信任调用者指定的存储 ID、在持久化之前确认写入、绕过角色校验或保存明文密码/令牌。只有操作者允许的 Webhook 接收端可以接收事件。CI 的仓库代码必须在单独授权的隔离环境执行。
 
-For browser changes, run `npm run test:ui` against the local server. This optional suite uses Playwright (`npm install --no-save --package-lock=false playwright`), with `CHROME_EXECUTABLE` pointing to an installed Chrome/Chromium executable, or a browser installed with `npx playwright install chromium`. An existing Playwright installation may instead be selected with the absolute `PLAYWRIGHT_MODULE` path to its `index.mjs`. The suite creates isolated browser contexts and temporary repositories/workspaces, disables its test user during cleanup, and writes screenshots under `.data/v12-ui`. It never uses the operator's browser profile. Wait for cleanup to finish before editing Worker code or rebuilding assets, since Wrangler reload interrupts in-flight acceptance requests.
+本地 E2E 创建 `e2e_` 测试数据并拒绝非回环主机。不要为访问生产数据库而放宽这个限制。云端验收使用独立、范围明确的脚本及临时凭据和数据。`.data`、`.wrangler`、`.dev.vars` 和所有凭据都不能提交到 Git。
 
-For cross-fork review changes, first run `KEEP_REVIEW_FIXTURE=1 npm run test:reviews`, then `npm run test:review-ui` with the same Playwright options. This local-only suite exercises source selection, branch loading, creation, both sides of a diff, discussion/reply pagination, review and CI gates, and an actual merge. It retains the main fixture for inspection, closes its pagination request, deletes the extra fork, and logs out its isolated browser sessions. Generate a fresh fixture before re-running: a completed merge is intentionally irreversible. Screenshots are under `.data/v13-review-ui`; fixture credentials stay in ignored `.data` files.
+## 界面与多语言
 
-For CI workflow changes, run `npm run test:workflows` for real Dynamic Worker jobs, versioned configuration, cancellation/publication gates and the shipped external Runner. Run `npm run test:workflow-git` for native Git push, automatic versioned workflow execution, clone and strict fsck. Then run `npm run test:workflow-ui` with the browser options above for configuration modes, task navigation, snapshot retry, mobile layout and reader permissions. These suites use temporary fixtures and must finish cleanup before Worker or asset changes.
+浏览器变更需在本地运行 `npm run test:ui`。可选 Playwright 安装命令为 `npm install --no-save --package-lock=false playwright`；用 `CHROME_EXECUTABLE` 指定已安装的 Chrome/Chromium，或执行 `npx playwright install chromium`。也可用 `PLAYWRIGHT_MODULE` 指定已有安装的 `index.mjs` 绝对路径。测试使用隔离浏览器上下文和临时仓库/空间，清理时停用测试用户，截图写入 `.data/v12-ui`，不会使用操作者浏览器配置。必须等待清理完成后再编辑 Worker 或重建资源，避免 Wrangler 热重载打断验收。
 
-For Git persistence changes, also run `npm run test:git-reliability`: it extends the native Git fixture with repeated API commits, concurrent expected-SHA writers, a stale-write rejection and native incremental push/fetch before clone/fsck. Provider failure cases belong in `tests/git-reliability.test.ts`; never inject storage failures into production. Remote suites require `ALLOW_REMOTE_ACCEPTANCE=1`, `TEST_ORIGIN` and a private `ONESTORAGE_TOKEN_FILE`. Capture only sanitized diagnostic fields when examining production incidents.
+界面只对应用自有字面量使用 `i18nText` / `i18nHTML`。英文文案维护在 `src/i18n/en.json`；不要将完整页面或用户内容传入翻译函数。占位符必须保留，日期使用 `getLocale()`。`npm run check` 检查文案覆盖和占位符；`npm run test:i18n` 验证双语页面、偏好保存与用户内容保持原样。文档中文保存在根目录及 `docs/`，英文保存在 `*.en.md` 和 `docs/en/`，修改时同步对应版本。源码打包会生成双语静态文档。
 
-For scheduled CI changes, run `npm run test:schedules` and `npm run test:schedule-ui`. The former waits for a real Cron/Queue occurrence (up to nine minutes on Cloudflare); the latter uses the same optional Playwright environment. Await fixture cleanup before rebuilding or deploying. Remote acceptance requires explicit opt-in and a private token file.
+## 专项验证
 
-For CI variables, run `npm run test:variables` (real Worker and shipped external Runner, lease/rotation/log masking) and `npm run test:variable-ui` (write-only values, edits, permissions, mobile). The same fixture cleanup and remote opt-in rules apply. Never use real deployment credentials as test variable values.
-
-For shared CI caches, run `npm run test:caches` and `npm run test:cache-ui`. Verify real Worker and shipped external Runner reuse, failed workflow isolation, generation invalidation, lease rejection, bounded archive extraction, quota and eventual R2 reclamation. Wait for all fixtures to finish cleanup before editing runtime files or deploying.
-
-For native TypeScript/npm builds, run `npm run test:builds` with a local application gateway connected to the same local D1/R2 (`TEST_APPS_ORIGIN`, default localhost:8789). See `docs/CI-BUILDS-v22.md` for service deployment order, dependency restrictions and acceptance. Never connect a local fixture gateway to production storage.
+- 跨 Fork 审阅：先 `KEEP_REVIEW_FIXTURE=1 npm run test:reviews`，再 `npm run test:review-ui`，使用同样的 Playwright 配置。覆盖来源选择、分支加载、创建请求、Diff 两侧、讨论/回复分页、审阅与 CI 门禁以及真实合并。主测试仓库留作检查，关闭分页请求、删除额外 Fork、退出隔离会话。再次运行前建立新数据，因为已完成的合并不可逆。截图在 `.data/v13-review-ui`，凭据只存在被忽略的 `.data`。
+- CI 工作流：运行 `npm run test:workflows`，覆盖真实 Dynamic Worker、版本化配置、取消/发布门禁和仓库提供的外部 Runner。`npm run test:workflow-git` 验证原生 push、自动工作流、clone 和严格 fsck；`npm run test:workflow-ui` 验证配置模式、任务导航、快照重试、移动布局和 Reader 权限。等全部临时数据清理后再改运行时代码或资源。
+- Git 持久化：另运行 `npm run test:git-reliability`，覆盖多次 API 提交、并发 expected-SHA 写入、旧 SHA 拒绝、增量 push/fetch 和 clone/fsck。提供方故障用例在 `tests/git-reliability.test.ts`；不得向生产存储注入故障。远程脚本需 `ALLOW_REMOTE_ACCEPTANCE=1`、`TEST_ORIGIN` 和私有 `ONESTORAGE_TOKEN_FILE`。生产诊断仅保存脱敏字段。
+- 定时 CI：运行 `npm run test:schedules` 与 `npm run test:schedule-ui`。前者等待真实 Cron/Queue 触发，在 Cloudflare 上最长约九分钟。后者使用可选 Playwright。清理完成前不重建或部署；远程验收需显式启用与私有令牌文件。
+- CI 变量：运行 `npm run test:variables`（真实 Worker、外部 Runner、租约、轮换、日志脱敏）和 `npm run test:variable-ui`（只写值、编辑、权限、移动端）。同样遵守清理与远程启用规则。测试值不能使用真实部署凭据。
+- 共享 CI 缓存：运行 `npm run test:caches` 和 `npm run test:cache-ui`，验证真实 Worker/外部 Runner 复用、失败工作流隔离、代际失效、租约拒绝、有界解包、配额和最终 R2 回收。等待清理后再改代码或部署。
+- 原生 TypeScript/npm 构建：运行 `npm run test:builds`，应用网关需连接相同的本地 D1/R2；`TEST_APPS_ORIGIN` 默认 localhost:8789。服务发布顺序、依赖限制和验收见 [云端构建](docs/CI-BUILDS-v22.md)。本地测试网关不得连接生产存储。

@@ -14,20 +14,39 @@ export function notebookText(value: unknown): string | null {
 }
 const record = (v: unknown): v is Record<string, any> =>
   !!v && typeof v === "object" && !Array.isArray(v);
-export function parseNotebook(source: string) {
+export function parseNotebook(
+  source: string,
+  locale: "zh-CN" | "en" = "zh-CN",
+) {
+  const message = (zh: string, en: string) => (locale === "en" ? en : zh);
   if (
     source.length > NOTEBOOK_LIMITS.bytes ||
     new TextEncoder().encode(source).length > NOTEBOOK_LIMITS.bytes
   )
-    throw Error("笔记本超过 2 MiB 预览上限，请查看源码或通过 Git 下载。");
+    throw Error(
+      message(
+        "笔记本超过 2 MiB 预览上限，请查看源码或通过 Git 下载。",
+        "This notebook exceeds the 2 MiB preview limit. View the source or download it with Git.",
+      ),
+    );
   let data: any;
   try {
     data = JSON.parse(source);
   } catch {
-    throw Error("笔记本不是有效的 JSON，请查看源码。");
+    throw Error(
+      message(
+        "笔记本不是有效的 JSON，请查看源码。",
+        "This notebook is not valid JSON. View the source.",
+      ),
+    );
   }
   if (!record(data) || data.nbformat !== 4 || !Array.isArray(data.cells))
-    throw Error("目前支持 nbformat 4 笔记本，请查看源码。");
+    throw Error(
+      message(
+        "目前支持 nbformat 4 笔记本，请查看源码。",
+        "Only nbformat 4 notebooks are supported. View the source.",
+      ),
+    );
   const language =
     typeof data.metadata?.language_info?.name === "string"
       ? data.metadata.language_info.name.slice(0, 80)
@@ -41,9 +60,17 @@ export function parseNotebook(source: string) {
       const cell = record(raw) ? raw : {},
         original = notebookText(cell.source),
         warnings: string[] = [];
-      if (original === null) warnings.push("单元源码格式无效");
+      if (original === null)
+        warnings.push(
+          message("单元源码格式无效", "Invalid cell source format"),
+        );
       if ((original?.length || 0) > NOTEBOOK_LIMITS.text)
-        warnings.push("单元内容已截断，请查看 JSON 源码");
+        warnings.push(
+          message(
+            "单元内容已截断，请查看 JSON 源码",
+            "Cell content was truncated. View the JSON source.",
+          ),
+        );
       const allOutputs = Array.isArray(cell.outputs) ? cell.outputs : [];
       const take = Math.min(
         NOTEBOOK_LIMITS.cellOutputs,
@@ -55,7 +82,10 @@ export function parseNotebook(source: string) {
       outputCount += outputs.length;
       if (allOutputs.length > outputs.length)
         warnings.push(
-          `已省略 ${allOutputs.length - outputs.length} 个超限输出`,
+          message(
+            `已省略 ${allOutputs.length - outputs.length} 个超限输出`,
+            `${allOutputs.length - outputs.length} outputs omitted because of preview limits`,
+          ),
         );
       return {
         index: index + 1,

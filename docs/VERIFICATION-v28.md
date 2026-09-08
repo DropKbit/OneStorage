@@ -1,5 +1,7 @@
 # v0.28 跨项目协作搜索验收
 
+**简体中文** · [English](en/VERIFICATION-v28.md)
+
 本阶段增加 Workers/D1 的统一项目、Issue、合并请求和当前 Wiki 搜索；不是完整 GitLab/Gogs 目标的完成声明。功能契约和边界见 [SEARCH-v28](SEARCH-v28.md)。
 
 ## 自动检查

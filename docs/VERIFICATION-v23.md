@@ -1,5 +1,7 @@
 # v0.23 统一登录验收
 
+**简体中文** · [English](en/VERIFICATION-v23.md)
+
 日期：2026-09-09（Asia/Singapore）。实现与边界见 [OIDC-v23](OIDC-v23.md)。生产代码候选提交 `e5fbb63`，主 Worker 版本 `f47e2cfd-52c5-4219-ac47-976f2b7f4cf0`；后续发布仅补充此验收文档及对应源码归档，运行时代码一致。
 
 ## 自动化与真实运行

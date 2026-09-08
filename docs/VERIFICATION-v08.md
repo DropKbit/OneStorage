@@ -1,5 +1,7 @@
 # v0.8 验证记录
 
+**简体中文** · [English](en/VERIFICATION-v08.md)
+
 2026-09-08，Cloudflare 原生 CODEOWNERS、合并关闭 Issue、R2 并发 I/O。
 
 - TypeScript 检查通过，107 个单元测试通过。新增验证规则优先级、目标快照、防自批准、空间/角色继承、停用和撤权、陈旧批准、删除与文件/目录替换、Issue 指令解析、跨项目过滤、D1 事务故障恢复、人工重开后幂等性。

@@ -1,5 +1,7 @@
 # 项目归档与转移：后续实现门槛
 
+**简体中文** · [English](en/PROJECT-LIFECYCLE-PLAN.md)
+
 目标保持完整。v0.10 已实现可恢复归档及实际 Git/D1/CI 写屏障，契约见 [项目归档](ARCHIVE-v10.md)；v0.11 实现转移、别名授权和在途写入版本检查，见 [转移契约](TRANSFER-v11.md)。以下要求持续作为回归门槛。
 
 - 归档要同时冻结原生 Git/REST/临时引用/LFS、Issue/MR/Wiki/发布等写入，停止同步和新 CI，并使正在执行的 Runner 失去发布资格。读取、clone、导出仍可用；应用发布状态需要明确处理。

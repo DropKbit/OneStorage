@@ -1,5 +1,7 @@
 # 定时流水线（v0.19）
 
+**简体中文** · [English](en/CI-SCHEDULES-v19.md)
+
 项目 CI/CD 页面现在可创建、编辑、暂停、接管和删除计划。运行复用已有的 Worker / external / DAG 执行、日志、产物、取消和部署门禁。计划不是浏览器计时器：Cloudflare Cron 检查 D1，持久事件由 Queues 消费，隔离 JS/WASM 仍在 Dynamic Workers 执行，没有容器。
 
 ## 使用与时间语义

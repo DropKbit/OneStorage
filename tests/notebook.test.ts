@@ -122,3 +122,13 @@ test("notebook Markdown attachments and heading prefixes do not allow active pro
   assert.doesNotMatch(html, /href="(?:javascript|attachment):/);
   assert.doesNotMatch(renderMarkdown("![x](attachment:file)"), /<img/);
 });
+test("notebook diagnostics follow the interface language without changing source", () => {
+  assert.throws(() => parseNotebook("{", "en"), /not valid JSON/);
+  const model = parseNotebook(
+    nb([{ source: "中文", outputs: Array(41).fill({}) }, { source: null }]),
+    "en",
+  );
+  assert.equal(model.cells[0].source, "中文");
+  assert.match(model.cells[0].warnings[0], /1 outputs omitted/);
+  assert.equal(model.cells[1].warnings[0], "Invalid cell source format");
+});

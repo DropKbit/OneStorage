@@ -1,21 +1,23 @@
 # v0.6 验证记录
 
+**简体中文** · [English](en/VERIFICATION-v06.md)
+
 日期：2026-09-08。目标仍处于进行中；此记录仅覆盖账户安全与展示增量，不代表完整 GitLab/Gogs 兼容。
 
 ## 自动验证
 
-| 检查 | 结果 |
-| --- | --- |
-| `npm ci --ignore-scripts` | 从锁文件重新安装成功，审计 0 漏洞；随后重新运行类型/单元测试和生产构建通过 |
-| `npm run check` | TypeScript 通过，83/83 单元测试通过 |
-| `npm run test:e2e` | 43 项基础 API 断言及真实 Git clone/push/clone、pack、并发、LFS、R2/DO 持久化通过 |
-| `npm run test:features` | 76 项高级 HTTP 验证通过：JWT、撤销、引用策略、临时命名空间、流式提交、Notes、Range、Fork、生命周期 |
-| `npm run test:git-features` | 原生 Git 签名提交、未签名/撤销拒绝、临时与导入 remote、Notes 通过 |
-| `npm run test:parity` | 51 项 Code Storage 对照能力具有实现与验证映射 |
-| `npm run build:production` | Wrangler 生产构建通过 |
-| `scripts/e2e-account.mjs` 本地 | 41 项请求检查通过；显式保留临时账户供浏览器视觉验收 |
-| 同脚本真实 Cloudflare | 43 项请求检查通过；包含临时账户停用、凭据撤销、仓库软删除、停用用户资料 404 |
-| OpenAPI | 113 个操作，11 个新增账户/资料/预览操作；浏览器 Cookie 认证独立声明 |
+| 检查                           | 结果                                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `npm ci --ignore-scripts`      | 从锁文件重新安装成功，审计 0 漏洞；随后重新运行类型/单元测试和生产构建通过                         |
+| `npm run check`                | TypeScript 通过，83/83 单元测试通过                                                                |
+| `npm run test:e2e`             | 43 项基础 API 断言及真实 Git clone/push/clone、pack、并发、LFS、R2/DO 持久化通过                   |
+| `npm run test:features`        | 76 项高级 HTTP 验证通过：JWT、撤销、引用策略、临时命名空间、流式提交、Notes、Range、Fork、生命周期 |
+| `npm run test:git-features`    | 原生 Git 签名提交、未签名/撤销拒绝、临时与导入 remote、Notes 通过                                  |
+| `npm run test:parity`          | 51 项 Code Storage 对照能力具有实现与验证映射                                                      |
+| `npm run build:production`     | Wrangler 生产构建通过                                                                              |
+| `scripts/e2e-account.mjs` 本地 | 41 项请求检查通过；显式保留临时账户供浏览器视觉验收                                                |
+| 同脚本真实 Cloudflare          | 43 项请求检查通过；包含临时账户停用、凭据撤销、仓库软删除、停用用户资料 404                        |
+| OpenAPI                        | 113 个操作，11 个新增账户/资料/预览操作；浏览器 Cookie 认证独立声明                                |
 
 单元验证新增 RFC 4226/6238 标准向量、TOTP 单调时间窗、密钥非明文存储、恢复码并发只成功一次、设置过期与版本替换、密码校验、按账户验证码限流、恢复码轮换/关闭双重验证、匿名资料权限过滤、Markdown XSS 与远程图片防自动加载。专门模拟登录过程中认证版本失效、启用过程中会话撤销、创建 PAT 时认证版本改变，均拒绝陈旧状态操作。
 

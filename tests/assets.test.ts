@@ -39,3 +39,37 @@ test("every published browser module is routed to its asset rather than the HTML
   const shell = await app.request("https://test/owner/repo/issues", {}, env);
   assert.equal(await shell.text(), await readFile("public/index.html", "utf8"));
 });
+test("documentation routes serve real language pages and never fall back to the application shell", async () => {
+  const env = {
+    APP_ORIGIN: "https://test",
+    ASSETS: {
+      fetch: async (request: Request) =>
+        new Response("document:" + new URL(request.url).pathname, {
+          headers: { "content-type": "text/html" },
+        }),
+    },
+  } as unknown as Env;
+  for (const lang of ["en", "zh-CN"]) {
+    const landing = await app.request(
+      "https://test/docs",
+      { headers: { cookie: `onestorage_locale=${lang}` } },
+      env,
+    );
+    assert.equal(landing.headers.get("location"), `/docs/${lang}/index.html`);
+    const page = await app.request(
+      `https://test/docs/${lang}/README.html`,
+      {},
+      env,
+    );
+    assert.equal(await page.text(), `document:/docs/${lang}/README.html`);
+    assert.equal(page.headers.get("content-language"), lang);
+  }
+  const invalid = await app.request(
+    "https://test/docs/unknown/README.html",
+    {},
+    env,
+  );
+  assert.equal(invalid.status, 404);
+  const malformed = await app.request("https://test/%ZZ", {}, env);
+  assert.equal(malformed.status, 400);
+});

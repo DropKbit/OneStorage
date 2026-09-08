@@ -1,3 +1,4 @@
+import { text as i18nText, html as i18nHTML, getLocale } from "./i18n.js";
 import DOMPurify from "dompurify";
 import { renderMarkdown } from "./markdown.js";
 import { highlightCode } from "./highlight.js";
@@ -39,7 +40,9 @@ const textOutput = (parent, text, cls = "") => {
     ),
   );
   if (raw.length > NOTEBOOK_LIMITS.text)
-    parent.append(element("p", "muted", "输出已截断，请查看 JSON 源码。"));
+    parent.append(
+      element("p", "muted", i18nText("输出已截断，请查看 JSON 源码。")),
+    );
   return true;
 };
 function richOutput(parent, bundle, env) {
@@ -48,11 +51,13 @@ function richOutput(parent, bundle, env) {
   const image = notebookImage(bundle);
   if (image) {
     const img = element("img", "notebook-image");
-    img.alt = "笔记本输出图片";
+    img.alt = i18nText("笔记本输出图片");
     img.loading = "lazy";
     img.src = image;
     img.onerror = () => {
-      img.replaceWith(element("p", "muted", "图片内容损坏，无法显示。"));
+      img.replaceWith(
+        element("p", "muted", i18nText("图片内容损坏，无法显示。")),
+      );
     };
     parent.append(img);
     return true;
@@ -114,7 +119,7 @@ function richOutput(parent, bundle, env) {
         element(
           "p",
           "muted notebook-output-note",
-          "静态 HTML 输出 · 样式、链接、图片与交互内容已过滤",
+          i18nText("静态 HTML 输出 · 样式、链接、图片与交互内容已过滤"),
         ),
       );
       return true;
@@ -129,7 +134,7 @@ function richOutput(parent, bundle, env) {
     );
     parent.append(box);
     if (markdown.length > NOTEBOOK_LIMITS.text)
-      parent.append(element("p", "muted", "输出已截断。"));
+      parent.append(element("p", "muted", i18nText("输出已截断。")));
     return true;
   }
   if (bundle["application/json"] !== undefined)
@@ -142,8 +147,8 @@ function richOutput(parent, bundle, env) {
 export function mountNotebook(target, source, context = {}) {
   target.replaceChildren();
   const toolbar = element("div", "notebook-toolbar"),
-    previewButton = element("button", "btn small", "预览"),
-    sourceButton = element("button", "btn small", "JSON 源码");
+    previewButton = element("button", "btn small", i18nText("预览")),
+    sourceButton = element("button", "btn small", i18nText("JSON 源码"));
   previewButton.type = sourceButton.type = "button";
   toolbar.append(previewButton, sourceButton);
   const preview = element("div", "notebook-preview"),
@@ -182,7 +187,9 @@ export function mountNotebook(target, source, context = {}) {
           element(
             "p",
             "info",
-            "源码视图最多显示前 10,000 行 / 2 MiB 字符，请通过 Git 查看完整文件。",
+            i18nText(
+              "源码视图最多显示前 10,000 行 / 2 MiB 字符，请通过 Git 查看完整文件。",
+            ),
           ),
         );
     }
@@ -199,7 +206,7 @@ export function mountNotebook(target, source, context = {}) {
   previewButton.setAttribute("aria-pressed", "true");
   sourceButton.setAttribute("aria-pressed", "false");
   try {
-    model = parseNotebook(source);
+    model = parseNotebook(source, getLocale());
   } catch (e) {
     preview.append(element("p", "info", e.message));
     if (/^#L/.test(location.hash)) showRaw();
@@ -209,7 +216,7 @@ export function mountNotebook(target, source, context = {}) {
     element(
       "p",
       "notebook-summary",
-      `${model.total} 个单元 · ${model.language || "未指定语言"} · 只读预览，不执行代码`,
+      i18nHTML`${model.total} 个单元 · ${model.language || i18nText("未指定语言")} · 只读预览，不执行代码`,
     ),
   );
   if (model.omitted)
@@ -217,11 +224,11 @@ export function mountNotebook(target, source, context = {}) {
       element(
         "p",
         "info",
-        `预览最多 1,000 个单元，已省略 ${model.omitted} 个。`,
+        i18nHTML`预览最多 1,000 个单元，已省略 ${model.omitted} 个。`,
       ),
     );
   const cells = element("div", "notebook-cells"),
-    more = element("button", "btn notebook-more", "加载更多单元");
+    more = element("button", "btn notebook-more", i18nText("加载更多单元"));
   more.type = "button";
   preview.append(cells, more);
   const append = () => {
@@ -229,7 +236,11 @@ export function mountNotebook(target, source, context = {}) {
       const section = element("section", "notebook-cell"),
         header = element("div", "notebook-cell-heading");
       section.id = "nb-cell-" + cell.index;
-      const link = element("a", "notebook-cell-link", `单元 ${cell.index}`);
+      const link = element(
+        "a",
+        "notebook-cell-link",
+        i18nHTML`单元 ${cell.index}`,
+      );
       link.href = "#" + section.id;
       header.append(
         link,
@@ -293,7 +304,11 @@ export function mountNotebook(target, source, context = {}) {
             rendered = richOutput(box, output.data, env);
           if (!rendered)
             box.append(
-              element("p", "muted", "此输出格式无法预览，请查看 JSON 源码。"),
+              element(
+                "p",
+                "muted",
+                i18nText("此输出格式无法预览，请查看 JSON 源码。"),
+              ),
             );
           section.append(box);
         }
@@ -301,7 +316,7 @@ export function mountNotebook(target, source, context = {}) {
         textOutput(section, cell.source);
         if (cell.type !== "raw")
           section.append(
-            element("p", "muted", "未支持的单元类型，已显示原文。"),
+            element("p", "muted", i18nText("未支持的单元类型，已显示原文。")),
           );
       }
       for (const warning of cell.warnings)

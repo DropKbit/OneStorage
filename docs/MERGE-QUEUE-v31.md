@@ -1,5 +1,7 @@
 # 合并队列
 
+**简体中文** · [English](en/MERGE-QUEUE-v31.md)
+
 OneStorage v0.31 增加由 Cloudflare Durable Objects 驱动的合并队列。Git 对象保存在 R2，排队状态、审阅和 CI 状态保存在 D1；候选流水线沿用 Cloudflare Queues、Workers 执行器或已配置的外部 Runner，不需要容器。
 
 ## 使用

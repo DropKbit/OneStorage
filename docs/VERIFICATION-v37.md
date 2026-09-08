@@ -1,5 +1,7 @@
 # v0.37 Notebook 验收记录
 
+**简体中文** · [English](en/VERIFICATION-v37.md)
+
 ## 实现范围
 
 nbformat 4 只读预览、语言高亮、Markdown、静态 HTML 表格、PNG/JPEG 输出与附件、纯文本/错误/JSON、分页、源码切换和固定提交链接。源码为 `src/browser/notebook.js`、`notebook-model.ts`，复用 Markdown、高亮和现有 Git/图片鉴权接口。完整支持范围与限额见 [Notebook 说明](NOTEBOOK-v37.md)。

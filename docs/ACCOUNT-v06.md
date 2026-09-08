@@ -1,5 +1,7 @@
 # OneStorage v0.6：账户安全与内容展示
 
+**简体中文** · [English](en/ACCOUNT-v06.md)
+
 这是 GitLab/Gogs 持续目标的增量版本，仍使用 Workers、D1、R2、Durable Objects，不增加容器或外部认证服务。
 
 ## 双重验证

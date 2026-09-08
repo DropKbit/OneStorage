@@ -1,5 +1,7 @@
 # v0.24 空间 CI 变量验收
 
+**简体中文** · [English](en/VERIFICATION-v24.md)
+
 日期：2026-09-09（Asia/Singapore）。契约与限制见 [空间变量](CI-WORKSPACE-VARIABLES-v24.md)。生产验收候选提交 `e4df35c`，主 Worker 版本 `0c4675b2-8514-45fb-ad09-81f0b27f974c`；之后仅补充此文档和对应源码归档，运行时代码一致。
 
 | 环境         | 检查                                 | 结果                                                                      |

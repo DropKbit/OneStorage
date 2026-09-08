@@ -1,21 +1,23 @@
-# Security
+# 安全说明
 
-OneStorage is an alpha. It has not undergone independent penetration testing or production-scale reliability review. Report security issues privately to the deployment operator; this repository does not yet advertise a dedicated security mailbox.
+**简体中文** · [English](SECURITY.en.md)
 
-- Git, LFS and content routes check project visibility, membership and credential scope. Internal repository IDs are derived server-side.
-- The Git service runs only JavaScript in Workers. No repository-controlled code, native command, hook, filesystem path or symlink is executed.
-- Pack SHA-1 and zlib checksums, object lengths, delta instructions, refs and graph connectivity are validated before publication. Decompression, graph, request and queue budgets are enforced.
-- R2 objects are immutable and repository-isolated; all object writes precede atomic DO ref publication. Failed uploads cannot publish refs. Existing-object byte conflicts fail closed.
-- Git IDs use Web Crypto SHA-1, **without native Git's SHA1DC collision detector**. Our object validation is not complete `git fsck` parity; passing native Git checks on test fixtures does not prove all malicious inputs are handled. Do not claim equivalent hardening to mature native Git.
-- PATs/session tokens are stored as hashes. Scope, expiry, revocation and session-only PAT creation are enforced. Password changes revoke all sessions and PATs. Delegated JWT keys are managed and revoked separately in key settings.
-- Project/workspace deploy tokens are separate principals with hashed secrets, mandatory expiry and independent Git-read/package scopes. They survive issuer membership changes and account disablement; current project maintainers/workspace owners must explicitly revoke them when no longer needed. Cross-space project transfer permanently revokes project tokens and changes workspace-token coverage. They cannot use general user/admin APIs or push Git. See [deployment credentials](docs/DEPLOY-TOKENS-v26.md).
-- Untrusted repository text is displayed as text with a restrictive CSP. Cookie writes require the configured Origin. The web UI does not put secrets in clone URLs or localStorage. SDK credential-bearing Git URLs require explicit opt-in and must not be persisted or logged.
-- Webhooks use an operator hostname allowlist, HTTPS, no redirects, timeouts and timestamped HMAC. The operator must ensure approved hostnames resolve only to intended public receivers.
+OneStorage 处于 alpha，尚未经过独立渗透测试或生产规模可靠性审查。请向部署操作者私下报告安全问题；本仓库尚未公布专用安全邮箱。
 
-Passwords use PBKDF2-SHA256 at 100,000 iterations. TOTP MFA, recovery codes and administrator-configured OIDC are supported; complete account recovery is still a separate goal. There are operation limits but no complete account/storage quotas or active-repository unreachable-object GC; authorized users can consume compute/storage over repeated requests. D1/R2/DO administrator access can compromise data. Back up all three stores together. Never deploy the public local initialization secret.
+- Git、LFS 和内容路由检查项目可见性、成员身份和凭据范围。内部仓库 ID 由服务端求得。
+- Git 接收路径只在 Workers 中运行 JavaScript，不执行仓库控制的代码、原生命令、Hook、文件系统路径或符号链接。CI 代码在单独授权的隔离环境执行。
+- 发布前校验 pack SHA-1/zlib 校验和、对象长度、delta 指令、引用和图连通性，并限制解压、图遍历、请求和队列预算。
+- R2 对象不可变且仓库隔离；全部对象写入先于 DO 原子引用发布。上传失败不能发布引用，已有对象的字节冲突会拒绝操作。
+- Git ID 使用 Web Crypto SHA-1，**没有原生 Git 的 SHA1DC 碰撞检测器**。对象校验不等同完整 `git fsck`；测试数据通过原生 Git 检查不能证明覆盖所有恶意输入，也不能宣称与成熟原生 Git 同等加固。
+- PAT/会话令牌仅存哈希，强制检查范围、期限和撤销。只有会话可创建 PAT。修改密码撤销全部会话和 PAT；委托 JWT 密钥在密钥设置中独立管理与撤销。
+- 项目/空间部署令牌是独立主体，仅存哈希，必须设置期限，Git 读取与软件包权限独立。创建者退出成员关系或停用账号不会自动撤销它们，当前维护者/空间所有者应主动撤销不再使用的令牌。跨空间转移永久撤销项目令牌并改变空间令牌覆盖范围。部署令牌不能使用普通用户/管理员 API 或推送 Git，见[部署凭据](docs/DEPLOY-TOKENS-v26.md)。
+- 不可信仓库文本按文本展示，并应用严格 CSP。Cookie 写操作必须匹配配置的 Origin。网页不把密钥放入 clone URL 或 localStorage；localStorage 仅保存语言等非敏感偏好。SDK 的含凭据 Git URL 需要显式启用，不应持久化或记录日志。
+- Webhook 使用操作者主机白名单、HTTPS、禁止重定向、超时和带时间戳的 HMAC。操作者须确保允许主机只解析到预期的公网接收端。
 
-Before sensitive production use, add appropriate edge rate limits, access controls, tested recovery, protocol fuzzing, dependency updates and independent review. Only small repositories are currently supported; platform resource limits may reject a request before application limits are reached.
+密码使用 100,000 次迭代的 PBKDF2-SHA256。支持 TOTP MFA、MFA 恢复码、管理员配置的 OIDC/OAuth，以及预先保存的一次性密码恢复密钥；没有自动邮件恢复或完整人工身份恢复流程。操作预算不能替代完整账户/存储配额，活跃仓库没有不可达对象 GC；授权用户可以反复消耗计算和存储。拥有 D1/R2/DO 管理权限可能破坏数据，需共同备份三个存储。生产不能使用公开的本地初始化密钥。
 
-Delegated JWT verification uses registered SPKI keys, explicit repository/scopes, expiry and per-request revocation checks. SSH/OpenPGP signing keys are separate from API JWT keys. Policies are first-match ordered restrictions; a broad unrestricted rule placed first shadows later rules. Credential encryption requires a private 32-byte Worker secret; losing it makes stored upstream credentials unreadable. Keep an encrypted backup and do not rotate by simply replacing it.
+敏感生产使用前，应配置合适的边缘限流、访问控制，完成恢复演练、协议模糊测试、依赖更新和独立审查。当前仅适合小仓库，平台资源限制可能先于应用预算拒绝请求。
 
-The HTTP Git client validates provider paths/approved hosts, rejects redirects and never runs hooks. GitHub App LFS forwarding separates installation authentication from storage-action headers. Operators control hostname allowlists and are responsible for keeping those DNS targets trusted. MCP calls traverse REST authorization; an authenticated agent is still able to exercise the permissions deliberately granted to it.
+委托 JWT 通过已登记 SPKI 公钥验证，明确限定仓库/范围/期限，每次请求检查撤销。SSH/OpenPGP 提交签名公钥与 API JWT 密钥彼此独立。引用策略按顺序首条匹配：前置的宽泛无限制规则会遮蔽后续限制。凭据加密需要私有 32 字节 Worker secret；丢失后已存上游凭据无法解密。保留加密备份，不要仅替换密钥来“轮换”。
+
+HTTP Git 客户端校验提供方路径和允许主机、拒绝重定向、不运行 Hook。GitHub App LFS 转发将安装凭据与存储 action 请求头分开。操作者负责主机白名单及其 DNS 可信性。MCP 经由 REST 授权检查；经过认证的 Agent 仍能使用刻意授予它的权限。

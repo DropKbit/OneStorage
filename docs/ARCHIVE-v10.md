@@ -1,5 +1,7 @@
 # 项目归档（v0.10）
 
+**简体中文** · [English](en/ARCHIVE-v10.md)
+
 项目所有者在设置页面选择「归档为只读」或「取消归档」。空间项目必须由该空间的当前 owner 操作；原始创建者不会绕过空间所有权。管理员身份本身不提供归档权限，仍可使用既有管理员仓库删除与空间所有权恢复流程。
 
 `PUT /api/repos/{namespace}/{repo}/lifecycle` 接收 `{ "archived": true, "revision": 0 }`。版本来自项目详情的 `lifecycle_revision`；归档和恢复均递增版本，陈旧版本返回 409，不能覆盖另一个操作者。只读 PAT 和委托 Git JWT 不允许修改生命周期。

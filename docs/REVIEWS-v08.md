@@ -1,5 +1,7 @@
 # v0.8 代码负责人、Issue 联动与 Git I/O
 
+**简体中文** · [English](en/REVIEWS-v08.md)
+
 ## CODEOWNERS
 
 在仓库「分支保护」勾选「CODEOWNERS 指定的负责人必须批准」。也可向 `PUT /api/repos/{namespace}/{repo}/protections` 传入 `require_codeowners: true`。该规则独立生效，即使普通批准人数为零、`require_mr` 为 false，也不能通过普通 push、网页编辑或直接合并接口绕过 MR。

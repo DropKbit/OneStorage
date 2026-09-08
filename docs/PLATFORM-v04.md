@@ -1,5 +1,7 @@
 # OneStorage v0.4：协作空间与 CI/CD
 
+**简体中文** · [English](en/PLATFORM-v04.md)
+
 ## 目标与验收
 
 - 代码高亮：本地打包 Highlight.js，按需加载；常用 16 种语言、行号、HTML 转义；未知格式与超过 200,000 字符的文件退回纯文本。

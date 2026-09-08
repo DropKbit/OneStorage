@@ -1,12 +1,26 @@
+import "./i18n.mjs";
 import "./content.mjs";
 import "./highlight.mjs";
 // Content-version the public entry points. HTML revalidates; versioned assets can stay cached.
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 const hash = (s) => createHash("sha256").update(s).digest("hex").slice(0, 16);
 async function update(path, content) {
   if ((await readFile(path, "utf8")) !== content)
     await writeFile(path, content);
+}
+const localeVersion = hash(await readFile("public/i18n.js"));
+for (const file of (await readdir("public")).filter(
+  (f) => f.endsWith(".js") && f !== "i18n.js",
+)) {
+  const path = "public/" + file;
+  await update(
+    path,
+    (await readFile(path, "utf8")).replace(
+      /(["'])(\.\/i18n\.js)(?:\?v=[a-f0-9]+)?\1/g,
+      (_, quote, name) => `${quote}${name}?v=${localeVersion}${quote}`,
+    ),
+  );
 }
 const oidcVersion = hash(await readFile("public/oidc.js"));
 await update(

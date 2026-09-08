@@ -1,12 +1,14 @@
 > v0.33 新增独立 GitHub/GitLab OAuth 适配，复用本文账户与流程机制；配置见 [OAuth 登录](OAUTH-v33.md)。本文 JWT 规则仍仅适用于 OIDC。
 
+**简体中文** · [English](en/OIDC-v23.md)
+
 # v0.23 统一登录
 
 OneStorage 在 Workers 中实现 OIDC Authorization Code + PKCE S256，通过 Web Crypto/Jose 验证 ID Token。D1 保存身份映射、版本化配置与一次性登录状态，提供方密钥和短期流程数据用既有 `CREDENTIAL_ENCRYPTION_KEY` 加密。无需容器、独立认证服务器或外部数据库。
 
 ## 管理与使用
 
-1. 管理员打开 `/admin/identity`，在自己的身份服务中注册 Web 应用。当前实例回调地址为 `https://git.1s.hk/api/auth/oidc/callback`，必须精确登记。
+1. 管理员打开 `/admin/identity`，在自己的身份服务中注册 Web 应用。当前实例回调地址为 `https://1s.hk/api/auth/oidc/callback`，必须精确登记。
 2. 填写名称、准确的 issuer、client ID、client secret、客户端认证方式及获准端点主机。支持 `client_secret_basic`、`client_secret_post`、`none`。主机列表须覆盖 discovery、authorization、token 与 JWKS 的实际域名；不使用通配符。
 3. 保存时读取 discovery 并验证 issuer、code 流、端点与认证方式。启用后登录页出现按钮。默认不开放创建账户；需要时显式开启该提供方的注册，可限制已验证邮箱的准确域名。
 4. 已有用户先按原方式登录，在 `/settings/account` 输入当前密码和已启用的双因素验证码，再关联身份。匹配依据是提供方 ID 与 `sub`，不会按邮箱、显示名或用户名自动合并账户。

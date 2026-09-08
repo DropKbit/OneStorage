@@ -1,5 +1,9 @@
 # 版本记录
 
+**简体中文** · [English](en/CHANGELOG.md)
+
+v0.38 将主站迁移至 1s.hk，并增加简体中文/English 界面及双语文档。此前宽泛开发目标已按用户要求收敛至 v0.37 的已交付范围，后续功能另行规划；历史段落中的“目标继续”仅记录当时状态。
+
 v0.37 增加 Jupyter Notebook 只读预览：代码高亮、Markdown、静态表格/图表、源码切换及分页，沿用仓库权限和固定提交。见 [Notebook 预览](NOTEBOOK-v37.md) 与 [验收记录](VERIFICATION-v37.md)。
 
 v0.36 增加云端 tsconfig/JSONC、本地配置继承、baseUrl/paths 别名和 TypeScript 源文件扩展名解析。见 [构建配置](CI-TSCONFIG-v36.md)。
