@@ -1439,3 +1439,5 @@ button.text {
   gap: 6px;
   margin: 0 0 16px;
 }
+
+.recovery-key { white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }

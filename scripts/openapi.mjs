@@ -1,4 +1,5 @@
 import { addSearchPaths } from "./search-openapi.mjs";
+import { addPasswordRecoveryPaths } from "./password-recovery-openapi.mjs";
 import { addPackagePaths } from "./package-openapi.mjs";
 import { addDeployTokenPaths } from "./deploy-token-openapi.mjs";
 import { addOIDCPaths } from "./oidc-openapi.mjs";
@@ -287,6 +288,7 @@ addPackagePaths(paths);
 addDeployTokenPaths(paths);
 addPlatformPaths(paths);
 addAccountPaths(paths);
+addPasswordRecoveryPaths(paths);
 addReviewPaths(paths);
 addIssuePaths(paths);
 addLifecyclePaths(paths);

@@ -1,4 +1,5 @@
 import { registerSearch } from "./search";
+import { registerPasswordRecovery } from "./password-recovery";
 import { confirmGitResponse } from "./git/confirmation";
 import { registerDeployTokenRoutes } from "./deploy-token-routes";
 import {
@@ -495,11 +496,12 @@ app.use("*", async (c, next) => {
 registerSearch(app);
 registerIdentityRoutes(app);
 registerAccount(app);
+registerPasswordRecovery(app);
 registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.29.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.30.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({

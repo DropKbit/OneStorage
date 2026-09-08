@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.29.0",
+    "version": "0.30.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -12142,6 +12142,234 @@
           },
           "409": {
             "description": "Concurrent account change or expired setup"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/account/password-recovery": {
+      "get": {
+        "operationId": "password_recovery_status",
+        "summary": "password recovery status",
+        "tags": [
+          "Account"
+        ],
+        "description": "Read own saved recovery-key metadata and the latest 20 recovery audit events. Never returns the key or hash. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; recovery requires subsequent normal sign-in"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Invalid recovery credentials or session"
+          },
+          "403": {
+            "description": "Browser session, current proof or same-origin request required"
+          },
+          "409": {
+            "description": "Concurrent security/key change, or local password required"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      },
+      "put": {
+        "operationId": "issue_password_recovery",
+        "summary": "issue password recovery",
+        "tags": [
+          "Account"
+        ],
+        "description": "Current browser session, local password and fresh MFA factor required. Supply the current version (null initially). Replaces the saved key and returns the new 256-bit secret ONCE, with a one-year expiry. Never log this response. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password",
+                  "version"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "version": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success; recovery requires subsequent normal sign-in"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Invalid recovery credentials or session"
+          },
+          "403": {
+            "description": "Browser session, current proof or same-origin request required"
+          },
+          "409": {
+            "description": "Concurrent security/key change, or local password required"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "revoke_password_recovery",
+        "summary": "revoke password recovery",
+        "tags": [
+          "Account"
+        ],
+        "description": "Verify password and fresh MFA factor, then atomically revoke the expected key version and audit the operation. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password",
+                  "version"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "version": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success; recovery requires subsequent normal sign-in"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Invalid recovery credentials or session"
+          },
+          "403": {
+            "description": "Browser session, current proof or same-origin request required"
+          },
+          "409": {
+            "description": "Concurrent security/key change, or local password required"
+          },
+          "429": {
+            "description": "Verification rate limit"
+          }
+        }
+      }
+    },
+    "/api/recover-password": {
+      "post": {
+        "operationId": "recover_password",
+        "summary": "recover password",
+        "tags": [
+          "Account"
+        ],
+        "description": "Anonymous saved-key password recovery. Requires a still-enabled local-password account, an unexpired unused key and a fresh MFA factor when enabled. Preserves MFA and signing identities; revokes all sessions, PATs, JWT delegation keys and pending OIDC flows. No automatic sign-in. Invalid, expired, revoked and unknown keys share an error. Ten attempts per IP and per username per ten minutes. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "key",
+                  "new_password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "maxLength": 48
+                  },
+                  "key": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "new_password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 128
+                  },
+                  "otp": {
+                    "type": "string",
+                    "maxLength": 64
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success; recovery requires subsequent normal sign-in"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Invalid recovery credentials or session"
+          },
+          "403": {
+            "description": "Browser session, current proof or same-origin request required"
+          },
+          "409": {
+            "description": "Concurrent security/key change, or local password required"
           },
           "429": {
             "description": "Verification rate limit"

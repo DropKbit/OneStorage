@@ -239,6 +239,9 @@ export function registerWorkspaceRoutes(
     if (b.password || b.disabled || b.revoke_sessions)
       statements.push(
         c.env.DB.prepare("DELETE FROM credentials WHERE user_id=?").bind(u.id),
+        c.env.DB.prepare("DELETE FROM password_recovery WHERE user_id=?").bind(
+          u.id,
+        ),
       );
     try {
       await c.env.DB.batch(statements);

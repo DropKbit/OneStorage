@@ -1,7 +1,7 @@
 const globalSearch = () => import("./search.js?v=29036dd1cae22885");
 const deployTokens = () => import("./deploy-tokens.js?v=3624ebb344aa8e94");
 const packages = () => import("./packages.js?v=940a14d638488fa5");
-const account = () => import("./account.js?v=d9bd32b82f5426d8");
+const account = () => import("./account.js?v=6ffc55e60c26a3a9");
 const oidc = () => import("./oidc.js?v=d111df485dceede5");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
 const platform = () => import("./manage.js?v=3f4cfee2f85c57c9");
@@ -351,7 +351,7 @@ const textarea = (label, name, value = "", cls = "") =>
   `<div class="field"><label for="${name}">${label}</label><textarea name="${name}" id="${name}" class="${cls}">${esc(value)}</textarea></div>`;
 function authPage() {
   const initializing = setup;
-  root.innerHTML = `<main class="auth"><section class="auth-story"><a href="/" class="brand" data-link><img src="/favicon.svg" alt="">OneStorage</a><div><h1>代码的归属，<br><span>由你定义。</span></h1><p>从第一个 commit 到下一次合并。把仓库、讨论与协作，留在自己的空间。</p><div class="lines">$ git add .<br>$ git commit -m "a new beginning"<br>$ git push origin main<br><span>↳ git.1s.hk</span></div></div><div class="auth-footer"><a href="/source.tar.gz" download>OPEN SOURCE · AGPL-3.0 ↓</a></div></section><section class="auth-form"><form id="login-form"><h2>${initializing ? "创建你的工作空间" : "欢迎回来"}</h2><p class="muted">${initializing ? "使用部署时配置的初始化密钥创建管理员。" : "登录 OneStorage，继续你的下一个想法。"}</p>${initializing ? field("初始化密钥", "secret", "password") : ""}${field("用户名", "username")}${field("密码", "password", "password", "", "至少 12 个字符")}${!initializing ? '<div class="field"><label>双重验证（已启用时填写）<input name="otp" maxlength="64" autocomplete="one-time-code" placeholder="验证码或恢复码"></label></div>' : ""}<button type="submit" class="btn primary">${initializing ? "初始化 OneStorage" : "登录工作空间"} →</button>${!initializing ? link("/", "浏览公开项目 →") : ""}</form></section></main>`;
+  root.innerHTML = `<main class="auth"><section class="auth-story"><a href="/" class="brand" data-link><img src="/favicon.svg" alt="">OneStorage</a><div><h1>代码的归属，<br><span>由你定义。</span></h1><p>从第一个 commit 到下一次合并。把仓库、讨论与协作，留在自己的空间。</p><div class="lines">$ git add .<br>$ git commit -m "a new beginning"<br>$ git push origin main<br><span>↳ git.1s.hk</span></div></div><div class="auth-footer"><a href="/source.tar.gz" download>OPEN SOURCE · AGPL-3.0 ↓</a></div></section><section class="auth-form"><form id="login-form"><h2>${initializing ? "创建你的工作空间" : "欢迎回来"}</h2><p class="muted">${initializing ? "使用部署时配置的初始化密钥创建管理员。" : "登录 OneStorage，继续你的下一个想法。"}</p>${initializing ? field("初始化密钥", "secret", "password") : ""}${field("用户名", "username")}${field("密码", "password", "password", "", "至少 12 个字符")}${!initializing ? '<div class="field"><label>双重验证（已启用时填写）<input name="otp" maxlength="64" autocomplete="one-time-code" placeholder="验证码或恢复码"></label></div>' : ""}<button type="submit" class="btn primary">${initializing ? "初始化 OneStorage" : "登录工作空间"} →</button>${!initializing ? link("/login/recover", "忘记密码？") + link("/", "浏览公开项目 →") : ""}</form></section></main>`;
   bindForm("#login-form", async (data) => {
     if (initializing) {
       await api("/setup", { method: "POST", body: data });
@@ -890,6 +890,10 @@ async function render() {
     }
     if (path === "/login/oidc") {
       await (await oidc()).completeLogin(helpers);
+      return;
+    }
+    if (path === "/login/recover") {
+      (await account()).recoverPasswordPage(helpers);
       return;
     }
     if (path === "/admin/identity") {
