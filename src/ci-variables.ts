@@ -35,7 +35,16 @@ export const workspaceVariableContext = (workspace: string, id: string) =>
 const bindingContext = (run: string, key: string) =>
   "ci-run-variable:" + run + ":" + key;
 export const variableLive = `EXISTS(SELECT 1 FROM ci_runs c JOIN repositories r ON r.id=c.repo_id WHERE c.id=? AND c.status='running' AND c.lease_hash=? AND c.lease_until>? AND r.deleted_at IS NULL AND r.archived_at IS NULL)`;
+export async function assertPrivatePackagesActive(env: Env, run: CIRun) {
+  if (
+    await env.DB.prepare("SELECT id FROM ci_invalid_package_runs WHERE id=?")
+      .bind(run.id)
+      .first()
+  )
+    fail(409, "Private package authority changed");
+}
 export async function assertVariablesActive(env: Env, run: CIRun) {
+  await assertPrivatePackagesActive(env, run);
   const current = await env.DB.prepare(
     `SELECT id FROM ci_runs WHERE id=? AND ${variableLive} AND NOT EXISTS(SELECT 1 FROM ci_run_variables b WHERE b.run_id=ci_runs.id AND NOT EXISTS(SELECT 1 FROM ci_authorized_variables v WHERE v.id=b.variable_id AND v.repo_id=ci_runs.repo_id AND v.revision=b.revision AND (v.protected=0 OR EXISTS(SELECT 1 FROM branch_protections p WHERE p.repo_id=ci_runs.repo_id AND p.branch=ci_runs.ref AND p.require_mr=1))))`,
   )

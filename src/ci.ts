@@ -3,7 +3,12 @@ import { registerCacheRoutes } from "./ci-cache-routes";
 import { executeBuild } from "./ci-build";
 import { cloudCacheInputs, saveCloudCaches } from "./ci-cache";
 import { registerVariableRoutes } from "./ci-variable-routes";
-import { loadRunVariables, maskRunLog, maskLogRows } from "./ci-variables";
+import {
+  loadRunVariables,
+  maskRunLog,
+  maskLogRows,
+  assertVariablesActive,
+} from "./ci-variables";
 import { activeTick, registerScheduleRoutes } from "./ci-schedules";
 import {
   executeJavaScript,
@@ -330,6 +335,7 @@ export async function consumeCI(env: Env, id: string) {
     for (const event of caches.events) await log(env, run, seq++, event + "\n");
     for (const step of config.steps) {
       if (Date.now() >= deadline) throw Error("Pipeline timeout");
+      await assertVariablesActive(env, run);
       const active = await env.DB.prepare(
         "SELECT id FROM ci_runs WHERE id=? AND status='running' AND lease_hash=? AND lease_until>?",
       )

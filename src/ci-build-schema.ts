@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { variableKey } from "./ci-variable-schema";
 export const buildPath = z
   .string()
   .min(1)
@@ -22,6 +23,21 @@ export const buildPath = z
 export const buildStep = z
   .object({
     type: z.literal("build"),
+    private_registries: z
+      .array(
+        z
+          .object({
+            project_id: z.uuid(),
+            token_variable: variableKey,
+          })
+          .strict(),
+      )
+      .max(8)
+      .refine(
+        (a) => new Set(a.map((r) => r.project_id)).size === a.length,
+        "Duplicate registry project",
+      )
+      .optional(),
     entry: buildPath,
     sources: z
       .array(buildPath)
@@ -50,10 +66,14 @@ export const BUILD_LIMIT = {
   expanded: 8 * 1024 * 1024,
   packageFiles: 10000,
   output: 2 * 1024 * 1024,
+  request: 12 * 1024 * 1024,
 };
 export const buildRequest = z
   .object({
     step: buildStep,
     files: z.record(buildPath, z.string().max(1024 * 1024)),
+    packages: z
+      .record(z.string().url().max(2000), z.string().max(5592408))
+      .default({}),
   })
   .strict();

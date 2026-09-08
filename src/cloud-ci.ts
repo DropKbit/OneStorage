@@ -1,5 +1,9 @@
 import { cacheFilesSchema, CLOUD_CACHE_LIMIT } from "./ci-cache-schema";
-import { loadRunVariables, assertVariablesActive } from "./ci-variables";
+import {
+  loadRunVariables,
+  assertVariablesActive,
+  assertPrivatePackagesActive,
+} from "./ci-variables";
 import { redact } from "./ci-redaction";
 import { z } from "zod";
 import type { Env, Repo } from "./types";
@@ -196,6 +200,7 @@ export async function saveCloudOutput(
   artifacts: CloudFiles,
   deploy?: z.infer<typeof deployConfig>,
 ) {
+  await assertPrivatePackagesActive(env, run);
   const statements: D1PreparedStatement[] = [],
     objects: string[] = [];
   const live =
@@ -270,12 +275,14 @@ export async function saveCloudOutput(
         "UPDATE ci_runs SET status='succeeded',finished_at=datetime('now'),lease_hash=NULL,lease_until=NULL WHERE id=? AND status='running' AND lease_hash=? AND lease_until>?",
       ).bind(run.id, run.lease_hash, Date.now()),
     );
+    await assertPrivatePackagesActive(env, run);
     publishing = true;
     const result = await env.DB.batch(statements);
     if (!result.at(-1)?.meta.changes)
       for (const key of objects) await env.OBJECTS.delete(key);
   } catch (e) {
-    if (!publishing) for (const key of objects) await env.OBJECTS.delete(key);
+    if (!publishing || /Private package authority changed/.test(String(e)))
+      for (const key of objects) await env.OBJECTS.delete(key);
     throw e;
   }
 }

@@ -22,6 +22,11 @@ export async function cancelRun(env: Env, id: string) {
 export async function coordinateWorkflow(env: Env, run: CIRun) {
   const config = workflowSchema.parse(JSON.parse(run.config));
   await env.DB.prepare(
+    "UPDATE ci_runs SET status='canceled',error='Private package authority changed',finished_at=datetime('now'),lease_hash=NULL,lease_until=NULL WHERE (id=? OR parent_id=?) AND status IN('queued','running') AND EXISTS(SELECT 1 FROM ci_invalid_package_runs b WHERE b.id=ci_runs.id)",
+  )
+    .bind(run.id, run.id)
+    .run();
+  await env.DB.prepare(
     "UPDATE ci_runs SET status='running',started_at=datetime('now') WHERE id=? AND status='queued' AND EXISTS(SELECT 1 FROM repositories WHERE id=ci_runs.repo_id AND deleted_at IS NULL AND archived_at IS NULL)",
   )
     .bind(run.id)

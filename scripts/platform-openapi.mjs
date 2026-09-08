@@ -203,7 +203,7 @@ export function addPlatformPaths(paths) {
     }
     if (id === "ci_save_config" || id === "ci_config") {
       operation.description =
-        "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 public registry tarballs. Does not run shell/npm lifecycle scripts. See docs/CI-BUILDS-v22.md for limits and deploy artifact configuration.";
+        "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See docs/CI-PRIVATE-PACKAGES-v27.md. Does not run shell/npm lifecycle scripts. See docs/CI-BUILDS-v22.md for limits and deploy artifact configuration.";
     }
     if (id.includes("variable")) {
       operation.description =

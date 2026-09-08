@@ -1,5 +1,7 @@
 # OneStorage
 
+v0.27 支持当前实例内的私有 npm 依赖原生云构建：显式部署令牌授权、锁文件与 SHA-512 校验、独立 WASM 编译、工作流依赖撤权门禁，见 [私有包构建](docs/CI-PRIVATE-PACKAGES-v27.md)。
+
 v0.26 增加项目/空间部署令牌：独立 Git 只读、包读取/发布/撤回权限，支持轮换、到期与撤销，跨空间转移自动收回范围，见 [部署令牌](docs/DEPLOY-TOKENS-v26.md) 和 [本地/生产验收](docs/VERIFICATION-v26.md)。
 
 v0.24 增加空间级 CI 变量与密钥继承、项目覆盖、只读继承展示和跨项目撤销，空间所有者可集中管理团队构建配置，见 [空间变量](docs/CI-WORKSPACE-VARIABLES-v24.md)。
@@ -24,7 +26,7 @@ v0.7 增加跨 Fork 合并请求、行级讨论与解决门禁、固定快照的
 
 v0.6 新增双重验证、会话管理、个人资料/活动、Markdown 与私有图片预览，见 [账户与展示说明](docs/ACCOUNT-v06.md) 与 [验收记录](docs/VERIFICATION-v06.md)。完整 GitLab/Gogs 目标仍持续推进。
 
-**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.26.0 alpha**。
+**自己的代码，自己的空间。** 基于 Cloudflare Workers 的开源 Git 服务，部署于 **[git.1s.hk](https://git.1s.hk)**。AGPL-3.0-only，**v0.27.0 alpha**。
 
 参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，并提供 GitLab 风格的中文协作界面。此次对照涵盖 **40 个首选 REST 操作和 11 类跨接口能力**；逐项差异、实现和验证证据见 [开发目标](docs/ROADMAP.md) 与 [功能矩阵](docs/parity.json)。不承诺第三方 SDK 直接兼容或相同的容量、性能和 SLA。
 

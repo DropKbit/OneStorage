@@ -5,6 +5,7 @@ import { boundedBody } from "./security";
 import { z } from "zod";
 import type { Env, Repo } from "./types";
 import type { CIRun } from "./ci";
+import { privateBuildPackages } from "./ci-private-packages";
 
 export async function executeBuild(
   env: Env,
@@ -54,7 +55,14 @@ export async function executeBuild(
     files[path] = file.content;
   }
   await assertVariablesActive(env, run);
-  const payload = JSON.stringify({ step, files });
+  const packages = await privateBuildPackages(env, run, step, files);
+  const payload = JSON.stringify({
+    step: { ...step, private_registries: undefined },
+    files,
+    packages,
+  });
+  if (new TextEncoder().encode(payload).length > BUILD_LIMIT.request)
+    throw Error("Cloud compiler request limit exceeded");
   const signal = AbortSignal.timeout(75000);
   let response: Response;
   for (let attempt = 0; ; attempt++) {

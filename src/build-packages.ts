@@ -1,6 +1,7 @@
 import { Inflate } from "pako";
 import { exports as packageExports } from "resolve.exports";
 import { BUILD_LIMIT } from "./ci-build-schema";
+import { decodeBase64 } from "./base64";
 
 const encoder = new TextEncoder(),
   decoder = new TextDecoder("utf-8", { fatal: true });
@@ -17,7 +18,10 @@ export function normalizePath(value: string) {
   }
   return parts.join("/");
 }
-export function lockPackages(files: Record<string, string>) {
+export function lockPackages(
+  files: Record<string, string>,
+  privateURL: (url: URL) => boolean = () => false,
+) {
   const manifest = JSON.parse(files["package.json"] || "{}");
   const lock = files["package-lock.json"]
     ? JSON.parse(files["package-lock.json"])
@@ -87,14 +91,16 @@ export function lockPackages(files: Record<string, string>) {
       throw Error("Invalid locked package version");
     const url = new URL(p.resolved);
     if (
-      url.origin !== "https://registry.npmjs.org" ||
+      (url.origin !== "https://registry.npmjs.org" && !privateURL(url)) ||
       url.username ||
       url.password ||
       url.search ||
       url.hash ||
       !url.pathname.endsWith(".tgz")
     )
-      throw Error("Only public npm registry tarballs are supported");
+      throw Error(
+        "Only public npm registry or explicitly supplied private tarballs are supported",
+      );
     if (
       typeof p.integrity !== "string" ||
       !/^sha512-[A-Za-z0-9+/]{86}==$/.test(p.integrity)
@@ -205,9 +211,31 @@ export class BuildFileSystem {
     private platform: "worker" | "browser",
     private fetcher: typeof fetch = globalThis.fetch.bind(globalThis),
     private signal: AbortSignal = new AbortController().signal,
+    private supplied: Record<string, string> = {},
   ) {
+    if (Object.keys(supplied).length > BUILD_LIMIT.packages)
+      throw Error("Private npm package count limit exceeded");
+    let encoded = 0;
+    for (const value of Object.values(supplied)) {
+      encoded += value.length;
+      if (
+        encoded >
+          Math.ceil(BUILD_LIMIT.compressed / 3) * 4 +
+            4 * BUILD_LIMIT.packages ||
+        value.length % 4 ||
+        !/^[A-Za-z0-9+/]*={0,2}$/.test(value)
+      )
+        throw Error("Private npm payload limit or encoding invalid");
+      this.compressed +=
+        (value.length / 4) * 3 -
+        (value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0);
+    }
+    if (this.compressed > BUILD_LIMIT.compressed)
+      throw Error("npm compressed byte limit exceeded");
     this.files = Object.assign(Object.create(null), files);
-    this.packages = lockPackages(files);
+    this.packages = lockPackages(files, (url) =>
+      Object.hasOwn(supplied, url.href),
+    );
   }
   async install(path: string) {
     if (this.loaded.has(path)) return this.loaded.get(path)!;
@@ -216,10 +244,13 @@ export class BuildFileSystem {
     const task = this.queue.then(async () => {
       this.signal.throwIfAborted();
       const pkg = this.packages[path];
-      const response = await this.fetcher(pkg.resolved, {
-        redirect: "manual",
-        signal: AbortSignal.any([this.signal, AbortSignal.timeout(15000)]),
-      });
+      const supplied = Object.hasOwn(this.supplied, pkg.resolved);
+      const response = supplied
+        ? new Response(decodeBase64(this.supplied[pkg.resolved]))
+        : await this.fetcher(pkg.resolved, {
+            redirect: "manual",
+            signal: AbortSignal.any([this.signal, AbortSignal.timeout(15000)]),
+          });
       if (!response.ok || !response.body) {
         await response.body?.cancel();
         throw Error("Locked npm package download failed");
@@ -232,7 +263,7 @@ export class BuildFileSystem {
           const { done, value } = await reader.read();
           if (done) break;
           size += value.length;
-          this.compressed += value.length;
+          if (!supplied) this.compressed += value.length;
           if (this.compressed > BUILD_LIMIT.compressed)
             throw Error("npm compressed byte limit exceeded");
           chunks.push(value);
@@ -262,6 +293,8 @@ export class BuildFileSystem {
       const manifest = JSON.parse(unpacked["package.json"] || "null");
       if (!manifest || manifest.version !== pkg.version)
         throw Error("npm manifest version mismatch");
+      if (supplied && manifest.name !== path.split("node_modules/").at(-1))
+        throw Error("Private npm manifest name mismatch");
       for (const [p, content] of Object.entries(unpacked)) {
         this.files[path + "/" + p] = content;
       }

@@ -65,6 +65,16 @@ export const executionSchema = z
   })
   .strict()
   .superRefine((p, c) => {
+    for (const step of p.steps)
+      if (step.type === "build") {
+        for (const registry of step.private_registries || [])
+          if (!p.variables?.includes(registry.token_variable))
+            c.addIssue({
+              code: "custom",
+              message:
+                "Private registry credential must be explicitly selected in job variables",
+            });
+      }
     if (p.environment && p.deploy && p.environment !== p.deploy.environment)
       c.addIssue({
         code: "custom",

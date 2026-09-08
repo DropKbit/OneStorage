@@ -3,7 +3,7 @@ const packages = () => import("./packages.js?v=940a14d638488fa5");
 const account = () => import("./account.js?v=d9bd32b82f5426d8");
 const oidc = () => import("./oidc.js?v=d111df485dceede5");
 const collaboration = () => import("./collaboration.js?v=b5593ce58e7ebae4");
-const platform = () => import("./manage.js?v=485e40b48dc4921c");
+const platform = () => import("./manage.js?v=3f4cfee2f85c57c9");
 import {
   keyPage,
   forgePage,

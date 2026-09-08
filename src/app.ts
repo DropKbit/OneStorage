@@ -494,7 +494,7 @@ registerWorkspaceRoutes(app, { engine });
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>
-  c.json({ name: "OneStorage", version: "0.26.0", status: "ok" }),
+  c.json({ name: "OneStorage", version: "0.27.0", status: "ok" }),
 );
 app.get("/api/bootstrap", async (c) =>
   c.json({

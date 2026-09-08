@@ -61,3 +61,7 @@ npm install @team/example --ignore-scripts
 名称不超过 80 字符；可选用户名匹配 `[a-zA-Z0-9][a-zA-Z0-9._+-]{0,79}`，未指定自动生成。时间字段为 Unix 毫秒。陈旧版本、有效数量超限或操作过程中管理权限改变返回 409。认证失败为 401，已认证但范围不足为 403。OpenAPI 与本地/生产验收脚本 `npm run test:deploy-tokens` 随源码提供。
 
 设计参照 [GitLab deploy tokens](https://docs.gitlab.com/user/project/deploy_tokens/) 的独立项目/组主体与代码只读语义；OneStorage 额外拆分包撤回权限并强制有限有效期，不宣称 GitLab API 完全兼容。
+
+## v0.27 私有包云构建
+
+原生 Worker 编译现可通过显式选择的密钥变量和项目/空间部署令牌读取本实例私有包；只把完整性校验后的包内容交给编译服务。授权、限额及客户端用法见 [私有包构建](CI-PRIVATE-PACKAGES-v27.md)。

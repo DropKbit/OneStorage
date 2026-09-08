@@ -40,8 +40,8 @@ export default {
     const controller = new AbortController();
     let context: esbuild.BuildContext | undefined;
     try {
-      const { step, files } = buildRequest.parse(
-        await body(request, 6 * 1024 * 1024),
+      const { step, files, packages } = buildRequest.parse(
+        await body(request, BUILD_LIMIT.request),
       );
       if (
         Object.keys(files).length > BUILD_LIMIT.files ||
@@ -58,6 +58,7 @@ export default {
         step.platform,
         undefined,
         controller.signal,
+        packages,
       );
       initialization ??= esbuild
         .initialize({ wasmModule, worker: false })
