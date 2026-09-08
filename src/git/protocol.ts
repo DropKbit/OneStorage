@@ -134,6 +134,13 @@ export async function receive(repo: GitRepository, data: Uint8Array) {
     try {
       await repo.updates(commands);
     } catch (e) {
+      if (!(e instanceof HTTPException))
+        console.error(
+          "Git ref publication failed",
+          e instanceof Error
+            ? { name: e.name, message: e.message.slice(0, 500) }
+            : { type: typeof e },
+        );
       reason =
         e instanceof HTTPException
           ? e.message
