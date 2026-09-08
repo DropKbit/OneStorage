@@ -74,7 +74,9 @@ git clone http://localhost:8787/owner/project.git
 npm run check
 npm run test:parity
 npm run build:production
+npm run build:compiler
 npm run db:remote
+npm run deploy:build
 npm run deploy
 ```
 

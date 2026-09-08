@@ -4,7 +4,7 @@
 
 规范地址为 **https://git.1s.hk**；`1s.hk` 继续提供 Cubelink。独立 Worker 地址为 `https://onestorage.xbitfun.workers.dev`，浏览器登录和 LFS 应使用规范地址，以匹配 APP_ORIGIN。
 
-资源：Worker `onestorage`、D1 `onestorage`、R2 `onestorage-objects`、Queue `onestorage-events`、SQLite Durable Object 类 `Repository`。没有 Containers、Docker 镜像或外部 Git 服务器。
+资源：Worker `onestorage`、私有编译 Worker `onestorage-build`、D1 `onestorage`、R2 `onestorage-objects`、Queue `onestorage-events`、SQLite Durable Object 类 `Repository`。应用由独立 `onestorage-apps` 网关提供。没有 Containers、Docker 镜像或外部 Git 服务器。
 
 首次初始化通过网页完成，用户名和密码由操作者选择。初始化 secret 存放在本机被 Git 忽略的 `.data/production-bootstrap-secret.txt`（权限 0600），同时保存在 Worker secret 中。不要将它加入源码或公开发送。成功创建管理员后，D1 会锁定初始化，可删除云端 BOOTSTRAP_SECRET。
 
@@ -26,11 +26,17 @@ npx wrangler queues create onestorage-events
 ```sh
 npm run check
 npm run build:production
+npm run build:compiler
 npm run db:remote
+npm run deploy:build
 npm run deploy
 npx wrangler secret put BOOTSTRAP_SECRET
 npx wrangler secret put CREDENTIAL_ENCRYPTION_KEY
 ```
+
+先部署编译 Worker，再部署主 Worker；主配置的 `BUILDER` 服务名必须与 `wrangler.build.jsonc` 的 Worker 名一致。编译 Worker 无存储/密钥绑定，禁用 workers.dev 和预览 URL。升级它无需 D1 迁移。详见 [云端构建](CI-BUILDS-v22.md)。
+
+若使用应用发布，另外配置 `wrangler.apps.jsonc` 的 D1/R2 为本实例资源，保留 `LOADER`，运行 `npm run deploy:apps`，再把主 Worker 的 `APPS_ORIGIN` 设置为返回的独立应用域名并发布主 Worker。应用域名须与 Git 登录域名分开。
 
 `deploy` 与打包命令会先从明确的源码目录生成 `public/source.tar.gz`，通过页面提供 AGPL 源码下载。不要将私有文件放入这些源码目录；`.data`、`.wrangler` 和环境密钥文件不在打包白名单。
 
