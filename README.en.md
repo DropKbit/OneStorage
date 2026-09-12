@@ -62,7 +62,7 @@ Open [localhost:8787](http://localhost:8787). Create an administrator with boots
 
 ## Scope
 
-Current release: **v0.38 alpha**. Cloud CI runs JS/WASM, not arbitrary shell commands, Python, or npm lifecycle scripts. General command builds can use a self-managed external runner. SSH Git transport, shallow/partial clones, and full GitLab API compatibility are not supported. See [limits](docs/en/LIMITS.md) for repository and capacity boundaries.
+Current release: **v0.39 alpha**. Cloud CI runs JS/WASM, not arbitrary shell commands, Python, or npm lifecycle scripts. General command builds can use a self-managed external runner. SSH Git transport, shallow/partial clones, and full GitLab API compatibility are not supported. See [limits](docs/en/LIMITS.md) for repository and capacity boundaries.
 
 [Deployment and recovery](docs/en/DEPLOYMENT.md) · [CI/CD](docs/en/CI-BUILDS-v22.md) · [API](docs/en/API.md) · [SDK](docs/en/SDK.md) · [Contributing](CONTRIBUTING.en.md) · [Security](SECURITY.en.md)
 
