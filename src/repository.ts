@@ -6,6 +6,7 @@ import {
   validateQueuePublication,
 } from "./merge-queue";
 import { RequestGate } from "./git/request-gate";
+import { BrowseCache } from "./git/browse-cache";
 import {
   acquireSnapshot,
   SnapshotBudget,
@@ -71,6 +72,8 @@ export class Repository extends DurableObject<Env> {
   private objectCache = new ObjectCache();
   private objectIndex?: GitObjectIndex;
   async fetch(request: Request): Promise<Response> {
+    const started = performance.now();
+    let admitted = started;
     try {
       // Internal cross-fork queue checks never wait on the other repository's writer gate.
       // Only published refs are visible; no R2 reads or nested source locks are acquired.
@@ -92,11 +95,13 @@ export class Repository extends DurableObject<Env> {
       const response = await this.gate.run(
         shareableOperation(request),
         async (ready) => {
+          admitted = performance.now();
           await assertDeployGitRequest(this.env, request);
           return this.handle(request, ready);
         },
         snapshotRead(request)
           ? async () => {
+              admitted = performance.now();
               await assertDeployGitRequest(this.env, request);
               return this.handleSnapshot(request);
             }
@@ -107,6 +112,12 @@ export class Repository extends DurableObject<Env> {
       } catch (e) {
         await response.body?.cancel();
         throw e;
+      }
+      if (new URL(request.url).pathname === "/browse") {
+        response.headers.append(
+          "Server-Timing",
+          `repo_queue;dur=${(admitted - started).toFixed(1)}, repo_total;dur=${(performance.now() - started).toFixed(1)}`,
+        );
       }
       return response;
     } catch (e) {
@@ -211,7 +222,32 @@ export class Repository extends DurableObject<Env> {
           if (!live) await this.ctx.storage.delete("code-index");
           else if (live.sync_status === "initializing")
             await this.ctx.storage.setAlarm(Date.now() + 30000);
-          else
+          else {
+            // Prewarm after published push/sync events, before the heavier code
+            // index traversal. Cache failure cannot block index maintenance.
+            try {
+              const refs = (await this.ctx.storage.get<Refs>("refs.v2")) || {};
+              const target = refs["refs/heads/" + live.default_branch];
+              if (
+                target &&
+                target !== (await this.ctx.storage.get("browse-warmed.v1"))
+              ) {
+                const response = await this.handle(
+                  new Request("http://repository/browse", {
+                    headers: {
+                      "x-repo-id": live.id,
+                      "x-lifecycle-revision": String(live.lifecycle_revision),
+                      "x-default-branch": live.default_branch,
+                    },
+                  }),
+                );
+                await response.body?.cancel();
+                if (response.ok)
+                  await this.ctx.storage.put("browse-warmed.v1", target);
+              }
+            } catch {
+              /* The next foreground read can rebuild the disposable cache. */
+            }
             await this.handle(
               new Request("http://repository/internal/code-index-tick", {
                 method: "POST",
@@ -222,6 +258,7 @@ export class Repository extends DurableObject<Env> {
                 },
               }),
             );
+          }
           await this.ctx.storage.delete("code-index-failures");
         } catch {
           const attempts =
@@ -342,7 +379,12 @@ export class Repository extends DurableObject<Env> {
         )
           throw new SnapshotBudget();
       }
-      const result = await repositoryRead(repo, request, defaultBranch);
+      const result = await repositoryRead(
+        repo,
+        request,
+        defaultBranch,
+        new BrowseCache(this.ctx.storage, false),
+      );
       if (!result) throw new SnapshotBudget();
       const response = await snapshotResponse(result);
       completion = responseCompletion(response);
@@ -834,7 +876,12 @@ export class Repository extends DurableObject<Env> {
       fail(409, "Repository initialization is in progress");
     const q = Object.fromEntries(url.searchParams),
       page = { limit: q.limit, cursor: q.cursor };
-    const sharedRead = await repositoryRead(repo, request, defaultBranch);
+    const sharedRead = await repositoryRead(
+      repo,
+      request,
+      defaultBranch,
+      new BrowseCache(this.ctx.storage),
+    );
     if (sharedRead) return sharedRead;
     if (request.method === "GET") {
       switch (path) {

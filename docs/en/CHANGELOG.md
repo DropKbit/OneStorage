@@ -2,6 +2,8 @@
 
 [简体中文](../CHANGELOG.md) · **English**
 
+- **v0.39**: Durable root/README cache, post-push prewarming, live ref validation and Server-Timing. [Details](PERFORMANCE.md).
+
 - **v0.38**: Primary domain and Simplified Chinese/English interface and documentation. [Guide](DEPLOYMENT.md).
 - **v0.37**: Read-only Jupyter Notebook cells, safe outputs, source switching, and pagination. [Guide](NOTEBOOK-v37.md).
 - **v0.36**: Selected tsconfig/JSONC inheritance, aliases, JSX, and source extension resolution. [Guide](CI-TSCONFIG-v36.md).

@@ -293,7 +293,14 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
   storage.sql?.exec(
     "DROP TABLE IF EXISTS git_edges_v1; DROP TABLE IF EXISTS git_objects_v1; DROP TABLE IF EXISTS git_index_owner_v1; DROP TABLE IF EXISTS git_walk_excluded_v1;",
   );
-  await storage.delete(["refs.v2", "snapshot", "default-branch"]);
+  await storage.delete([
+    "refs.v2",
+    "snapshot",
+    "default-branch",
+    "browse-root.v1:ordinary",
+    "browse-root.v1:ephemeral",
+    "browse-warmed.v1",
+  ]);
   const incoming = await storage.list({ prefix: "incoming:" });
   if (incoming.size) await storage.delete([...incoming.keys()]);
   const packCache = await storage.list({ prefix: "pack-cache:" });

@@ -4,6 +4,7 @@ import type { ObjectCache } from "./object-cache";
 import type { ForgeRepository } from "./forge";
 import { fail } from "../security";
 import { streamResponse } from "./pack-stream";
+import type { BrowseCache } from "./browse-cache";
 
 const paths = new Set([
   "/browse",
@@ -125,6 +126,7 @@ export async function repositoryRead(
   repo: ForgeRepository,
   request: Request,
   defaultBranch: string,
+  cache?: BrowseCache,
 ) {
   if (!readRoute(request)) return;
   const url = new URL(request.url),
@@ -166,6 +168,10 @@ export async function repositoryRead(
       return Response.json({ name, sha });
     }
     case "/browse": {
+      const started = performance.now();
+      const timing = (state: string) => ({
+        "Server-Timing": `browse;dur=${(performance.now() - started).toFixed(1)};desc="${state}", r2_reads;desc="${repo.store.ioUsage.r2Reads}"`,
+      });
       const branches = repo.listBranches({ limit: 256 }).branches;
       if (!branches.length)
         return Response.json({
@@ -176,6 +182,15 @@ export async function repositoryRead(
         });
       const branch = q.ref || defaultBranch,
         blob = q.view === "blob";
+      const target = !blob && !file ? cache?.target(repo, branch) : undefined;
+      const cached = target ? await cache?.get(repo, target) : undefined;
+      if (cached)
+        return Response.json(
+          { branches, default_branch: defaultBranch, ...cached },
+          {
+            headers: timing("persistent-hit"),
+          },
+        );
       const data = blob
         ? await repo.blob(branch, file)
         : await repo.tree(branch, file);
@@ -193,12 +208,19 @@ export async function repositoryRead(
             throw error;
         }
       }
-      return Response.json({
-        branches,
-        default_branch: defaultBranch,
-        data,
-        readme,
-      });
+      if (target && "entries" in data)
+        await cache?.put(repo, target, { data, readme });
+      return Response.json(
+        {
+          branches,
+          default_branch: defaultBranch,
+          data,
+          readme,
+        },
+        {
+          headers: timing(target ? "persistent-miss" : "uncached"),
+        },
+      );
     }
   }
 }

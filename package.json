@@ -1,6 +1,6 @@
 {
   "name": "onestorage",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "private": true,
   "description": "Git hosting implemented in JavaScript on Cloudflare Workers, R2 and Durable Objects",
   "license": "AGPL-3.0-only",
@@ -78,7 +78,8 @@
     "test:tsconfig": "ONESTORAGE_TSCONFIG=1 node scripts/e2e-builds.mjs",
     "test:notebook": "node scripts/e2e-notebook.mjs",
     "test:i18n": "node scripts/e2e-i18n.mjs",
-    "docs": "node scripts/docs.mjs"
+    "docs": "node scripts/docs.mjs",
+    "test:browse-cache": "node scripts/e2e-browse-cache.mjs"
   },
   "dependencies": {
     "cron-parser": "5.10.0",

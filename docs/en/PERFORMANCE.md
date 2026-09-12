@@ -1,6 +1,18 @@
-# Page loading improvements — v0.3.1
+# Page loading performance
 
 [简体中文](../PERFORMANCE.md) · **English**
+
+## v0.39: Durable root cache and prewarming
+
+Root directory and README content are cached by the Git target object ID in the repository Durable Object. Ordinary and ephemeral namespaces each have one fixed slot, capped at 96 KiB with a seven-day expiry. Authorization, branch lists, and the default branch are never cached. Every request still checks current authorization, deletion, project version, and refs; changed refs immediately select fresh content.
+
+Background maintenance after push/sync events prewarms the default branch. Cached content survives DO reconstruction. Oversized entries, cache failures, expired entries, subdirectories/files, and complex revisions retain the existing verified-object read path. A new commit without prewarming still requires R2 reads on its first visit. Git protocol and repository size budgets are unchanged. Repository deletion removes the cache.
+
+Server-Timing exposes browse duration and hit/miss state, r2_reads, repo_queue, and repo_total, without paths, credentials, or user content.
+
+Validation: 387 tests pass. The local test:browse-cache acceptance verifies automatic prewarming, private authorization on hits, and immediate visibility after writes. Native Git/LFS/concurrency acceptance passes. After stopping and restarting workerd, an existing root cache hit requires zero R2 reads. The fresh-object-store unit comparison is three initial reads versus zero durable-hit reads. These are not global p95 measurements or guarantees for never-warmed repositories.
+
+The following measurements describe historical v0.3.1 behavior. Language negotiation changed HTML ETag handling in v0.38.
 
 Measured on 2026-09-08 at `git.1s.hk`, using private repository `1shk/nb`. This historical release addressed the full-page “connecting” screen on refresh and slow page navigation.
 

@@ -2,7 +2,7 @@
 
 [简体中文](../LIMITS.md) · **English**
 
-Applies to v0.38. These are application budgets; Cloudflare platform limits may be reached sooner.
+Applies to v0.39. These are application budgets; Cloudflare platform limits may be reached sooner.
 
 | Resource                                         | Limit / behavior                                                                              |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
