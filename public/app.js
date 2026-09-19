@@ -611,7 +611,7 @@ async function loadFileUpdates(ap, sha, path, version) {
     ]),
   );
   try {
-    for (let batch = 0; batch < 314 && version === routeVersion; batch++) {
+    for (let batch = 0; batch < 626 && version === routeVersion; batch++) {
       const result = await api(url);
       if (
         version !== routeVersion ||
