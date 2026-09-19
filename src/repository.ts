@@ -7,6 +7,7 @@ import {
 } from "./merge-queue";
 import { RequestGate } from "./git/request-gate";
 import { BrowseCache } from "./git/browse-cache";
+import { updatesAt } from "./git/tree-updates";
 import {
   acquireSnapshot,
   SnapshotBudget,
@@ -876,6 +877,15 @@ export class Repository extends DurableObject<Env> {
       fail(409, "Repository initialization is in progress");
     const q = Object.fromEntries(url.searchParams),
       page = { limit: q.limit, cursor: q.cursor };
+    if (request.method === "GET" && path === "/tree-updates")
+      return Response.json(
+        await updatesAt(
+          repo,
+          q.ref || defaultBranch,
+          q.path || "",
+          this.ctx.storage,
+        ),
+      );
     const sharedRead = await repositoryRead(
       repo,
       request,

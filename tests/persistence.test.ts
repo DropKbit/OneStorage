@@ -248,11 +248,13 @@ test("deletion tombstone rejects writes and incremental cleanup removes Git, LFS
     "browse-root.v1:ordinary",
     "browse-root.v1:ephemeral",
     "browse-warmed.v1",
+    "tree-updates.v1:ordinary",
+    "tree-updates.v1:ephemeral",
   ])
     f.values.set(key, "private cached content");
   for (let i = 0; i < 5; i++) await collectDeleted(f.env, f.storage);
   assert.equal(
-    [...f.values.keys()].some((key) => key.startsWith("browse-")),
+    [...f.values.keys()].some((key) => /^(browse-|tree-updates)/.test(key)),
     false,
   );
   assert.equal(f.metadata(), undefined);

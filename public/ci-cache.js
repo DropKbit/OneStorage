@@ -2,7 +2,7 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=b03346d448c25b98";
+} from "./i18n.js?v=421fdfd4be286a79";
 export function cachePanel(data, base, maintain, esc) {
   const mb = (size) => (size / 1048576).toFixed(1);
   return i18nHTML`<section class="panel" aria-label="构建缓存"><div class="panelhead"><strong>构建缓存</strong>${maintain ? i18nText('<button type="button" class="btn small danger" data-action="cache-clear">清空缓存</button>') : ""}</div><div class="detail-body"><p class="muted">复用依赖和中间文件。缓存按仓库、分支及保护状态隔离，任务和工作流成功后才可复用，保留七天。清空后旧上传不能重新生效，存储由 Cloudflare 定时回收。</p><p>占用 ${mb(data.used.bytes)} / ${mb(data.limits.bytes)} MiB · 缓存版本 ${data.generation}</p>${data.entries.map((e) => i18nHTML`<div class="token-row"><div><strong>${esc(e.label)}</strong> <span class="pill">${esc(e.format)}</span><p>${esc(e.ref)} · ${mb(e.size)} MiB</p><p class="muted">${e.paths.map(esc).join("、")} · 到期 ${esc(new Date(e.expires_at).toLocaleString(getLocale()))}</p><a data-link href="${base}/ci/${e.run_id}">来源任务</a></div></div>`).join("") || i18nText('<p class="empty">暂无可复用缓存</p>')}<p class="hint">任务配置使用 caches，可通过 key_files 按锁文件生成键，并设置 fallback_keys、branch/protected 作用域或 pull/push/pull-push 策略。云端脚本读取并返回 caches 文件集合；外部 Runner 缓存指定目录，建议 npm 使用 --cache .npm。不要缓存凭据文件。</p><pre>{ "caches": [{ "id": "npm", "key": "npm-v1", "key_files": ["package-lock.json"], "paths": [".npm"] }] }</pre></div></section>`;

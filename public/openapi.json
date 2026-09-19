@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "OneStorage",
-    "version": "0.39.0",
+    "version": "0.40.0",
     "description": "Container-free Git hosting on Cloudflare Workers. Independent API; not wire-compatible with third-party SDKs."
   },
   "servers": [
@@ -14799,6 +14799,64 @@
           },
           "409": {
             "description": "Address conflict, stale revision, ownership changed, initialization or upstream reconciliation pending"
+          }
+        }
+      }
+    },
+    "/api/repos/{namespace}/{repo}/tree-updates": {
+      "get": {
+        "operationId": "get_tree_updates",
+        "summary": "Read incremental first-parent update times for directory entries",
+        "description": "Use a fixed commit ref. Repeat until complete or limited. Each request scans at most 16 commits; progress is cached in one bounded slot per namespace. A merge records when content entered its first-parent branch. Unknown times are null, never the repository creation time.",
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ephemeral",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot ref/path, updates (name, date, commit), complete and limited flags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
           }
         }
       }

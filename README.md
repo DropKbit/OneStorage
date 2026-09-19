@@ -13,7 +13,7 @@
 ## 能做什么
 
 - **代码托管**：公开 / 私有仓库，HTTPS clone、push、fetch，分支、标签、Fork、Git LFS 和上游同步。
-- **代码浏览**：语法高亮、文件历史、Diff、Blame、跨项目搜索，以及 Markdown、图片和 Jupyter Notebook 预览。
+- **代码浏览**：文件/目录更新时间、语法高亮、文件历史、Diff、Blame、跨项目搜索，以及 Markdown、图片和 Jupyter Notebook 预览。
 - **团队协作**：多工作空间与切换、角色权限、Issue / 看板 / 里程碑、合并请求、行级讨论、CODEOWNERS 和受保护分支。
 - **CI/CD**：推送与定时触发、日志、变量 / 密钥、缓存和产物；云端构建 TypeScript / TSX、JS / CSS 与锁定 npm 依赖，支持应用发布和回滚。
 - **项目管理**：npm / 通用包仓库、版本发布、Wiki、通知、审计日志和管理员后台。
@@ -62,7 +62,7 @@ npm run dev
 
 ## 使用范围
 
-当前为 **v0.39 alpha**。云端 CI 支持 JS / WASM，不运行任意 shell、Python 或 npm 生命周期脚本；通用命令构建可接入自行管理的外部 Runner。暂不支持 SSH Git 传输、shallow / partial clone，也不兼容全部 GitLab API。容量与大仓库限制见 [使用边界](docs/LIMITS.md)。
+当前为 **v0.40 alpha**。云端 CI 支持 JS / WASM，不运行任意 shell、Python 或 npm 生命周期脚本；通用命令构建可接入自行管理的外部 Runner。暂不支持 SSH Git 传输、shallow / partial clone，也不兼容全部 GitLab API。容量与大仓库限制见 [使用边界](docs/LIMITS.md)。
 
 [部署与恢复](docs/DEPLOYMENT.md) · [CI/CD](docs/CI-BUILDS-v22.md) · [API](docs/API.md) · [SDK](docs/SDK.md) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md)
 

@@ -13,7 +13,7 @@ Host code, manage teams, and review changes in a GitLab / Gogs-style workspace. 
 ## Features
 
 - **Code hosting:** public/private repositories, HTTPS clone/push/fetch, branches, tags, forks, Git LFS, and upstream synchronization.
-- **Code browsing:** syntax highlighting, file history, diffs, blame, cross-project search, and Markdown, image, and Jupyter Notebook previews.
+- **Code browsing:** file/directory update times, syntax highlighting, file history, diffs, blame, cross-project search, and Markdown, image, and Jupyter Notebook previews.
 - **Collaboration:** multiple workspaces, role-based access, issues/boards/milestones, merge requests, line discussions, CODEOWNERS, and protected branches.
 - **CI/CD:** push and scheduled triggers, logs, variables/secrets, caches, and artifacts. Cloud builds support TypeScript/TSX, JS/CSS, and locked npm dependencies, with app publishing and rollback.
 - **Project management:** npm/generic package registries, releases, wikis, notifications, audit logs, and administration.
@@ -62,7 +62,7 @@ Open [localhost:8787](http://localhost:8787). Create an administrator with boots
 
 ## Scope
 
-Current release: **v0.39 alpha**. Cloud CI runs JS/WASM, not arbitrary shell commands, Python, or npm lifecycle scripts. General command builds can use a self-managed external runner. SSH Git transport, shallow/partial clones, and full GitLab API compatibility are not supported. See [limits](docs/en/LIMITS.md) for repository and capacity boundaries.
+Current release: **v0.40 alpha**. Cloud CI runs JS/WASM, not arbitrary shell commands, Python, or npm lifecycle scripts. General command builds can use a self-managed external runner. SSH Git transport, shallow/partial clones, and full GitLab API compatibility are not supported. See [limits](docs/en/LIMITS.md) for repository and capacity boundaries.
 
 [Deployment and recovery](docs/en/DEPLOYMENT.md) · [CI/CD](docs/en/CI-BUILDS-v22.md) · [API](docs/en/API.md) · [SDK](docs/en/SDK.md) · [Contributing](CONTRIBUTING.en.md) · [Security](SECURITY.en.md)
 

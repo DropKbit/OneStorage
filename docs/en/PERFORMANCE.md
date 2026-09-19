@@ -45,3 +45,9 @@ Another comparison using the old individual endpoints measured 547 / 743 / 950 /
 - Browser navigation between code, commits, and Git tools was checked with real contents.
 - Production aggregate results matched the old directory/README endpoints. Anonymous and invalid-token private access returned 401. APIs remained no-store; conditional public HTML returned 304 and versioned scripts cached correctly.
 - Production build passed without database migrations, containers, or additional paid services.
+
+## v0.40: File list update times
+
+File and directory rows receive relative update times after the listing renders. Tooltips show exact committer dates. A fixed page commit anchors a first-parent walk for each path's latest content or mode change. Merged content uses the merge commit date, renames count as new-path changes, and directories track tree changes. Repository creation dates and unrelated tip commits are never substituted.
+
+`GET /api/repos/:namespace/:repo/tree-updates?ref=<fixed-commit>&path=<directory>` returns `ref`, `path`, `updates` (name/date/commit), `complete`, and `limited`. Repeated requests advance at most 16 commits each, with a 5,000-commit traversal ceiling. Each namespace has one 96 KiB progress slot expiring after seven days; changed refs or paths restart the walk. Current repository read authorization applies. Budget limits or failures show a dash rather than invented dates. Navigation cancels subsequent requests. This cache is separate from the v0.39 root cache and is removed on repository deletion.

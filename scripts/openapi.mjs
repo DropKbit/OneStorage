@@ -292,6 +292,35 @@ addPasswordRecoveryPaths(paths);
 addReviewPaths(paths);
 addIssuePaths(paths);
 addLifecyclePaths(paths);
+paths["/api/repos/{namespace}/{repo}/tree-updates"] = {
+  get: {
+    operationId: "get_tree_updates",
+    summary: "Read incremental first-parent update times for directory entries",
+    description:
+      "Use a fixed commit ref. Repeat until complete or limited. Each request scans at most 16 commits; progress is cached in one bounded slot per namespace. A merge records when content entered its first-parent branch. Unknown times are null, never the repository creation time.",
+    parameters: [
+      ...["namespace", "repo"].map((name) => ({
+        name,
+        in: "path",
+        required: true,
+        schema: { type: "string" },
+      })),
+      ...["ref", "path"].map((name) => ({
+        name,
+        in: "query",
+        schema: { type: "string" },
+      })),
+      { name: "ephemeral", in: "query", schema: { type: "boolean" } },
+    ],
+    responses: {
+      200: {
+        description:
+          "Snapshot ref/path, updates (name, date, commit), complete and limited flags",
+        content: { "application/json": { schema: { type: "object" } } },
+      },
+    },
+  },
+};
 await writeFile(
   new URL("../public/openapi.json", import.meta.url),
   JSON.stringify(
