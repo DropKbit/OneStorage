@@ -1,4 +1,5 @@
 import "./docs.mjs";
+import { isPrivatePath, assertPublicFile } from "./source-policy.mjs";
 import "./openapi.mjs";
 import "./assets.mjs";
 // Build-time only: publish an explicit allowlist of source files, never local state/secrets.
@@ -21,6 +22,8 @@ const files = [
   "SECURITY.md",
   "CONTRIBUTING.md",
   ".gitignore",
+  ".gitleaks.toml",
+  ".gitleaksignore",
 ];
 try {
   if ((await lstat(".env.example")).isFile()) files.push(".env.example");
@@ -36,6 +39,7 @@ async function collect(dir) {
     )
       continue;
     const path = join(dir, e.name);
+    if (isPrivatePath(path)) continue;
     if (e.isSymbolicLink())
       throw Error("Source archive must not contain symlinks: " + path);
     if (e.isDirectory()) await collect(path);
@@ -50,7 +54,6 @@ for (const dir of [
   "scripts",
   "tests",
   "migrations",
-  "docs",
   ".github",
 ])
   await collect(dir);
@@ -61,6 +64,7 @@ for (const file of files.sort()) {
     throw Error("Source archive path too long: " + path);
   const data = await readFile(file),
     header = Buffer.alloc(512);
+  assertPublicFile(file, data);
   header.write(path, 0, 100, "utf8");
   header.write("0000644\0", 100);
   header.write("0000000\0", 108);

@@ -142,7 +142,7 @@ export function addPlatformPaths(paths) {
               : "Workspaces",
       ],
       description:
-        "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
       parameters,
       security: [{ bearerAuth: [] }],
       responses: {
@@ -158,7 +158,7 @@ export function addPlatformPaths(paths) {
     const operation = paths[path][method];
     if (id.includes("cache")) {
       operation.description =
-        "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.";
+        "Shared repository CI cache; see https://1s.hk/docs/en/CI-CACHES-v21.html. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.";
       if (id === "ci_clear_caches")
         operation.requestBody = {
           required: true,
@@ -203,11 +203,11 @@ export function addPlatformPaths(paths) {
     }
     if (id === "ci_save_config" || id === "ci_config") {
       operation.description =
-        "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See docs/CI-PRIVATE-PACKAGES-v27.md. Does not run shell/npm lifecycle scripts. See docs/CI-BUILDS-v22.md for limits and deploy artifact configuration. v0.35 optionally caches public npm tarballs in a dedicated R2 bucket; each hit still verifies SHA-512, private supplied packages bypass it, and success logs report hits/misses/writes/errors/downloaded bytes. See docs/CI-NPM-CACHE-v35.md. v0.36 accepts optional tsconfig selected from source files, relative local extends, baseUrl/paths and supported JSX/TS emit options. Explicit step JSX overrides configuration. See docs/CI-TSCONFIG-v36.md.";
+        "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See https://1s.hk/docs/en/CI-PRIVATE-PACKAGES-v27.html. Does not run shell/npm lifecycle scripts. See https://1s.hk/docs/en/CI-BUILDS-v22.html for limits and deploy artifact configuration. v0.35 optionally caches public npm tarballs in a dedicated R2 bucket; each hit still verifies SHA-512, private supplied packages bypass it, and success logs report hits/misses/writes/errors/downloaded bytes. See https://1s.hk/docs/en/CI-NPM-CACHE-v35.html. v0.36 accepts optional tsconfig selected from source files, relative local extends, baseUrl/paths and supported JSX/TS emit options. Explicit step JSX overrides configuration. See https://1s.hk/docs/en/CI-TSCONFIG-v36.html.";
     }
     if (id.includes("variable")) {
       operation.description =
-        "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.";
+        "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.";
       if (method !== "get") {
         const full = id === "ci_create_variable" || id === "ci_update_variable";
         const properties = full
@@ -254,7 +254,7 @@ export function addPlatformPaths(paths) {
     }
     if (id.includes("schedule")) {
       operation.description =
-        "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.";
+        "Persistent scheduled pipeline; see https://1s.hk/docs/en/CI-SCHEDULES-v19.html. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.";
       if (method !== "get") {
         const fields = {
           name: { type: "string", minLength: 1, maxLength: 80 },
@@ -295,7 +295,7 @@ export function addPlatformPaths(paths) {
     }
     if (id === "ci_save_config") {
       operation.description +=
-        " Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See docs/CI-WORKFLOWS-v14.md for task schemas, dependency artifacts and limits.";
+        " Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See https://1s.hk/docs/en/CI-WORKFLOWS-v14.html for task schemas, dependency artifacts and limits.";
       operation.requestBody = {
         required: true,
         content: {
@@ -346,7 +346,7 @@ export function addPlatformPaths(paths) {
       operation.operationId = "workspace_" + operation.operationId;
       operation.summary = "Workspace " + operation.summary;
       operation.description =
-        "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.";
+        "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.";
       operation.parameters = (operation.parameters || [])
         .filter((p) => p.name !== "repo")
         .map((p) => (p.name === "namespace" ? { ...p, name: "slug" } : p));
@@ -354,5 +354,5 @@ export function addPlatformPaths(paths) {
     paths["/api/workspaces/{slug}/ci" + suffix] = operations;
   }
   paths[base + "/variables"].get.description +=
-    " Response includes inherited workspace metadata separately in inherited; variables remains the project definitions. See docs/CI-WORKSPACE-VARIABLES-v24.md.";
+    " Response includes inherited workspace metadata separately in inherited; variables remains the project definitions. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.";
 }

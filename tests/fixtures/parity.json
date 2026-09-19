@@ -13,8 +13,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repo-url/{id}",
@@ -30,8 +29,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos",
@@ -47,8 +45,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos",
@@ -64,8 +61,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}",
@@ -81,8 +77,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}",
@@ -98,8 +93,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}",
@@ -114,8 +108,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/archive",
@@ -132,8 +125,7 @@
         "tests/persistence.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-sync.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/base",
@@ -148,8 +140,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/blame",
@@ -165,8 +156,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/branch",
@@ -181,8 +171,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/branches",
@@ -197,8 +186,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/branches",
@@ -213,8 +201,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/branches/create",
@@ -229,8 +216,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/branches/diff",
@@ -246,8 +232,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/commit",
@@ -262,8 +247,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/commit-pack",
@@ -278,8 +262,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/commits",
@@ -294,8 +277,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/diff",
@@ -310,8 +292,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/diff-commit",
@@ -326,8 +307,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/file",
@@ -342,8 +322,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/file",
@@ -358,8 +337,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/files",
@@ -374,8 +352,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/files/metadata",
@@ -392,8 +369,7 @@
         "tests/persistence.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-sync.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/git-credentials",
@@ -410,8 +386,7 @@
         "tests/persistence.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-sync.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/git-credentials/{id}",
@@ -428,8 +403,7 @@
         "tests/persistence.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-sync.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/git-credentials",
@@ -444,8 +418,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/grep",
@@ -460,8 +433,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/merge",
@@ -477,8 +449,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/merge/preview",
@@ -494,8 +465,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/notes",
@@ -511,8 +481,7 @@
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-git-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/notes",
@@ -528,8 +497,7 @@
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-git-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/notes",
@@ -544,8 +512,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/notes/refs",
@@ -562,8 +529,7 @@
         "tests/persistence.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-sync.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/pull-upstream",
@@ -578,8 +544,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/reset-commits",
@@ -594,8 +559,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/restore-commit",
@@ -610,8 +574,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/tag",
@@ -626,8 +589,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/tags",
@@ -642,8 +604,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/tags",
@@ -658,8 +619,7 @@
       "evidence": [
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "implementation_path": "/api/repos/{namespace}/{repo}/tags/{tag}",
@@ -705,8 +665,7 @@
         "tests/forge.test.ts",
         "scripts/e2e-features.mjs",
         "scripts/e2e-git-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "cloud_verified": true
@@ -731,8 +690,7 @@
         "scripts/e2e-features.mjs",
         "tests/persistence.test.ts",
         "scripts/e2e-sdks.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "cloud_verified": true,
@@ -799,14 +757,13 @@
         "examples/workflows.ts",
         "scripts/e2e-sdk-ts.ts",
         "scripts/e2e-features.mjs",
-        "scripts/verify-cloud.mjs",
-        "docs/VERIFICATION.md"
+        "scripts/verify-cloud.mjs"
       ],
       "verification": "Local workerd/native-Git coverage plus operator-owned Cloudflare acceptance; see VERIFICATION.md for tested cases and limits.",
       "cloud_verified": true
     }
   ],
-  "limits_document": "docs/PARITY.md",
+  "limits_document": "https://1s.hk/docs/en/LIMITS.html",
   "release": "0.3.0",
   "cloud_acceptance_date": "2026-09-08"
 }

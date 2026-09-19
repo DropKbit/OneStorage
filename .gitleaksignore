@@ -1,0 +1,4 @@
+# Reviewed historical false positives: prose and the documented local-only test key.
+1a2faaa0fbd32519b1a556968dcc56678303825c:docs/en/VERIFICATION-v11.md:generic-api-key:7
+1a2faaa0fbd32519b1a556968dcc56678303825c:docs/en/ROADMAP.md:generic-api-key:57
+908c916b95a3a87e4782c731ffec41ae13b288d8:wrangler.local.jsonc:generic-api-key:16

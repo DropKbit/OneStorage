@@ -15,7 +15,7 @@
     "run_worker_first": true,
   },
   "vars": {
-    "APPS_ORIGIN": "https://onestorage-apps.xbitfun.workers.dev",
+    "APPS_ORIGIN": "http://localhost:8789",
     "APP_ORIGIN": "http://localhost:8787",
     "BOOTSTRAP_SECRET": "local-development-only-change-me",
     "WEBHOOK_ALLOWED_HOSTS": "",

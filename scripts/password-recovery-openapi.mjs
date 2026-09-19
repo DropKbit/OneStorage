@@ -56,7 +56,7 @@ export function addPasswordRecoveryPaths(paths) {
       tags: ["Account"],
       description:
         description +
-        " See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        " See https://1s.hk/docs/en/PASSWORD-RECOVERY-v30.html. Cookie mutations require same-origin Origin.",
       security: id === "recover_password" ? [] : [{ sessionCookie: [] }],
       ...(schema
         ? {

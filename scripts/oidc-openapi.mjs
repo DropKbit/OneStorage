@@ -138,7 +138,7 @@ export function addOIDCPaths(paths) {
       summary: description.split(". ")[0],
       description:
         description +
-        " See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        " See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
       security:
         kind === "public"
           ? []

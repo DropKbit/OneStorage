@@ -1,0 +1,9 @@
+title = "OneStorage secret detection"
+[extend]
+useDefault = true
+
+[[rules]]
+id = "onestorage-pat"
+description = "OneStorage personal access token"
+regex = '''\bos_[a-f0-9]{64}\b'''
+keywords = ["os_"]

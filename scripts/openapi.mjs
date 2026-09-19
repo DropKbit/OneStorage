@@ -10,7 +10,10 @@ import { addAccountPaths } from "./account-openapi.mjs";
 import { addPlatformPaths } from "./platform-openapi.mjs";
 import { readFile, writeFile } from "node:fs/promises";
 const parity = JSON.parse(
-  await readFile(new URL("../docs/parity.json", import.meta.url), "utf8"),
+  await readFile(
+    new URL("../tests/fixtures/parity.json", import.meta.url),
+    "utf8",
+  ),
 );
 const queryFields = {
   list_repos: "q,page,limit,cursor",
@@ -178,7 +181,7 @@ for (const feature of parity.features) {
     summary: feature.name,
     description:
       feature.note ||
-      "See the OneStorage API contract in the source archive (docs/API.md).",
+      "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
     parameters,
     security: [{ bearerAuth: [] }],
     "x-required-scope": scope,

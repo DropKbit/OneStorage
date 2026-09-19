@@ -9,7 +9,12 @@ const escape = (s) =>
         c
       ],
   );
-const files = (await fs.readdir("docs"))
+const files = (
+  await fs.readdir("docs").catch((error) => {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  })
+)
   .filter((f) => f.endsWith(".md"))
   .sort();
 const rootPages = ["README", "CONTRIBUTING", "SECURITY"];
@@ -39,6 +44,7 @@ const slug = (text) =>
     .replace(/[^\p{L}\p{N}_ -]/gu, "")
     .trim()
     .replace(/\s+/g, "-");
+await fs.rm("public/docs", { recursive: true, force: true });
 for (const lang of ["zh-CN", "en"]) {
   await fs.mkdir(`public/docs/${lang}`, { recursive: true });
   const english = lang === "en",
@@ -104,7 +110,7 @@ for (const lang of ["zh-CN", "en"]) {
       return self.renderToken(tokens, idx, options);
     };
     const content = md.render(text);
-    const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · OneStorage Docs</title><link rel="stylesheet" href="/docs/site.css"><link rel="icon" href="/favicon.svg"><link rel="alternate" hreflang="${other}" href="/docs/${other}/${page.name}.html"><script defer src="/docs-client.js"></script></head><body><a class="skip" href="#content">${english ? "Skip to content" : "跳到正文"}</a><header><a class="brand" href="/?lang=${lang}">OneStorage</a><a href="/docs/${lang}/index.html">${english ? "Documentation" : "文档"}</a><nav aria-label="Language / 语言"><a lang="zh-CN" href="/docs/zh-CN/${page.name}.html" ${!english ? 'aria-current="page"' : ""}>简体中文</a><a lang="en" href="/docs/en/${page.name}.html" ${english ? 'aria-current="page"' : ""}>English</a></nav></header><div class="layout"><aside><details open><summary>${english ? "All documents" : "全部文档"}</summary><nav>${nav}</nav></details></aside><main id="content"><div class="source"><a href="https://github.com/DropKbit/OneStorage/blob/main/${source}">${english ? "View Markdown source" : "查看 Markdown 源文档"}</a></div>${content}</main></div><footer>OneStorage · AGPL-3.0-only</footer></body></html>`;
+    const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)} · OneStorage Docs</title><link rel="stylesheet" href="/docs/site.css"><link rel="icon" href="/favicon.svg"><link rel="alternate" hreflang="${other}" href="/docs/${other}/${page.name}.html"><script defer src="/docs-client.js"></script></head><body><a class="skip" href="#content">${english ? "Skip to content" : "跳到正文"}</a><header><a class="brand" href="/?lang=${lang}">OneStorage</a><a href="/docs/${lang}/index.html">${english ? "Documentation" : "文档"}</a><nav aria-label="Language / 语言"><a lang="zh-CN" href="/docs/zh-CN/${page.name}.html" ${!english ? 'aria-current="page"' : ""}>简体中文</a><a lang="en" href="/docs/en/${page.name}.html" ${english ? 'aria-current="page"' : ""}>English</a></nav></header><div class="layout"><aside><details open><summary>${english ? "All documents" : "全部文档"}</summary><nav>${nav}</nav></details></aside><main id="content">${source.startsWith("docs/") ? "" : `<div class="source"><a href="https://github.com/DropKbit/OneStorage/blob/main/${source}">${english ? "View Markdown source" : "查看 Markdown 源文档"}</a></div>`}${content}</main></div><footer>OneStorage · AGPL-3.0-only</footer></body></html>`;
     await fs.writeFile(`public/docs/${lang}/${page.name}.html`, html);
   }
   const index = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OneStorage · ${english ? "Documentation" : "文档"}</title><link rel="stylesheet" href="/docs/site.css"><script defer src="/docs-client.js"></script></head><body><header><a class="brand" href="/?lang=${lang}">OneStorage</a><nav aria-label="Language / 语言"><a href="/docs/zh-CN/index.html" lang="zh-CN">简体中文</a><a href="/docs/en/index.html" lang="en">English</a></nav></header><main class="index"><h1>${english ? "Documentation" : "项目文档"}</h1><p>${english ? "Learn to deploy, use, and maintain your own Cloudflare Git platform. Feature guides include their supported scope; verification reports describe historical releases." : "了解如何部署、使用和维护自己的 Cloudflare Git 平台。功能指南包含支持边界；验收报告记录对应历史版本。"}</p><section class="doc-grid">${nav}</section></main><footer>OneStorage · AGPL-3.0-only</footer></body></html>`;

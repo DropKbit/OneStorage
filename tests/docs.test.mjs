@@ -6,7 +6,12 @@ const names = [
   "README",
   "CONTRIBUTING",
   "SECURITY",
-  ...(await fs.readdir("docs"))
+  ...(
+    await fs.readdir("docs").catch((error) => {
+      if (error.code === "ENOENT") return [];
+      throw error;
+    })
+  )
     .filter((n) => n.endsWith(".md"))
     .map((n) => n.slice(0, -3)),
 ];

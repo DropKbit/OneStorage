@@ -124,7 +124,7 @@ export function addAccountPaths(paths) {
       summary: id.replaceAll("_", " "),
       description:
         description +
-        " See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        " See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
       tags: [image ? "Repository" : "Account"],
       parameters,
       security: publicProfile

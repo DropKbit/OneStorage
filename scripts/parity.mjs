@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile, access } from "node:fs/promises";
-const report = JSON.parse(await readFile("docs/parity.json", "utf8"));
+const report = JSON.parse(await readFile("tests/fixtures/parity.json", "utf8"));
 assert.equal(report.features.length, 51);
 const ids = new Set();
 for (const feature of report.features) {

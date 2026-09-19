@@ -8,7 +8,7 @@ Host code, manage teams, and review changes in a GitLab / Gogs-style workspace. 
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FDropKbit%2FOneStorage%2Ftree%2Fdeploy)
 
-[Live instance](https://1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [Self-hosted repository](https://1s.hk/1shk/nb) · [Deployment guide](docs/en/DEPLOYMENT.md) · [Changelog](docs/en/CHANGELOG.md)
+[Live instance](https://1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [Self-hosted repository](https://1s.hk/1shk/nb) · [Deployment guide](https://1s.hk/docs/en/DEPLOYMENT.html) · [Changelog](https://1s.hk/docs/en/CHANGELOG.html)
 
 ## Features
 
@@ -33,7 +33,7 @@ A complete instance has three Workers: the **main service** handles Git, the web
 | Queues + Cron + DO Alarms | Background jobs, events, retries, and cleanup                 |
 | Worker Loader + WASM      | Isolated cloud tasks, compilation, and app execution          |
 
-A push follows **Git client → main Worker authorization → repository DO coordination → R2 object storage → DO reference publication**. Indexing, CI, and notifications run in the background. See the [architecture guide](docs/en/ARCHITECTURE.md).
+A push follows **Git client → main Worker authorization → repository DO coordination → R2 object storage → DO reference publication**. Indexing, CI, and notifications run in the background. See the [architecture guide](https://1s.hk/docs/en/ARCHITECTURE.html).
 
 ## Deploy to Cloudflare
 
@@ -43,7 +43,7 @@ Click **Deploy to Cloudflare** above to create an instance from the `deploy` tem
 2. Enter `BOOTSTRAP_SECRET` and `CREDENTIAL_ENCRYPTION_KEY`. Service URLs are generated automatically.
 3. Open the main Worker URL after deployment and create your administrator using the bootstrap secret.
 
-The template migrates D1, deploys the compiler, gateway, and main Worker in order, and connects storage and service URLs. Appropriate Cloudflare quotas and deployment permissions are required. See the [deployment details and verification status](docs/en/DEPLOYMENT.md#one-click-deployment). Preserve resources and encryption keys when upgrading.
+The template migrates D1, deploys the compiler, gateway, and main Worker in order, and connects storage and service URLs. Appropriate Cloudflare quotas and deployment permissions are required. See the [deployment details and verification status](https://1s.hk/docs/en/DEPLOYMENT.html#one-click-deployment). Preserve resources and encryption keys when upgrading.
 
 The primary domain is `1s.hk`. Browser pages on `git.1s.hk` redirect to it; existing Git HTTPS URLs remain compatible. OneStorage replaces the former Cubelink service.
 
@@ -62,8 +62,8 @@ Open [localhost:8787](http://localhost:8787). Create an administrator with boots
 
 ## Scope
 
-Current release: **v0.40 alpha**. Cloud CI runs JS/WASM, not arbitrary shell commands, Python, or npm lifecycle scripts. General command builds can use a self-managed external runner. SSH Git transport, shallow/partial clones, and full GitLab API compatibility are not supported. See [limits](docs/en/LIMITS.md) for repository and capacity boundaries.
+Current release: **v0.40 alpha**. Cloud CI runs JS/WASM, not arbitrary shell commands, Python, or npm lifecycle scripts. General command builds can use a self-managed external runner. SSH Git transport, shallow/partial clones, and full GitLab API compatibility are not supported. See [limits](https://1s.hk/docs/en/LIMITS.html) for repository and capacity boundaries.
 
-[Deployment and recovery](docs/en/DEPLOYMENT.md) · [CI/CD](docs/en/CI-BUILDS-v22.md) · [API](docs/en/API.md) · [SDK](docs/en/SDK.md) · [Contributing](CONTRIBUTING.en.md) · [Security](SECURITY.en.md)
+[Deployment and recovery](https://1s.hk/docs/en/DEPLOYMENT.html) · [CI/CD](https://1s.hk/docs/en/CI-BUILDS-v22.html) · [API](https://1s.hk/docs/en/API.html) · [SDK](https://1s.hk/docs/en/SDK.html) · [Contributing](CONTRIBUTING.en.md) · [Security](SECURITY.en.md)
 
 Licensed under [AGPL-3.0-only](LICENSE). Modified versions offered as a network service must provide their corresponding source to users. Independently implemented with reference to [Code Storage documentation](https://code.storage/docs/); not affiliated with Code Storage, GitLab, Gogs, or Cloudflare.
