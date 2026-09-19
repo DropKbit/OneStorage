@@ -29,6 +29,8 @@ main.r2_buckets = [
   { binding: "OBJECTS", bucket_name: "onestorage-objects" },
   { binding: "NPM_CACHE", bucket_name: "onestorage-npm-cache" },
 ];
+main.ai = { binding: "AI" };
+main.vectorize = [{ binding: "CODE_VECTORS", index_name: "onestorage-code" }];
 main.secrets = { required: ["CREDENTIAL_ENCRYPTION_KEY"] };
 await write("wrangler.jsonc", main);
 const compiler = await read("wrangler.build.jsonc");
@@ -57,6 +59,14 @@ pkg.cloudflare = {
     CREDENTIAL_ENCRYPTION_KEY: {
       description:
         "凭据加密密钥。请使用 openssl rand -base64 32 生成（32 随机字节），升级时必须保留。",
+    },
+    AI: {
+      description:
+        "中英文代码语义搜索使用 Workers AI 的 bge-m3；用量受平台额度与计费约束。",
+    },
+    CODE_VECTORS: {
+      description:
+        "代码向量索引：Dimensions 必须填写 1024，Metric 选择 cosine。部署脚本会验证并创建权限过滤所需的 repo 元数据索引。",
     },
     NPM_CACHE: {
       description: "独立的公共 npm 下载缓存 R2 桶；不能与 Git 对象桶共用。",

@@ -1,3 +1,4 @@
+import { semanticConfigured } from "./semantic";
 import type { Env, Repo } from "./types";
 import type { ForgeRepository } from "./git/forge";
 import { parseCommit, parseTree, bytes } from "./git/objects";
@@ -426,5 +427,13 @@ export async function advanceCodeIndex(
     env.DB.prepare("DELETE FROM mutation_guards WHERE id=?").bind(guard),
   );
   await env.DB.batch(statements);
+  if (done && semanticConfigured(env)) {
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO semantic_state(repo_id) VALUES(?)",
+    )
+      .bind(metadata.id)
+      .run();
+    await env.EVENTS?.send({ id: "semantic:" + metadata.id }).catch(() => {});
+  }
   return true;
 }

@@ -2,7 +2,7 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=421fdfd4be286a79";
+} from "./i18n.js?v=aca1321acd070c64";
 export async function completeLogin(h) {
   const { api, layout, esc, bindForm } = h;
   const pending = await api("/auth/oidc/pending");

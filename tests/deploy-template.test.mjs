@@ -11,6 +11,8 @@ import {
 } from "../scripts/deploy-template.mjs";
 const fixture = () => ({
   name: "my-forge",
+  ai: { binding: "AI" },
+  vectorize: [{ binding: "CODE_VECTORS", index_name: "my-code" }],
   vars: {},
   d1_databases: [
     { binding: "DB", database_id: "12345678-1234-1234-1234-123456789abc" },

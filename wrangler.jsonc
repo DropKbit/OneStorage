@@ -76,4 +76,13 @@
     "crons": ["*/5 * * * *"],
   },
   "workers_dev": true,
+  "ai": {
+    "binding": "AI",
+  },
+  "vectorize": [
+    {
+      "binding": "CODE_VECTORS",
+      "index_name": "onestorage-code",
+    },
+  ],
 }
