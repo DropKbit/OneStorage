@@ -8,7 +8,7 @@
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2FDropKbit%2FOneStorage%2Ftree%2Fdeploy)
 
-[在线体验](https://1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [自托管仓库](https://1s.hk/1shk/nb) · [部署指南](docs/DEPLOYMENT.md) · [版本记录](docs/CHANGELOG.md)
+[在线体验](https://1s.hk) · [GitHub](https://github.com/DropKbit/OneStorage) · [自托管仓库](https://1s.hk/1shk/nb) · [部署指南](https://1s.hk/docs/zh-CN/DEPLOYMENT.html) · [版本记录](https://1s.hk/docs/zh-CN/CHANGELOG.html)
 
 ## 能做什么
 
@@ -33,7 +33,7 @@
 | Queues + Cron + DO Alarms | 后台任务、事件投递、重试与清理           |
 | Worker Loader + WASM      | 隔离执行云端任务、编译和应用运行         |
 
-一次推送的主要路径是：**Git 客户端 → 主 Worker 校验权限 → 仓库 DO 协调 → R2 保存对象 → DO 发布引用**。提交后的索引、CI 和通知由后台任务处理。详见 [架构设计](docs/ARCHITECTURE.md)。
+一次推送的主要路径是：**Git 客户端 → 主 Worker 校验权限 → 仓库 DO 协调 → R2 保存对象 → DO 发布引用**。提交后的索引、CI 和通知由后台任务处理。详见 [架构设计](https://1s.hk/docs/zh-CN/ARCHITECTURE.html)。
 
 ## 部署到 Cloudflare
 
@@ -43,7 +43,7 @@
 2. 填写初始化密钥 `BOOTSTRAP_SECRET` 和凭据加密密钥 `CREDENTIAL_ENCRYPTION_KEY`，服务地址会自动生成。
 3. 部署完成后打开主 Worker 的地址，使用初始化密钥创建管理员。
 
-模板自动迁移数据库，依次部署编译服务、应用网关和主服务，并连接共享存储与服务地址。需要相应 Cloudflare 服务额度及部署权限；详见 [部署说明](docs/DEPLOYMENT.md#关于一键部署)。已有实例升级请保留原有资源和加密密钥。
+模板自动迁移数据库，依次部署编译服务、应用网关和主服务，并连接共享存储与服务地址。需要相应 Cloudflare 服务额度及部署权限；详见 [部署说明](https://1s.hk/docs/zh-CN/DEPLOYMENT.html#关于一键部署)。已有实例升级请保留原有资源和加密密钥。
 
 主站使用 **1s.hk**，替换原 Cubelink 服务。旧 `git.1s.hk` 网页跳转到主站，Git HTTPS 与 API 地址继续兼容；新客户端和外部登录回调请使用主域名。
 
@@ -62,8 +62,8 @@ npm run dev
 
 ## 使用范围
 
-当前为 **v0.40 alpha**。云端 CI 支持 JS / WASM，不运行任意 shell、Python 或 npm 生命周期脚本；通用命令构建可接入自行管理的外部 Runner。暂不支持 SSH Git 传输、shallow / partial clone，也不兼容全部 GitLab API。容量与大仓库限制见 [使用边界](docs/LIMITS.md)。
+当前为 **v0.40 alpha**。云端 CI 支持 JS / WASM，不运行任意 shell、Python 或 npm 生命周期脚本；通用命令构建可接入自行管理的外部 Runner。暂不支持 SSH Git 传输、shallow / partial clone，也不兼容全部 GitLab API。容量与大仓库限制见 [使用边界](https://1s.hk/docs/zh-CN/LIMITS.html)。
 
-[部署与恢复](docs/DEPLOYMENT.md) · [CI/CD](docs/CI-BUILDS-v22.md) · [API](docs/API.md) · [SDK](docs/SDK.md) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md)
+[部署与恢复](https://1s.hk/docs/zh-CN/DEPLOYMENT.html) · [CI/CD](https://1s.hk/docs/zh-CN/CI-BUILDS-v22.html) · [API](https://1s.hk/docs/zh-CN/API.html) · [SDK](https://1s.hk/docs/zh-CN/SDK.html) · [贡献](CONTRIBUTING.md) · [安全](SECURITY.md)
 
 采用 [AGPL-3.0-only](LICENSE) 开源协议；修改后提供在线服务时，须向用户提供相应源码。项目参考 [Code Storage 文档](https://code.storage/docs/) 独立实现，与 Code Storage、GitLab、Gogs 或 Cloudflare 无隶属关系。

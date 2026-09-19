@@ -4,7 +4,7 @@
 
 OneStorage accepts contributions under AGPL-3.0-only.
 
-1. Read [architecture](docs/en/ARCHITECTURE.md), particularly R2-before-refs ordering and authorization.
+1. Read [architecture](https://1s.hk/docs/en/ARCHITECTURE.html), particularly R2-before-refs ordering and authorization.
 2. Install Node.js 22.13+ and npm. Native Git and tar are required for tests, not the service runtime.
 3. Run `npm ci` and `npm run dev`. Wrangler starts the Git service on 8787 and the private WASM compiler service together. `npm run dev:build` can run the compiler separately on 8788.
 4. For protocol/storage/auth changes, run `npm run check`, `npm run test:e2e` and `npm run build:production`. Use native Git as an independent compatibility oracle and add focused failure regressions.
@@ -28,6 +28,8 @@ For CI variables, run `npm run test:variables` (real Worker and shipped external
 
 For shared CI caches, run `npm run test:caches` and `npm run test:cache-ui`. Verify real Worker and shipped external Runner reuse, failed workflow isolation, generation invalidation, lease rejection, bounded archive extraction, quota and eventual R2 reclamation. Wait for all fixtures to finish cleanup before editing runtime files or deploying.
 
-For native TypeScript/npm builds, run `npm run test:builds` with a local application gateway connected to the same local D1/R2 (`TEST_APPS_ORIGIN`, default localhost:8789). See [native builds](docs/en/CI-BUILDS-v22.md) for service deployment order, dependency restrictions and acceptance. Never connect a local fixture gateway to production storage.
+For native TypeScript/npm builds, run `npm run test:builds` with a local application gateway connected to the same local D1/R2 (`TEST_APPS_ORIGIN`, default localhost:8789). See [native builds](https://1s.hk/docs/en/CI-BUILDS-v22.html) for service deployment order, dependency restrictions and acceptance. Never connect a local fixture gateway to production storage.
 
 For interface changes, translate application-owned literals explicitly through `src/browser/i18n.js` and `src/i18n/en.json`; never translate user text, code, or already-rendered HTML. Preserve template placeholders. Add both Simplified Chinese and English documentation pages, then run `npm run docs`, `npm run check`, and `npm run test:i18n` against an isolated local instance. The language selector persists a non-sensitive preference; source and document language links must point to their counterparts.
+
+Root documents use `*.md` / `*.en.md` for Chinese and English. Optional `docs/` content stays local and is excluded from Git and source downloads; a fresh clone can build bilingual root documentation without it.

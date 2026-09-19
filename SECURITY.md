@@ -10,7 +10,7 @@ OneStorage 处于 alpha，尚未经过独立渗透测试或生产规模可靠性
 - R2 对象不可变且仓库隔离；全部对象写入先于 DO 原子引用发布。上传失败不能发布引用，已有对象的字节冲突会拒绝操作。
 - Git ID 使用 Web Crypto SHA-1，**没有原生 Git 的 SHA1DC 碰撞检测器**。对象校验不等同完整 `git fsck`；测试数据通过原生 Git 检查不能证明覆盖所有恶意输入，也不能宣称与成熟原生 Git 同等加固。
 - PAT/会话令牌仅存哈希，强制检查范围、期限和撤销。只有会话可创建 PAT。修改密码撤销全部会话和 PAT；委托 JWT 密钥在密钥设置中独立管理与撤销。
-- 项目/空间部署令牌是独立主体，仅存哈希，必须设置期限，Git 读取与软件包权限独立。创建者退出成员关系或停用账号不会自动撤销它们，当前维护者/空间所有者应主动撤销不再使用的令牌。跨空间转移永久撤销项目令牌并改变空间令牌覆盖范围。部署令牌不能使用普通用户/管理员 API 或推送 Git，见[部署凭据](docs/DEPLOY-TOKENS-v26.md)。
+- 项目/空间部署令牌是独立主体，仅存哈希，必须设置期限，Git 读取与软件包权限独立。创建者退出成员关系或停用账号不会自动撤销它们，当前维护者/空间所有者应主动撤销不再使用的令牌。跨空间转移永久撤销项目令牌并改变空间令牌覆盖范围。部署令牌不能使用普通用户/管理员 API 或推送 Git，见[部署凭据](https://1s.hk/docs/zh-CN/DEPLOY-TOKENS-v26.html)。
 - 不可信仓库文本按文本展示，并应用严格 CSP。Cookie 写操作必须匹配配置的 Origin。网页不把密钥放入 clone URL 或 localStorage；localStorage 仅保存语言等非敏感偏好。SDK 的含凭据 Git URL 需要显式启用，不应持久化或记录日志。
 - Webhook 使用操作者主机白名单、HTTPS、禁止重定向、超时和带时间戳的 HMAC。操作者须确保允许主机只解析到预期的公网接收端。
 
@@ -21,3 +21,5 @@ OneStorage 处于 alpha，尚未经过独立渗透测试或生产规模可靠性
 委托 JWT 通过已登记 SPKI 公钥验证，明确限定仓库/范围/期限，每次请求检查撤销。SSH/OpenPGP 提交签名公钥与 API JWT 密钥彼此独立。引用策略按顺序首条匹配：前置的宽泛无限制规则会遮蔽后续限制。凭据加密需要私有 32 字节 Worker secret；丢失后已存上游凭据无法解密。保留加密备份，不要仅替换密钥来“轮换”。
 
 HTTP Git 客户端校验提供方路径和允许主机、拒绝重定向、不运行 Hook。GitHub App LFS 转发将安装凭据与存储 action 请求头分开。操作者负责主机白名单及其 DNS 可信性。MCP 经由 REST 授权检查；经过认证的 Agent 仍能使用刻意授予它的权限。
+
+本仓库仅提交可公开的配置模板。`docs/`、`output/`、环境变量文件、私钥和 `*.production.jsonc` 不进入 Git 或源码下载包。生产资源配置保存在本地 `wrangler.production.jsonc`（编译/网关对应 `wrangler.build.production.jsonc`、`wrangler.apps.production.jsonc`），使用 `npm run deploy:production` 发布主服务；密钥通过 Wrangler secrets 设置。提交前运行 `npm run check:source`，CI 也执行同一检查。该检查不能证明不存在所有未知格式的秘密；误提交的凭据需要撤销，并单独处理历史记录。

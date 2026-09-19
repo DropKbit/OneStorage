@@ -15,7 +15,7 @@
       "get": {
         "operationId": "get_repo_url_by_id",
         "summary": "Get Repo Url By Id",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "id",
@@ -61,7 +61,7 @@
       "get": {
         "operationId": "list_repos",
         "summary": "List Repos",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "q",
@@ -129,7 +129,7 @@
       "post": {
         "operationId": "create_repo",
         "summary": "Create Repo",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [],
         "security": [
           {
@@ -177,7 +177,7 @@
       "delete": {
         "operationId": "delete_repo",
         "summary": "Delete Repo",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -230,7 +230,7 @@
       "get": {
         "operationId": "get_repo",
         "summary": "Get Repo",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -286,7 +286,7 @@
       "patch": {
         "operationId": "update_repo",
         "summary": "Update Repository Settings",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -367,7 +367,7 @@
       "post": {
         "operationId": "archive",
         "summary": "Archive",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -468,7 +468,7 @@
       "delete": {
         "operationId": "unset_base_repo",
         "summary": "Unset Base Repo",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -635,7 +635,7 @@
       "get": {
         "operationId": "get_branch",
         "summary": "Get Branch",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -709,7 +709,7 @@
       "delete": {
         "operationId": "delete_branch",
         "summary": "Delete Branch",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -787,7 +787,7 @@
       "get": {
         "operationId": "list_branches",
         "summary": "List Branches",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -869,7 +869,7 @@
       "post": {
         "operationId": "create_branch",
         "summary": "Create Branch",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1067,7 +1067,7 @@
       "get": {
         "operationId": "get_commit",
         "summary": "Get Commit",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1149,7 +1149,7 @@
       "post": {
         "operationId": "commit_pack",
         "summary": "Create Commit from Files",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1215,7 +1215,7 @@
       "get": {
         "operationId": "list_commits",
         "summary": "List Commits",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1313,7 +1313,7 @@
       "get": {
         "operationId": "get_commit_diff",
         "summary": "Get Commit Diff",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1411,7 +1411,7 @@
       "post": {
         "operationId": "diff_commit",
         "summary": "Create Commit from Diff",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1477,7 +1477,7 @@
       "get": {
         "operationId": "get_file",
         "summary": "Get File",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1557,7 +1557,7 @@
       "head": {
         "operationId": "head_file",
         "summary": "Get File Headers",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1631,7 +1631,7 @@
       "get": {
         "operationId": "list_files",
         "summary": "List Files",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1737,7 +1737,7 @@
       "get": {
         "operationId": "list_files_metadata",
         "summary": "List Files with Metadata",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1843,7 +1843,7 @@
       "post": {
         "operationId": "create_generic_git_credential",
         "summary": "Create Git Credential",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1920,7 +1920,7 @@
       "put": {
         "operationId": "update_generic_git_credential",
         "summary": "Update Git Credential",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -1999,7 +1999,7 @@
       "delete": {
         "operationId": "delete_generic_git_credential",
         "summary": "Delete Git Credential",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2062,7 +2062,7 @@
       "post": {
         "operationId": "grep",
         "summary": "Grep",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2385,7 +2385,7 @@
       "delete": {
         "operationId": "notes_delete",
         "summary": "Delete Note",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2488,7 +2488,7 @@
       "get": {
         "operationId": "notes_read",
         "summary": "Get Note",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2568,7 +2568,7 @@
       "post": {
         "operationId": "notes_write",
         "summary": "Create or Append Note",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2683,7 +2683,7 @@
       "get": {
         "operationId": "list_notes_refs",
         "summary": "List Notes Refs",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2749,7 +2749,7 @@
       "post": {
         "operationId": "pull_upstream",
         "summary": "Pull Upstream",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2815,7 +2815,7 @@
       "post": {
         "operationId": "reset_commits",
         "summary": "Reset Branch to Commit",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2881,7 +2881,7 @@
       "post": {
         "operationId": "restore_commit",
         "summary": "Restore Commit",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -2947,7 +2947,7 @@
       "get": {
         "operationId": "get_tag",
         "summary": "Get Tag",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -3021,7 +3021,7 @@
       "get": {
         "operationId": "list_tags",
         "summary": "List Tags",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -3101,7 +3101,7 @@
       "post": {
         "operationId": "create_tag",
         "summary": "Create Tag",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -3184,7 +3184,7 @@
       "delete": {
         "operationId": "delete_tag",
         "summary": "Delete Tag",
-        "description": "See the OneStorage API contract in the source archive (docs/API.md).",
+        "description": "See the OneStorage API contract online (https://1s.hk/docs/en/API.html).",
         "parameters": [
           {
             "name": "namespace",
@@ -3255,7 +3255,7 @@
       "get": {
         "operationId": "get__api_auth_oidc_providers",
         "summary": "Enabled public identity-provider names and IDs.",
-        "description": "Enabled public identity-provider names and IDs. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Enabled public identity-provider names and IDs. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3283,7 +3283,7 @@
       "post": {
         "operationId": "post__api_auth_oidc_id_start",
         "summary": "Matching Origin required",
-        "description": "Matching Origin required. Link requires browser session and local proof; reauth is bound to the current account. Returns authorization URL and sets ten-minute HttpOnly flow cookie. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Matching Origin required. Link requires browser session and local proof; reauth is bound to the current account. Returns authorization URL and sets ten-minute HttpOnly flow cookie. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3350,7 +3350,7 @@
       "get": {
         "operationId": "get__api_auth_oidc_callback",
         "summary": "Single-use state and browser-cookie binding",
-        "description": "Single-use state and browser-cookie binding. Verifies code and PKCE, then OIDC ID Token or OAuth stable user ID from the pinned user API; redirects to account, home, local MFA/registration or generic failure. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Single-use state and browser-cookie binding. Verifies code and PKCE, then OIDC ID Token or OAuth stable user ID from the pinned user API; redirects to account, home, local MFA/registration or generic failure. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3411,7 +3411,7 @@
       "get": {
         "operationId": "get__api_auth_oidc_pending",
         "summary": "Requires the pending flow cookie",
-        "description": "Requires the pending flow cookie. Returns stage and provider name. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Requires the pending flow cookie. Returns stage and provider name. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3439,7 +3439,7 @@
       "post": {
         "operationId": "post__api_auth_oidc_complete",
         "summary": "Matching Origin and pending flow cookie required",
-        "description": "Matching Origin and pending flow cookie required. Complete local MFA or choose username for an ordinary passwordless account. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Matching Origin and pending flow cookie required. Complete local MFA or choose username for an ordinary passwordless account. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [],
         "responses": {
           "200": {
@@ -3490,7 +3490,7 @@
       "get": {
         "operationId": "get__api_account_identities",
         "summary": "Browser session required",
-        "description": "Browser session required. List own linked and available identities and local-password availability. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Browser session required. List own linked and available identities and local-password availability. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3522,7 +3522,7 @@
       "post": {
         "operationId": "post__api_account_identities_id_unlink",
         "summary": "Local proof and browser session required",
-        "description": "Local proof and browser session required. Keep one enabled login method. Revokes this provider's sessions and derived PATs for the account. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Local proof and browser session required. Keep one enabled login method. Revokes this provider's sessions and derived PATs for the account. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3584,7 +3584,7 @@
       "get": {
         "operationId": "get__api_admin_identity_providers",
         "summary": "Administrator only",
-        "description": "Administrator only. Lists configuration without client secrets and reports callback URL. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Administrator only. Lists configuration without client secrets and reports callback URL. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3617,7 +3617,7 @@
       "post": {
         "operationId": "post__api_admin_identity_providers",
         "summary": "Administrator with write scope",
-        "description": "Administrator with write scope. Validates discovery and approved HTTPS hosts before inserting. Maximum twenty providers. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Administrator with write scope. Validates discovery and approved HTTPS hosts before inserting. Maximum twenty providers. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3737,7 +3737,7 @@
       "put": {
         "operationId": "put__api_admin_identity_providers_id_",
         "summary": "Administrator with write scope and current revision",
-        "description": "Administrator with write scope and current revision. Issuer/client ID immutable; omitted secret retained. Revokes provider credentials and pending flows. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Administrator with write scope and current revision. Issuer/client ID immutable; omitted secret retained. Revokes provider credentials and pending flows. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -3863,7 +3863,7 @@
       "delete": {
         "operationId": "delete__api_admin_identity_providers_id_",
         "summary": "Administrator with write scope",
-        "description": "Administrator with write scope. Refuses deletion while linked accounts exist. See docs/OIDC-v23.md and docs/OAUTH-v33.md. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
+        "description": "Administrator with write scope. Refuses deletion while linked accounts exist. See https://1s.hk/docs/en/OIDC-v23.html and https://1s.hk/docs/en/OAUTH-v33.html. Existing /auth/oidc route names also serve GitHub/GitLab OAuth flows.",
         "security": [
           {
             "sessionCookie": []
@@ -5811,7 +5811,7 @@
           "Deploy tokens"
         ],
         "summary": "List deployment credentials without secret or hash; 50 per page.",
-        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "namespace",
@@ -5877,7 +5877,7 @@
           "Deploy tokens"
         ],
         "summary": "Create a scoped deploy token; plaintext returned once.",
-        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "namespace",
@@ -5983,7 +5983,7 @@
           "Deploy tokens"
         ],
         "summary": "Rotate a live or expired token; old secret immediately invalid; revoked tokens cannot be renewed.",
-        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "namespace",
@@ -6076,7 +6076,7 @@
           "Deploy tokens"
         ],
         "summary": "Permanently revoke the exact observed token revision.",
-        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current project maintainer with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "namespace",
@@ -6159,7 +6159,7 @@
           "Deploy tokens"
         ],
         "summary": "List deployment credentials without secret or hash; 50 per page.",
-        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "slug",
@@ -6214,7 +6214,7 @@
           "Deploy tokens"
         ],
         "summary": "Create a scoped deploy token; plaintext returned once.",
-        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "slug",
@@ -6312,7 +6312,7 @@
           "Deploy tokens"
         ],
         "summary": "Rotate a live or expired token; old secret immediately invalid; revoked tokens cannot be renewed.",
-        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "slug",
@@ -6397,7 +6397,7 @@
           "Deploy tokens"
         ],
         "summary": "Permanently revoke the exact observed token revision.",
-        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.",
+        "description": "Current workspace owner with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.",
         "parameters": [
           {
             "name": "slug",
@@ -6473,7 +6473,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -6510,7 +6510,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -6549,7 +6549,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -6595,7 +6595,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -6641,7 +6641,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -6689,7 +6689,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -6735,7 +6735,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -6783,7 +6783,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "slug",
@@ -6839,7 +6839,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -6878,7 +6878,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -6917,7 +6917,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -6965,7 +6965,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -7004,7 +7004,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -7052,7 +7052,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -7091,7 +7091,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -7137,7 +7137,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -7185,7 +7185,7 @@
         "tags": [
           "Administration"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -7224,7 +7224,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
+        "description": "Shared repository CI cache; see https://1s.hk/docs/en/CI-CACHES-v21.html. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
         "parameters": [
           {
             "name": "namespace",
@@ -7283,7 +7283,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
+        "description": "Shared repository CI cache; see https://1s.hk/docs/en/CI-CACHES-v21.html. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
         "parameters": [
           {
             "name": "namespace",
@@ -7359,7 +7359,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries. A miss returns JSON {hit:false}; a hit is application/gzip with Content-Length and X-Cache-SHA256. All responses are no-store.",
+        "description": "Shared repository CI cache; see https://1s.hk/docs/en/CI-CACHES-v21.html. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries. A miss returns JSON {hit:false}; a hit is application/gzip with Content-Length and X-Cache-SHA256. All responses are no-store.",
         "parameters": [
           {
             "name": "id",
@@ -7421,7 +7421,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "Shared repository CI cache; see docs/CI-CACHES-v21.md. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
+        "description": "Shared repository CI cache; see https://1s.hk/docs/en/CI-CACHES-v21.html. Metadata requires project read role; clear requires maintain role and current generation. Contents only flow through the configured task slot under runner token and X-Run-Lease. Keys derive from immutable key files; repository, branch/protection generation and runner format are isolated. Only successful jobs/parents are reusable. Clear invalidates pending writes and schedules R2 collection. Up to four slots/job, 64 MiB compressed/entry, 512 MiB and 100 entries/project, seven-day TTL. Runner archives must contain ordinary files only, expanded <=256 MiB and 25000 entries.",
         "parameters": [
           {
             "name": "id",
@@ -7515,7 +7515,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store. Response includes inherited workspace metadata separately in inherited; variables remains the project definitions. See docs/CI-WORKSPACE-VARIABLES-v24.md.",
+        "description": "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store. Response includes inherited workspace metadata separately in inherited; variables remains the project definitions. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.",
         "parameters": [
           {
             "name": "namespace",
@@ -7572,7 +7572,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "description": "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
         "parameters": [
           {
             "name": "namespace",
@@ -7683,7 +7683,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "description": "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
         "parameters": [
           {
             "name": "namespace",
@@ -7800,7 +7800,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "description": "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
         "parameters": [
           {
             "name": "namespace",
@@ -7884,7 +7884,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "description": "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
         "parameters": [
           {
             "name": "namespace",
@@ -7968,7 +7968,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "Project CI variables: see docs/CI-VARIABLES-v20.md. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
+        "description": "Project CI variables: see https://1s.hk/docs/en/CI-VARIABLES-v20.html. Management requires maintain role and returns metadata only; values are write-only and encrypted. Updating/revoking a bound variable cancels active runs. Secrets/protected variables reject MR origins including retries; first use requires current branch SHA. Exact environment overrides *. Runner retrieval requires repository runner token plus X-Run-Lease and returns private variables/patterns with no-store.",
         "parameters": [
           {
             "name": "id",
@@ -8024,7 +8024,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
+        "description": "Persistent scheduled pipeline; see https://1s.hk/docs/en/CI-SCHEDULES-v19.html. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
         "parameters": [
           {
             "name": "namespace",
@@ -8081,7 +8081,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
+        "description": "Persistent scheduled pipeline; see https://1s.hk/docs/en/CI-SCHEDULES-v19.html. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
         "parameters": [
           {
             "name": "namespace",
@@ -8175,7 +8175,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
+        "description": "Persistent scheduled pipeline; see https://1s.hk/docs/en/CI-SCHEDULES-v19.html. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
         "parameters": [
           {
             "name": "namespace",
@@ -8280,7 +8280,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
+        "description": "Persistent scheduled pipeline; see https://1s.hk/docs/en/CI-SCHEDULES-v19.html. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
         "parameters": [
           {
             "name": "namespace",
@@ -8364,7 +8364,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Persistent scheduled pipeline; see docs/CI-SCHEDULES-v19.md. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
+        "description": "Persistent scheduled pipeline; see https://1s.hk/docs/en/CI-SCHEDULES-v19.html. Member read access required; writes require maintainer. Cron uses five fields and IANA timezone, weekday 0/7=Sunday. Cloudflare scans every five minutes and coalesces missed occurrences. Editing or revoking a schedule cancels its unfinished runs. Takeover leaves it paused. Revision is required for existing schedule mutations.",
         "parameters": [
           {
             "name": "namespace",
@@ -8448,7 +8448,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See docs/CI-PRIVATE-PACKAGES-v27.md. Does not run shell/npm lifecycle scripts. See docs/CI-BUILDS-v22.md for limits and deploy artifact configuration. v0.35 optionally caches public npm tarballs in a dedicated R2 bucket; each hit still verifies SHA-512, private supplied packages bypass it, and success logs report hits/misses/writes/errors/downloaded bytes. See docs/CI-NPM-CACHE-v35.md. v0.36 accepts optional tsconfig selected from source files, relative local extends, baseUrl/paths and supported JSX/TS emit options. Explicit step JSX overrides configuration. See docs/CI-TSCONFIG-v36.md.",
+        "description": "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See https://1s.hk/docs/en/CI-PRIVATE-PACKAGES-v27.html. Does not run shell/npm lifecycle scripts. See https://1s.hk/docs/en/CI-BUILDS-v22.html for limits and deploy artifact configuration. v0.35 optionally caches public npm tarballs in a dedicated R2 bucket; each hit still verifies SHA-512, private supplied packages bypass it, and success logs report hits/misses/writes/errors/downloaded bytes. See https://1s.hk/docs/en/CI-NPM-CACHE-v35.html. v0.36 accepts optional tsconfig selected from source files, relative local extends, baseUrl/paths and supported JSX/TS emit options. Explicit step JSX overrides configuration. See https://1s.hk/docs/en/CI-TSCONFIG-v36.html.",
         "parameters": [
           {
             "name": "namespace",
@@ -8505,7 +8505,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See docs/CI-PRIVATE-PACKAGES-v27.md. Does not run shell/npm lifecycle scripts. See docs/CI-BUILDS-v22.md for limits and deploy artifact configuration. v0.35 optionally caches public npm tarballs in a dedicated R2 bucket; each hit still verifies SHA-512, private supplied packages bypass it, and success logs report hits/misses/writes/errors/downloaded bytes. See docs/CI-NPM-CACHE-v35.md. v0.36 accepts optional tsconfig selected from source files, relative local extends, baseUrl/paths and supported JSX/TS emit options. Explicit step JSX overrides configuration. See docs/CI-TSCONFIG-v36.md. Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See docs/CI-WORKFLOWS-v14.md for task schemas, dependency artifacts and limits.",
+        "description": "Worker execution steps also support type=build: entry, sources (recursive file/directory selection), outfile, platform (worker/browser), minify, sourcemap, jsx and jsx_import_source. Builds run esbuild WASM in a private Cloudflare service; npm dependencies require matching package-lock v2/v3 with SHA-512 registry tarballs. Private OneStorage packages use private_registries [{project_id,token_variable}], maximum 8 distinct projects. Each token_variable must be selected in job variables and stored as a secret deployment token with package read scope. Main Worker verifies immutable R2 package bytes and current authority; compiler never receives credentials. See https://1s.hk/docs/en/CI-PRIVATE-PACKAGES-v27.html. Does not run shell/npm lifecycle scripts. See https://1s.hk/docs/en/CI-BUILDS-v22.html for limits and deploy artifact configuration. v0.35 optionally caches public npm tarballs in a dedicated R2 bucket; each hit still verifies SHA-512, private supplied packages bypass it, and success logs report hits/misses/writes/errors/downloaded bytes. See https://1s.hk/docs/en/CI-NPM-CACHE-v35.html. v0.36 accepts optional tsconfig selected from source files, relative local extends, baseUrl/paths and supported JSX/TS emit options. Explicit step JSX overrides configuration. See https://1s.hk/docs/en/CI-TSCONFIG-v36.html. Repository files are fixed to the pushed/manual SHA; merge requests select the target SHA configuration. See https://1s.hk/docs/en/CI-WORKFLOWS-v14.html for task schemas, dependency artifacts and limits.",
         "parameters": [
           {
             "name": "namespace",
@@ -8599,7 +8599,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -8656,7 +8656,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -8712,7 +8712,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Includes config_path/config_sha/config_error, parent_id/job_key, and child jobs for a workflow. Lease hashes are never returned. Only top-level runs appear in ci_list_runs or satisfy merge gates.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Includes config_path/config_sha/config_error, parent_id/job_key, and child jobs for a workflow. Lease hashes are never returned. Only top-level runs appear in ci_list_runs or satisfy merge gates.",
         "parameters": [
           {
             "name": "namespace",
@@ -8779,7 +8779,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -8843,7 +8843,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Child jobs and invalid repository configuration records cannot be retried directly; retry the parent workflow or start a new run after fixing configuration. Ordinary retries preserve the original config snapshot.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Child jobs and invalid repository configuration records cannot be retried directly; retry the parent workflow or start a new run after fixing configuration. Ordinary retries preserve the original config snapshot.",
         "parameters": [
           {
             "name": "namespace",
@@ -8907,7 +8907,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -8982,7 +8982,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9039,7 +9039,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9095,7 +9095,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9159,7 +9159,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -9198,7 +9198,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -9254,7 +9254,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -9310,7 +9310,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Returns dependencies[job][relativePath] = {content,binary}; binary content is Base64. Only declared successful siblings are included, up to 16 MiB raw data. Runner and lease authorization are checked again after storage reads.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. Returns dependencies[job][relativePath] = {content,binary}; binary content is Base64. Only declared successful siblings are included, up to 16 MiB raw data. Runner and lease authorization are checked again after storage reads.",
         "parameters": [
           {
             "name": "id",
@@ -9366,7 +9366,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -9422,7 +9422,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -9486,7 +9486,7 @@
         "tags": [
           "Runner"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "id",
@@ -9542,7 +9542,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9599,7 +9599,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9694,7 +9694,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9750,7 +9750,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9823,7 +9823,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9920,7 +9920,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -9984,7 +9984,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10075,7 +10075,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10134,7 +10134,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10190,7 +10190,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10254,7 +10254,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10310,7 +10310,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10473,7 +10473,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10530,7 +10530,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10586,7 +10586,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10650,7 +10650,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10709,7 +10709,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. For workflow jobs, both the deployment job and the parent workflow must have succeeded.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token. For workflow jobs, both the deployment job and the parent workflow must have succeeded.",
         "parameters": [
           {
             "name": "namespace",
@@ -10773,7 +10773,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10832,7 +10832,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10897,7 +10897,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -10961,7 +10961,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -11020,7 +11020,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -11074,7 +11074,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -11130,7 +11130,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -11184,7 +11184,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [
           {
             "name": "namespace",
@@ -11240,7 +11240,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -11279,7 +11279,7 @@
         "tags": [
           "Workspaces"
         ],
-        "description": "See docs/PLATFORM-v04.md and docs/CLOUD-NATIVE-v05.md in the source archive. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
+        "description": "See https://1s.hk/docs/en/PLATFORM-v04.html and https://1s.hk/docs/en/CLOUD-NATIVE-v05.html online. Platform management requires a user session or PAT; delegated JWTs are not accepted. Runner routes require a separate repository-scoped runner token.",
         "parameters": [],
         "security": [
           {
@@ -11318,7 +11318,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.",
+        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.",
         "parameters": [
           {
             "name": "slug",
@@ -11364,7 +11364,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.",
+        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.",
         "parameters": [
           {
             "name": "slug",
@@ -11467,7 +11467,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.",
+        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.",
         "parameters": [
           {
             "name": "slug",
@@ -11576,7 +11576,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.",
+        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.",
         "parameters": [
           {
             "name": "slug",
@@ -11652,7 +11652,7 @@
         "tags": [
           "CI/CD"
         ],
-        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See docs/CI-WORKSPACE-VARIABLES-v24.md.",
+        "description": "Workspace owner and live write session/PAT required for mutations; metadata only. Project definitions override inherited workspace values. Paused winning definitions block fallback. Rotation or owner revocation cancels bound runs across projects. See https://1s.hk/docs/en/CI-WORKSPACE-VARIABLES-v24.html.",
         "parameters": [
           {
             "name": "slug",
@@ -11725,7 +11725,7 @@
       "get": {
         "operationId": "account_security",
         "summary": "account security",
-        "description": "Read authenticator status and remaining recovery-code count. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Read authenticator status and remaining recovery-code count. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -11764,7 +11764,7 @@
       "post": {
         "operationId": "setup_authenticator",
         "summary": "setup authenticator",
-        "description": "Verify current password and return a ten-minute enrollment secret and otpauth URI. Never log the response. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Verify current password and return a ten-minute enrollment secret and otpauth URI. Never log the response. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -11822,7 +11822,7 @@
       "post": {
         "operationId": "enable_authenticator",
         "summary": "enable authenticator",
-        "description": "Confirm possession. Returns ten recovery codes once and revokes other browser sessions. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Confirm possession. Returns ten recovery codes once and revokes other browser sessions. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -11885,7 +11885,7 @@
       "post": {
         "operationId": "rotate_recovery_codes",
         "summary": "rotate recovery codes",
-        "description": "Verify password and fresh factor, invalidate old recovery codes, return ten new codes once. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Verify password and fresh factor, invalidate old recovery codes, return ten new codes once. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -11948,7 +11948,7 @@
       "post": {
         "operationId": "disable_authenticator",
         "summary": "disable authenticator",
-        "description": "Verify password and fresh factor, disable MFA and revoke other browser sessions. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Verify password and fresh factor, disable MFA and revoke other browser sessions. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -12011,7 +12011,7 @@
       "get": {
         "operationId": "list_sessions",
         "summary": "list sessions",
-        "description": "List up to 100 active browser sessions, without credential hashes. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "List up to 100 active browser sessions, without credential hashes. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -12050,7 +12050,7 @@
       "delete": {
         "operationId": "revoke_session",
         "summary": "revoke session",
-        "description": "Revoke one session owned by the current user. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Revoke one session owned by the current user. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -12099,7 +12099,7 @@
       "get": {
         "operationId": "read_own_profile",
         "summary": "read own profile",
-        "description": "Read editable public profile fields. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Read editable public profile fields. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -12136,7 +12136,7 @@
       "put": {
         "operationId": "update_profile",
         "summary": "update profile",
-        "description": "Replace public profile fields. Website must use HTTP(S), without embedded credentials. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Replace public profile fields. Website must use HTTP(S), without embedded credentials. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -12204,7 +12204,7 @@
       "get": {
         "operationId": "public_profile",
         "summary": "public profile",
-        "description": "Read public profile and up to 50 repositories/activity entries visible to the viewer. Disabled users return 404. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Read public profile and up to 50 repositories/activity entries visible to the viewer. Disabled users return 404. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Account"
         ],
@@ -12262,7 +12262,7 @@
       "get": {
         "operationId": "preview_image",
         "summary": "preview image",
-        "description": "Read a Git blob as PNG, JPEG, GIF or WebP using byte signatures. Requires repository read access; private no-store, 5 MiB maximum. See docs/ACCOUNT-v06.md. Cookie-authenticated mutations require a same-origin Origin header.",
+        "description": "Read a Git blob as PNG, JPEG, GIF or WebP using byte signatures. Requires repository read access; private no-store, 5 MiB maximum. See https://1s.hk/docs/en/ACCOUNT-v06.html. Cookie-authenticated mutations require a same-origin Origin header.",
         "tags": [
           "Repository"
         ],
@@ -12347,7 +12347,7 @@
         "tags": [
           "Account"
         ],
-        "description": "Read own saved recovery-key metadata and the latest 20 recovery audit events. Never returns the key or hash. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "description": "Read own saved recovery-key metadata and the latest 20 recovery audit events. Never returns the key or hash. See https://1s.hk/docs/en/PASSWORD-RECOVERY-v30.html. Cookie mutations require same-origin Origin.",
         "security": [
           {
             "sessionCookie": []
@@ -12380,7 +12380,7 @@
         "tags": [
           "Account"
         ],
-        "description": "Current browser session, local password and fresh MFA factor required. Supply the current version (null initially). Replaces the saved key and returns the new 256-bit secret ONCE, with a one-year expiry. Never log this response. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "description": "Current browser session, local password and fresh MFA factor required. Supply the current version (null initially). Replaces the saved key and returns the new 256-bit secret ONCE, with a one-year expiry. Never log this response. See https://1s.hk/docs/en/PASSWORD-RECOVERY-v30.html. Cookie mutations require same-origin Origin.",
         "security": [
           {
             "sessionCookie": []
@@ -12444,7 +12444,7 @@
         "tags": [
           "Account"
         ],
-        "description": "Verify password and fresh MFA factor, then atomically revoke the expected key version and audit the operation. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "description": "Verify password and fresh MFA factor, then atomically revoke the expected key version and audit the operation. See https://1s.hk/docs/en/PASSWORD-RECOVERY-v30.html. Cookie mutations require same-origin Origin.",
         "security": [
           {
             "sessionCookie": []
@@ -12510,7 +12510,7 @@
         "tags": [
           "Account"
         ],
-        "description": "Anonymous saved-key password recovery. Requires a still-enabled local-password account, an unexpired unused key and a fresh MFA factor when enabled. Preserves MFA and signing identities; revokes all sessions, PATs, JWT delegation keys and pending OIDC flows. No automatic sign-in. Invalid, expired, revoked and unknown keys share an error. Ten attempts per IP and per username per ten minutes. See docs/PASSWORD-RECOVERY-v30.md. Cookie mutations require same-origin Origin.",
+        "description": "Anonymous saved-key password recovery. Requires a still-enabled local-password account, an unexpired unused key and a fresh MFA factor when enabled. Preserves MFA and signing identities; revokes all sessions, PATs, JWT delegation keys and pending OIDC flows. No automatic sign-in. Invalid, expired, revoked and unknown keys share an error. Ten attempts per IP and per username per ten minutes. See https://1s.hk/docs/en/PASSWORD-RECOVERY-v30.html. Cookie mutations require same-origin Origin.",
         "security": [],
         "requestBody": {
           "required": true,
@@ -12572,7 +12572,7 @@
       "get": {
         "operationId": "list_merge_queue",
         "summary": "list merge queue",
-        "description": "List active FIFO entries (100 maximum) and the latest 20 finished entries. Optional mr_id filters one request. Current repository read access required. See docs/MERGE-QUEUE-v31.md. See docs/REVIEWS-v07.md.",
+        "description": "List active FIFO entries (100 maximum) and the latest 20 finished entries. Optional mr_id filters one request. Current repository read access required. See https://1s.hk/docs/en/MERGE-QUEUE-v31.html. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -12646,7 +12646,7 @@
       "post": {
         "operationId": "enqueue_merge_request",
         "summary": "enqueue merge request",
-        "description": "Maintainer queues a fixed request snapshot for candidate CI and exact-SHA publication. Durable intent expires after 24 hours. Target changes require new target-bound approvals and CI; source changes cancel. See docs/MERGE-QUEUE-v31.md. See docs/REVIEWS-v07.md.",
+        "description": "Maintainer queues a fixed request snapshot for candidate CI and exact-SHA publication. Durable intent expires after 24 hours. Target changes require new target-bound approvals and CI; source changes cancel. See https://1s.hk/docs/en/MERGE-QUEUE-v31.html. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -12745,7 +12745,7 @@
       "delete": {
         "operationId": "cancel_queued_merge",
         "summary": "cancel queued merge",
-        "description": "Maintainer cancels an active queue entry and its candidate CI. Already published merges cannot be canceled. See docs/REVIEWS-v07.md.",
+        "description": "Maintainer cancels an active queue entry and its candidate CI. Already published merges cannot be canceled. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -12815,7 +12815,7 @@
       "get": {
         "operationId": "list_merge_sources",
         "summary": "list merge sources",
-        "description": "List up to 100 writable repositories in the same fork family. Requires sign-in and target read access. See docs/REVIEWS-v07.md.",
+        "description": "List up to 100 writable repositories in the same fork family. Requires sign-in and target read access. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -12880,7 +12880,7 @@
       "get": {
         "operationId": "list_merge_requests",
         "summary": "list merge requests",
-        "description": "List the latest 100 merge requests visible in the target repository. See docs/REVIEWS-v07.md.",
+        "description": "List the latest 100 merge requests visible in the target repository. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -12944,7 +12944,7 @@
       "post": {
         "operationId": "create_merge_request",
         "summary": "create merge request",
-        "description": "Publish a fixed source branch snapshot into the target. Requires source write and target read permission. Cross-fork requests must share fork ancestry. Source history and reachable LFS objects are disclosed to target readers. Other source branches remain private. See docs/REVIEWS-v07.md.",
+        "description": "Publish a fixed source branch snapshot into the target. Requires source write and target read permission. Cross-fork requests must share fork ancestry. Source history and reachable LFS objects are disclosed to target readers. Other source branches remain private. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -13042,7 +13042,7 @@
       "post": {
         "operationId": "run_merge_pipeline",
         "summary": "run merge pipeline",
-        "description": "Target maintainer explicitly runs the target configuration against the reviewed source SHA. Source pipeline settings are not copied. See docs/REVIEWS-v07.md.",
+        "description": "Target maintainer explicitly runs the target configuration against the reviewed source SHA. Source pipeline settings are not copied. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -13112,7 +13112,7 @@
       "get": {
         "operationId": "list_merge_discussions",
         "summary": "list merge discussions",
-        "description": "Page discussions by numeric after cursor; 100 per page. Unresolved review gates consider all discussions regardless of pagination. See docs/REVIEWS-v07.md.",
+        "description": "Page discussions by numeric after cursor; 100 per page. Unresolved review gates consider all discussions regardless of pagination. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -13192,7 +13192,7 @@
       "post": {
         "operationId": "create_merge_discussion",
         "summary": "create merge discussion",
-        "description": "Create a general or file-line discussion bound to both reviewed SHAs. Path, side and line must be supplied together. See docs/REVIEWS-v07.md.",
+        "description": "Create a general or file-line discussion bound to both reviewed SHAs. Path, side and line must be supplied together. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -13304,7 +13304,7 @@
       "get": {
         "operationId": "read_merge_discussion",
         "summary": "read merge discussion",
-        "description": "Read discussion and up to 100 comments; numeric after cursor retrieves subsequent comments. See docs/REVIEWS-v07.md.",
+        "description": "Read discussion and up to 100 comments; numeric after cursor retrieves subsequent comments. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -13392,7 +13392,7 @@
       "patch": {
         "operationId": "resolve_merge_discussion",
         "summary": "resolve merge discussion",
-        "description": "Resolve or reopen a thread. Requires discussion author, merge author or target developer. Serialized with merge publication. See docs/REVIEWS-v07.md.",
+        "description": "Resolve or reopen a thread. Requires discussion author, merge author or target developer. Serialized with merge publication. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],
@@ -13488,7 +13488,7 @@
       "post": {
         "operationId": "reply_merge_discussion",
         "summary": "reply merge discussion",
-        "description": "Reply to an open merge request discussion. See docs/REVIEWS-v07.md.",
+        "description": "Reply to an open merge request discussion. See https://1s.hk/docs/en/REVIEWS-v07.html.",
         "tags": [
           "Merge requests"
         ],

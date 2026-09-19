@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 .wrangler/
 .dev.vars*
 .env*
@@ -15,3 +15,17 @@ __pycache__/
 *.egg-info/
 
 /public/docs/
+
+# Local documentation, operational state and credentials
+/docs/
+/output/
+*.production.jsonc
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+.npmrc
+.netrc
+credentials.json
+service-account*.json

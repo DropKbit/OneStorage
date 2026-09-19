@@ -14,7 +14,7 @@ export function addReviewPaths(paths) {
       base + "/merge-queue",
       "list_merge_queue",
       null,
-      "List active FIFO entries (100 maximum) and the latest 20 finished entries. Optional mr_id filters one request. Current repository read access required. See docs/MERGE-QUEUE-v31.md.",
+      "List active FIFO entries (100 maximum) and the latest 20 finished entries. Optional mr_id filters one request. Current repository read access required. See https://1s.hk/docs/en/MERGE-QUEUE-v31.html.",
     ],
     [
       "post",
@@ -28,7 +28,7 @@ export function addReviewPaths(paths) {
         },
         ["revision"],
       ),
-      "Maintainer queues a fixed request snapshot for candidate CI and exact-SHA publication. Durable intent expires after 24 hours. Target changes require new target-bound approvals and CI; source changes cancel. See docs/MERGE-QUEUE-v31.md.",
+      "Maintainer queues a fixed request snapshot for candidate CI and exact-SHA publication. Durable intent expires after 24 hours. Target changes require new target-bound approvals and CI; source changes cancel. See https://1s.hk/docs/en/MERGE-QUEUE-v31.html.",
     ],
     [
       "delete",
@@ -146,7 +146,7 @@ export function addReviewPaths(paths) {
     (paths[path] ||= {})[method] = {
       operationId: id,
       summary: id.replaceAll("_", " "),
-      description: description + " See docs/REVIEWS-v07.md.",
+      description: description + " See https://1s.hk/docs/en/REVIEWS-v07.html.",
       tags: ["Merge requests"],
       parameters,
       security:

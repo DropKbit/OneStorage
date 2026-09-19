@@ -75,7 +75,7 @@ export function addDeployTokenPaths(paths) {
       const operation = {
         tags: ["Deploy tokens"],
         summary,
-        description: `${workspace ? "Current workspace owner" : "Current project maintainer"} with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See docs/DEPLOY-TOKENS-v26.md.`,
+        description: `${workspace ? "Current workspace owner" : "Current project maintainer"} with browser session or PAT required; mutations require write credentials, session create/rotate also require configured MFA. Maximum 100 active tokens per scope. Secrets authenticate only Git/LFS reads and independently selected package operations, never management APIs. Tokens are independent of issuer membership and disabled status. Cross-space transfer revokes project tokens; workspace tokens follow current project membership. Archive permits management and reads, not package writes. Dates are epoch milliseconds. See https://1s.hk/docs/en/DEPLOY-TOKENS-v26.html.`,
         parameters,
         security: [{ bearerAuth: [] }, { sessionCookie: [] }],
         responses: {
