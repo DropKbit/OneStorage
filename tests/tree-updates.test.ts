@@ -15,6 +15,7 @@ async function fixture() {
     values = new Map();
   let reads = 0;
   const storage = {
+    delete: async (key: string) => values.delete(key),
     get: async <T>(k: string) =>
       structuredClone(values.get(k)) as T | undefined,
     put: async <T>(k: string, v: T) => {
@@ -108,6 +109,8 @@ test("long histories advance in bounded batches across fresh instances and inval
   result = await updatesAt(f.repo(head), head, "", f.storage);
   assert.equal(result.complete, false);
   result = await updatesAt(f.repo(head), head, "", f.storage);
+  for (let i = 0; i < 2; i++)
+    result = await updatesAt(f.repo(head), head, "", f.storage);
   assert.equal(result.complete, true);
   assert.equal(result.updates[0].commit, first);
   const next = await f.commit({ file: "new" }, [head], 3000);
@@ -168,4 +171,29 @@ test("subdirectories and folder rows follow changes beneath the selected path", 
   assert.equal(nested.updates[0].commit, b);
   const old = await updatesAt(f.repo(a), a, "src", f.storage);
   assert.equal(old.updates[0].commit, a);
+});
+
+test("different snapshots make progress independently within a bounded cache", async () => {
+  const f = await fixture();
+  const roots = [await f.commit({ file: "a" }), await f.commit({ file: "b" })];
+  const heads = [...roots];
+  for (let n = 0; n < 18; n++)
+    for (let i = 0; i < 2; i++)
+      heads[i] = await f.commit({ file: i ? "b" : "a" }, [heads[i]], 3000 + n);
+  for (let n = 0; n < 3; n++)
+    for (let i = 0; i < 2; i++) {
+      const result = await updatesAt(f.repo(heads[i]), heads[i], "", f.storage);
+      assert.equal(result.complete, n === 2);
+      if (result.complete) assert.equal(result.updates[0].commit, roots[i]);
+    }
+  for (let i = 0; i < 10; i++) {
+    const sha = await f.commit({ file: "value" + i }, [], 9000 + i);
+    await updatesAt(f.repo(sha), sha, "", f.storage);
+  }
+  assert.equal(
+    [...f.values.keys()].filter(
+      (k) => k.startsWith("tree-updates.v1:ordinary:") && !k.endsWith(":index"),
+    ).length,
+    8,
+  );
 });

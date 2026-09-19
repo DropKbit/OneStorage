@@ -297,7 +297,7 @@ paths["/api/repos/{namespace}/{repo}/tree-updates"] = {
     operationId: "get_tree_updates",
     summary: "Read incremental first-parent update times for directory entries",
     description:
-      "Use a fixed commit ref. Repeat until complete or limited. Each request scans at most 16 commits; progress is cached in one bounded slot per namespace. A merge records when content entered its first-parent branch. Unknown times are null, never the repository creation time.",
+      "Use a fixed commit ref. Repeat until complete or limited. Each request scans at most 8 commits; progress is cached in eight bounded slots per namespace. A merge records when content entered its first-parent branch. Unknown times are null, never the repository creation time.",
     parameters: [
       ...["namespace", "repo"].map((name) => ({
         name,

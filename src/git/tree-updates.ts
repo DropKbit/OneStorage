@@ -1,6 +1,6 @@
 import type { ForgeRepository } from "./forge";
 import type { RefStorage } from "./repository";
-import { parseCommit, parseTree, text, type TreeEntry } from "./objects";
+import { parseCommit, parseTree, text, bytes, type TreeEntry } from "./objects";
 import { parseIdentity } from "./forge-utils";
 import { fail } from "../security";
 
@@ -29,13 +29,20 @@ export async function updatesAt(
   repo: ForgeRepository,
   ref: string,
   path: string,
-  storage: RefStorage,
+  storage: RefStorage & { delete(key: string): Promise<unknown> },
 ): Promise<TreeUpdates> {
   if (path) repo.path(path);
   const sha = await repo.resolve(ref);
-  const key =
+  const prefix =
     "tree-updates.v1:" +
     (repo.policy.namespace === "ephemeral" ? "ephemeral" : "ordinary");
+  const pathHash = Array.from(
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", bytes(path) as BufferSource),
+    ),
+    (b) => b.toString(16).padStart(2, "0"),
+  ).join("");
+  const key = prefix + ":" + sha + ":" + pathHash;
   let state = await storage.get<Progress>(key);
   if (
     !state ||
@@ -79,11 +86,7 @@ export async function updatesAt(
       parseTree((await repo.store.get(oid)).data).map((e) => [e.name, e]),
     );
   };
-  for (
-    let batch = 0;
-    batch < 16 && !state.complete && !state.limited;
-    batch++
-  ) {
+  for (let batch = 0; batch < 8 && !state.complete && !state.limited; batch++) {
     if (!state.next) {
       state.complete = true;
       break;
@@ -118,9 +121,16 @@ export async function updatesAt(
     state.next = commit.parents[0] || null;
     state.complete = !state.next || state.updates.every((u) => u.commit);
   }
-  if (new TextEncoder().encode(JSON.stringify(state)).length <= MAX_BYTES)
+  if (new TextEncoder().encode(JSON.stringify(state)).length <= MAX_BYTES) {
+    const indexKey = prefix + ":index";
+    const keys = ((await storage.get<string[]>(indexKey)) || []).filter(
+      (k) => k !== key,
+    );
+    keys.push(key);
+    while (keys.length > 8) await storage.delete(keys.shift()!);
+    await storage.put(indexKey, keys);
     await storage.put(key, state);
-  else state.limited = true;
+  } else state.limited = true;
   return {
     ref: state.ref,
     path: state.path,
