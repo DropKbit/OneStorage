@@ -2,7 +2,7 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=b03346d448c25b98";
+} from "./i18n.js?v=421fdfd4be286a79";
 export function variablePanel(root, variables, branch, h, options = {}) {
   const { esc, api, bindForm, render } = h;
   let editing = null;

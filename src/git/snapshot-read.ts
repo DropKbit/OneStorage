@@ -34,6 +34,7 @@ export function shareableOperation(request: Request) {
   const path = new URL(request.url).pathname;
   return (
     snapshotRead(request) ||
+    (request.method === "GET" && path === "/tree-updates") ||
     (request.method === "POST" &&
       ["/git/git-upload-pack", "/git/git-receive-pack"].includes(path)) ||
     (request.method === "GET" && path === "/git/info/refs")

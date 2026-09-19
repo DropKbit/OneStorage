@@ -2,6 +2,8 @@
 
 [简体中文](../CHANGELOG.md) · **English**
 
+- **v0.40**: Relative file/directory update times in Chinese and English, with exact-date tooltips. Batched first-parent history reads use a fixed commit without delaying the initial directory listing.
+
 - **v0.39**: Durable root/README cache, post-push prewarming, live ref validation and Server-Timing. [Details](PERFORMANCE.md).
 
 - **v0.38**: Primary domain and Simplified Chinese/English interface and documentation. [Guide](DEPLOYMENT.md).

@@ -937,5 +937,7 @@
   "单元 ⟦0⟧": "Cell ⟦0⟧",
   "此输出格式无法预览，请查看 JSON 源码。": "This output format cannot be previewed. View the JSON source.",
   "未支持的单元类型，已显示原文。": "Unsupported cell type; showing the original content.",
-  "文档": "Documentation"
+  "文档": "Documentation",
+  "正在读取更新时间": "Loading last update",
+  "更新时间暂不可用，可在文件历史中查看": "Update time unavailable; see file history"
 }

@@ -5,19 +5,20 @@ import {
   languageControl,
   docsURL,
   errorText,
-} from "./i18n.js?v=b03346d448c25b98";
-const globalSearch = () => import("./search.js?v=bc8e5d45f15b464f");
-const deployTokens = () => import("./deploy-tokens.js?v=076a56dd0ac36de7");
-const packages = () => import("./packages.js?v=51835c4057e95822");
-const account = () => import("./account.js?v=be14c4078dc8635b");
-const oidc = () => import("./oidc.js?v=375ffeb8ec8980ba");
-const collaboration = () => import("./collaboration.js?v=61d17bf9277b1975");
-const platform = () => import("./manage.js?v=d641e6bb7fb961f1");
+  relativeTime,
+} from "./i18n.js?v=421fdfd4be286a79";
+const globalSearch = () => import("./search.js?v=ba8c4c5990534d11");
+const deployTokens = () => import("./deploy-tokens.js?v=f8c51a878d5523fd");
+const packages = () => import("./packages.js?v=28377dad0629c8e6");
+const account = () => import("./account.js?v=01cee61e6ec7f7b6");
+const oidc = () => import("./oidc.js?v=66f4534cf6fffa35");
+const collaboration = () => import("./collaboration.js?v=d512ecd8f620bd18");
+const platform = () => import("./manage.js?v=a57c467787bd0b3a");
 import {
   keyPage,
   forgePage,
   upstreamPage,
-} from "./forge.js?v=b69f0a0cd6fd6d60";
+} from "./forge.js?v=e9225b19aec749af";
 const root = document.querySelector("#app");
 const esc = (x) =>
   String(x ?? "").replace(
@@ -554,7 +555,7 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
         )
         .map(
           (f) =>
-            `<div class="file-row">${link(`${base}?ref=${encodeURIComponent(ref)}&path=${encodeURIComponent((p ? p + "/" : "") + f.name)}${f.type === "tree" ? "" : "&view=blob"}`, icon(f.type === "tree" ? "folder" : "file") + esc(f.name))}<span class="muted">${f.sha.slice(0, 8)}</span></div>`,
+            `<div class="file-row">${link(`${base}?ref=${encodeURIComponent(ref)}&path=${encodeURIComponent((p ? p + "/" : "") + f.name)}${f.type === "tree" ? "" : "&view=blob"}`, icon(f.type === "tree" ? "folder" : "file") + esc(f.name))}<span class="file-meta"><code class="muted">${f.sha.slice(0, 8)}</code><time class="file-updated muted" data-file-updated="${esc(f.name)}" title="${esc(i18nText("正在读取更新时间"))}">…</time></span></div>`,
         )
         .join("")}`;
   repoLayout(
@@ -564,11 +565,12 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
       `<div class="grid"><div><div class="panel">${list}</div>${readme}</div>${aside}</div>`,
     clone,
   );
+  if (!blob) void loadFileUpdates(ap, data.ref, p, version);
   const notebook = document.querySelector("#notebook-preview");
   if (notebook) {
     try {
       const { mountNotebook } =
-        await import("./notebook.js?v=7db6fbd04a5242af");
+        await import("./notebook.js?v=07aa089ddb182de9");
       if (version !== routeVersion || !notebook.isConnected) return;
       mountNotebook(notebook, data.content, { base, ref: data.ref, path: p });
     } catch {
@@ -600,6 +602,41 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
   document.querySelector("#branch").onchange = (e) =>
     go(`${base}?ref=${encodeURIComponent(e.target.value)}`);
 }
+async function loadFileUpdates(ap, sha, path, version) {
+  const url = `${ap}/tree-updates?ref=${encodeURIComponent(sha)}&path=${encodeURIComponent(path)}`;
+  const rows = new Map(
+    [...document.querySelectorAll("[data-file-updated]")].map((el) => [
+      el.dataset.fileUpdated,
+      el,
+    ]),
+  );
+  try {
+    for (let batch = 0; batch < 314 && version === routeVersion; batch++) {
+      const result = await api(url);
+      if (
+        version !== routeVersion ||
+        result.ref !== sha ||
+        result.path !== path
+      )
+        return;
+      for (const update of result.updates) {
+        const el = rows.get(update.name);
+        if (!el?.isConnected || !update.date) continue;
+        el.dateTime = update.date;
+        el.textContent = relativeTime(update.date);
+        el.title = new Date(update.date).toLocaleString(getLocale());
+      }
+      if (result.complete || result.limited) break;
+    }
+  } catch (error) {
+    if (version !== routeVersion || error.name === "AbortError") return;
+  }
+  for (const el of rows.values())
+    if (el.isConnected && !el.dateTime) {
+      el.textContent = "—";
+      el.title = i18nText("更新时间暂不可用，可在文件历史中查看");
+    }
+}
 async function searchPage(r, base, ap, version) {
   const q = new URLSearchParams(location.search).get("q") || "";
   const result = q
@@ -611,7 +648,7 @@ async function searchPage(r, base, ap, version) {
     "search",
     i18nHTML`<section class="panel" id="code-index-status"></section><form class="toolbar" id="code-search"><div class="search"><input name="q" value="${esc(q)}" required maxlength="128" placeholder="在默认分支搜索代码…" aria-label="搜索代码"></div><button class="btn primary" type="submit">搜索代码</button></form><div class="panel"><div class="panelhead"><strong>${result.matches.length} 处匹配</strong><span class="muted">${esc(r.default_branch)}${result.truncated ? i18nText(" · 仅显示前 200 条") : ""}</span></div>${result.matches.map((m) => `<div class="comment">${link(base + "?view=blob&path=" + encodeURIComponent(m.path), esc(m.path) + ":" + m.line)}<pre>${esc(m.text)}</pre></div>`).join("") || '<div class="empty"><p>' + (q ? i18nText("没有匹配的代码。") : i18nText("输入关键词，搜索仓库中的文本文件。")) + "</p></div>"}</div>`,
   );
-  const indexUI = await import("./search.js?v=bc8e5d45f15b464f");
+  const indexUI = await import("./search.js?v=ba8c4c5990534d11");
   if (version !== routeVersion) return;
   indexUI.mountCodeIndex(document.querySelector("#code-index-status"), r, ap, {
     api,
@@ -716,7 +753,7 @@ async function issuesPage(r, base, ap, sub, version, helpers) {
     });
     return i;
   }
-  return (await import("./issues.js?v=3443578efbe76eab")).issuesPage(
+  return (await import("./issues.js?v=e63380bf7968651f")).issuesPage(
     r,
     base,
     ap,

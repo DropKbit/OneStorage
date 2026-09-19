@@ -2,8 +2,8 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=b03346d448c25b98";
-import { identityPanel, bindIdentity } from "./oidc.js?v=375ffeb8ec8980ba";
+} from "./i18n.js?v=421fdfd4be286a79";
+import { identityPanel, bindIdentity } from "./oidc.js?v=66f4534cf6fffa35";
 let hasPassword = true;
 const passwordInput = () =>
   hasPassword

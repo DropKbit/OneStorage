@@ -300,6 +300,8 @@ export async function collectDeleted(env: Env, storage: DurableObjectStorage) {
     "browse-root.v1:ordinary",
     "browse-root.v1:ephemeral",
     "browse-warmed.v1",
+    "tree-updates.v1:ordinary",
+    "tree-updates.v1:ephemeral",
   ]);
   const incoming = await storage.list({ prefix: "incoming:" });
   if (incoming.size) await storage.delete([...incoming.keys()]);
