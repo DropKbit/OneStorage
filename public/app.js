@@ -6,19 +6,19 @@ import {
   docsURL,
   errorText,
   relativeTime,
-} from "./i18n.js?v=421fdfd4be286a79";
-const globalSearch = () => import("./search.js?v=ba8c4c5990534d11");
-const deployTokens = () => import("./deploy-tokens.js?v=f8c51a878d5523fd");
-const packages = () => import("./packages.js?v=28377dad0629c8e6");
-const account = () => import("./account.js?v=01cee61e6ec7f7b6");
-const oidc = () => import("./oidc.js?v=66f4534cf6fffa35");
-const collaboration = () => import("./collaboration.js?v=d512ecd8f620bd18");
-const platform = () => import("./manage.js?v=a57c467787bd0b3a");
+} from "./i18n.js?v=aca1321acd070c64";
+const globalSearch = () => import("./search.js?v=31d8e2b33c0b5ede");
+const deployTokens = () => import("./deploy-tokens.js?v=812caec7512ede50");
+const packages = () => import("./packages.js?v=bd676ab9ffab4cdf");
+const account = () => import("./account.js?v=5fc12e98754ab868");
+const oidc = () => import("./oidc.js?v=b3f1a969c131babb");
+const collaboration = () => import("./collaboration.js?v=1294d66f5c8fff8b");
+const platform = () => import("./manage.js?v=bdf0c63cc3922900");
 import {
   keyPage,
   forgePage,
   upstreamPage,
-} from "./forge.js?v=e9225b19aec749af";
+} from "./forge.js?v=6c774c1331f72a5a";
 const root = document.querySelector("#app");
 const esc = (x) =>
   String(x ?? "").replace(
@@ -570,7 +570,7 @@ git push -u origin ${esc(r.default_branch)}</pre></div>${aside}</div>`,
   if (notebook) {
     try {
       const { mountNotebook } =
-        await import("./notebook.js?v=07aa089ddb182de9");
+        await import("./notebook.js?v=ee7c9acda8fe869e");
       if (version !== routeVersion || !notebook.isConnected) return;
       mountNotebook(notebook, data.content, { base, ref: data.ref, path: p });
     } catch {
@@ -648,7 +648,7 @@ async function searchPage(r, base, ap, version) {
     "search",
     i18nHTML`<section class="panel" id="code-index-status"></section><form class="toolbar" id="code-search"><div class="search"><input name="q" value="${esc(q)}" required maxlength="128" placeholder="在默认分支搜索代码…" aria-label="搜索代码"></div><button class="btn primary" type="submit">搜索代码</button></form><div class="panel"><div class="panelhead"><strong>${result.matches.length} 处匹配</strong><span class="muted">${esc(r.default_branch)}${result.truncated ? i18nText(" · 仅显示前 200 条") : ""}</span></div>${result.matches.map((m) => `<div class="comment">${link(base + "?view=blob&path=" + encodeURIComponent(m.path), esc(m.path) + ":" + m.line)}<pre>${esc(m.text)}</pre></div>`).join("") || '<div class="empty"><p>' + (q ? i18nText("没有匹配的代码。") : i18nText("输入关键词，搜索仓库中的文本文件。")) + "</p></div>"}</div>`,
   );
-  const indexUI = await import("./search.js?v=ba8c4c5990534d11");
+  const indexUI = await import("./search.js?v=31d8e2b33c0b5ede");
   if (version !== routeVersion) return;
   indexUI.mountCodeIndex(document.querySelector("#code-index-status"), r, ap, {
     api,
@@ -753,7 +753,7 @@ async function issuesPage(r, base, ap, sub, version, helpers) {
     });
     return i;
   }
-  return (await import("./issues.js?v=e63380bf7968651f")).issuesPage(
+  return (await import("./issues.js?v=4cbb32eb6b0b0733")).issuesPage(
     r,
     base,
     ap,

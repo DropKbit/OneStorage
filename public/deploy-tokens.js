@@ -2,7 +2,7 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=421fdfd4be286a79";
+} from "./i18n.js?v=aca1321acd070c64";
 const scopeNames = {
   read_repository: [
     i18nText("读取代码"),

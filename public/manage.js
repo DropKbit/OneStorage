@@ -2,9 +2,9 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=421fdfd4be286a79";
-import { cachePanel } from "./ci-cache.js?v=f6e93896a1d4933b";
-import { variablePanel } from "./ci-variables.js?v=e8bd504f77c88549";
+} from "./i18n.js?v=aca1321acd070c64";
+import { cachePanel } from "./ci-cache.js?v=38534091e11bd942";
+import { variablePanel } from "./ci-variables.js?v=809f39693d26d011";
 const roleNames = {
   reader: i18nText("只读"),
   developer: i18nText("开发者"),
@@ -95,18 +95,21 @@ export async function adminConsole(h, user) {
     api("/admin/overview"),
     api(
       "/admin/" +
-        (["users", "workspaces", "repositories", "audit"].includes(tab)
+        (["users", "workspaces", "repositories", "audit", "semantic"].includes(
+          tab,
+        )
           ? tab
           : "users"),
     ),
   ]);
   if (!h.current()) return;
-  const tabs = ["users", "workspaces", "repositories", "audit"],
+  const tabs = ["users", "workspaces", "repositories", "audit", "semantic"],
     labels = [
       i18nText("用户"),
       i18nText("空间"),
       i18nText("仓库"),
       i18nText("审计"),
+      i18nText("语义搜索"),
     ];
   let content = "";
   if (tab === "users")
@@ -115,7 +118,16 @@ export async function adminConsole(h, user) {
     content = `<div class="panel">${data.workspaces.map((w) => i18nHTML`<div class="token-row"><div><strong>${esc(w.name)}</strong><p class="muted">${esc(w.slug)} · ${w.members} 位成员</p></div>${button(i18nText("恢复所有者"), "recover", w.id)}</div>`).join("") || i18nText('<div class="empty">尚无团队空间</div>')}</div><div id="recover-space"></div>`;
   else if (tab === "repositories")
     content = i18nHTML`<div class="panel">${data.repositories.map((r) => i18nHTML`<div class="token-row"><strong>${esc(r.namespace)} / ${esc(r.name)}</strong><div class="actionbar"><span class="pill">${esc(r.visibility)}</span>${button(i18nText("管理"), "edit-repo", r.id)}<a data-link class="btn small" href="/${esc(r.namespace)}/${encodeURIComponent(r.name)}">打开</a></div></div>`).join("") || i18nText('<div class="empty">尚无仓库</div>')}</div><p class="muted">后台展示仓库目录；读取私有代码仍需空间或仓库权限。</p><div id="admin-repo"></div>`;
-  else
+  else if (tab === "semantic") {
+    const states = {
+      queued: i18nText("等待索引"),
+      indexing: i18nText("正在索引"),
+      ready: i18nText("索引就绪"),
+      partial: i18nText("索引覆盖不完整"),
+      failed: i18nText("索引更新异常"),
+    };
+    content = `<div class="panel detail-body"><h2>${i18nText("语义搜索")}</h2><p>${i18nText("服务绑定")}：${data.configured ? i18nText("已配置") : i18nText("未配置")} · ${esc(data.model)}</p><form id="semantic-settings" class="form"><label class="field">${i18nText("启用语义搜索与后台索引")}<select name="enabled"><option value="1" ${data.settings.enabled ? "selected" : ""}>${i18nText("启用")}</option><option value="0" ${!data.settings.enabled ? "selected" : ""}>${i18nText("暂停")}</option></select></label><label class="field">${i18nText("每日字符额度（UTC）")}<input type="number" name="daily_chars" min="1000" max="50000000" value="${data.settings.daily_chars}" required></label><button class="btn primary" type="submit">${i18nText("保存")}</button></form><p>${i18nText("今日索引字符")}：${data.usage.index_chars} · ${i18nText("今日查询字符")}：${data.usage.query_chars}</p><p>${i18nText("额度按提交给模型的字符计数，包含失败重试；它不是 Cloudflare 的计费账单。")}</p><p>${i18nText("每个项目最多索引 8192 个片段；重建会重新生成向量并消耗额度。向量写入后可能需要等待才可被检索。")}</p></div><div class="panel">${data.repositories.map((r) => `<div class="token-row"><div><strong>${esc(r.namespace)}/${esc(r.name)}</strong><p>${esc(states[r.status] || i18nText("等待索引"))} · ${r.chunks || 0} ${i18nText("个代码片段")}${r.stale ? " · " + i18nText("索引更新中") : ""}</p>${r.error ? `<p class="error">${esc(r.error)}</p>` : ""}</div>${button(i18nText("重建索引"), "semantic-rebuild", r.id)}</div>`).join("")}</div>`;
+  } else
     content = `<div class="panel audit-list">${data.events.map((e) => `<article><div class="actionbar"><strong>${esc(e.action)}</strong><span class="muted">${esc(e.actor || "system")} · ${esc(e.created_at)}</span></div><pre>${esc(e.detail)}</pre></article>`).join("") || i18nText('<div class="empty">暂无审计记录</div>')}</div>`;
   layout(
     i18nHTML`<div class="titlebar"><div><h1>管理员后台</h1><p class="muted">账号、团队与实例运行情况。</p></div><a class="btn" data-link href="/admin/identity">统一登录</a></div><div class="stats">${[
@@ -134,11 +146,26 @@ export async function adminConsole(h, user) {
     i18nText("管理员后台"),
     "admin",
   );
+  bindForm("#semantic-settings", async (b) => {
+    await api("/admin/semantic", {
+      method: "PATCH",
+      body: { enabled: b.enabled === "1", daily_chars: Number(b.daily_chars) },
+    });
+    render();
+  });
   bindForm("#new-user", async (b) => {
     await api("/users", { method: "POST", body: b });
     render();
   });
   actions(h, async (a, id) => {
+    if (a === "semantic-rebuild") {
+      await api("/admin/semantic/rebuild", {
+        method: "POST",
+        body: { repo_id: id },
+      });
+      render();
+      return;
+    }
     if (a === "edit-repo") {
       const r = data.repositories.find((r) => r.id === id);
       const name = r.namespace + "/" + r.name;

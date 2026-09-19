@@ -25,7 +25,8 @@ export const codeSearchInput = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(30),
   cursor: z.string().max(8192).optional(),
 });
-type Input = z.infer<typeof codeSearchInput>;
+export type CodeSearchInput = z.infer<typeof codeSearchInput>;
+type Input = CodeSearchInput;
 export const codeFold = (value: string) =>
   value.replace(/[A-Z]/g, (c) => c.toLowerCase());
 /** Unicode codepoints, ASCII-only case folding, matching SQLite's lower/instr behavior. */
@@ -36,9 +37,9 @@ export function codeGrams(value: string) {
     result.add(chars[i] + chars[i + 1] + chars[i + 2]);
   return [...result];
 }
-const principalSQL = `SELECT u.id FROM users u JOIN credentials c ON c.user_id=u.id
+export const principalSQL = `SELECT u.id FROM users u JOIN credentials c ON c.user_id=u.id
  WHERE u.id=? AND u.disabled=0 AND c.hash=? AND c.kind IN('session','pat') AND c.expires_at>?`;
-const visibleSQL = `SELECT r.* FROM repositories r WHERE r.deleted_at IS NULL
+export const visibleSQL = `SELECT r.* FROM repositories r WHERE r.deleted_at IS NULL
  AND (r.visibility='public' OR EXISTS(SELECT 1 FROM principal p WHERE
  (r.workspace_id IS NULL AND r.owner_id=p.id)
  OR EXISTS(SELECT 1 FROM members m WHERE m.repo_id=r.id AND m.user_id=p.id)

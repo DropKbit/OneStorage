@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { App, Env } from "./types";
 import { fail } from "./security";
 import { base64, unbase64 } from "./git/signatures";
-import { codeSearchInput, searchCode } from "./code-search";
+import { semanticSearchInput, searchWithSemantics } from "./semantic-search";
 
 const kinds = ["project", "issue", "merge", "wiki"] as const;
 export const searchInput = z.object({
@@ -152,9 +152,9 @@ export function registerSearch(app: Hono<App>) {
     if (user && !credential) fail(401, "Authentication required");
     if (c.req.query("type") === "code")
       return c.json(
-        await searchCode(
+        await searchWithSemantics(
           c.env,
-          codeSearchInput.parse(c.req.query()),
+          semanticSearchInput.parse(c.req.query()),
           user ? { id: user.id, credential: credential! } : null,
         ),
       );

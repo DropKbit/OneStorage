@@ -1,3 +1,4 @@
+import { publicConfig } from "./public-config.mjs";
 import "./docs.mjs";
 import { isPrivatePath, assertPublicFile } from "./source-policy.mjs";
 import "./openapi.mjs";
@@ -62,7 +63,7 @@ for (const file of files.sort()) {
   const path = "onestorage/" + file;
   if (Buffer.byteLength(path) > 100)
     throw Error("Source archive path too long: " + path);
-  const data = await readFile(file),
+  const data = publicConfig(file, await readFile(file)),
     header = Buffer.alloc(512);
   assertPublicFile(file, data);
   header.write(path, 0, 100, "utf8");

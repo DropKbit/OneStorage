@@ -2,7 +2,7 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=421fdfd4be286a79";
+} from "./i18n.js?v=aca1321acd070c64";
 const button = (text, action, id = "") =>
   `<button type="button" class="btn small" data-collab="${action}" data-id="${id}">${text}</button>`;
 function actions(h, fn) {

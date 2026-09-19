@@ -2,7 +2,7 @@ import {
   text as i18nText,
   html as i18nHTML,
   getLocale,
-} from "./i18n.js?v=421fdfd4be286a79";
+} from "./i18n.js?v=aca1321acd070c64";
 const labels = {
   all: i18nText("全部协作内容"),
   code: i18nText("代码"),
@@ -33,7 +33,7 @@ export async function searchPage(h) {
       .join("")}</select></label>`;
   document.title = i18nText("跨项目搜索 · OneStorage");
   layout(
-    i18nHTML`<div class="titlebar"><h1>跨项目搜索</h1></div><form id="global-search" class="panel search-form" role="search"><label class="field" for="global-query">关键词<input id="global-query" name="q" value="${esc(q)}" placeholder="搜索标题、正文或选择代码范围" maxlength="128" required></label><div class="search-filters">${select("type", i18nText("内容类型"), labels, "all")}${select("state", i18nText("协作状态"), states, "all")}${select("archived", i18nText("归档项目"), { include: i18nText("包含归档"), exclude: i18nText("仅未归档"), only: i18nText("仅已归档") }, "include")}<label class="field" for="search-namespace">空间标识<input id="search-namespace" name="namespace" value="${esc(params.get("namespace") || "")}" maxlength="64" placeholder="留空搜索所有可访问空间"></label></div><div class="search-filters" id="code-search-filters"><label class="field">文件路径包含<input name="path" value="${esc(params.get("path") || "")}" maxlength="1000"></label><label class="field">扩展名<input name="extension" value="${esc(params.get("extension") || "")}" maxlength="32" placeholder="例如 ts、py"></label></div><button type="submit" class="btn primary">搜索</button><p class="hint">代码搜索至少输入三个字符，检索各项目默认分支的已发布索引快照。更新异步完成；结果中的版本和覆盖提示说明索引状态。协作搜索不包括评论及 Wiki 历史。</p></form><section id="search-results" class="panel" aria-live="polite" aria-busy="${!!q.trim()}"><div class="empty">${q.trim() ? i18nText("正在搜索…") : i18nText("输入关键词开始搜索")}</div></section>`,
+    i18nHTML`<div class="titlebar"><h1>跨项目搜索</h1></div><form id="global-search" class="panel search-form" role="search"><label class="field" for="global-query">关键词<input id="global-query" name="q" value="${esc(q)}" placeholder="搜索标题、正文或选择代码范围" maxlength="128" required></label><div class="search-filters">${select("type", i18nText("内容类型"), labels, "all")}${select("state", i18nText("协作状态"), states, "all")}${select("archived", i18nText("归档项目"), { include: i18nText("包含归档"), exclude: i18nText("仅未归档"), only: i18nText("仅已归档") }, "include")}<label class="field" for="search-namespace">空间标识<input id="search-namespace" name="namespace" value="${esc(params.get("namespace") || "")}" maxlength="64" placeholder="留空搜索所有可访问空间"></label></div><div class="search-filters" id="code-search-filters">${select("mode", i18nText("搜索方式"), { text: i18nText("文字匹配"), semantic: i18nText("语义搜索"), hybrid: i18nText("混合搜索") }, "text")}<label class="field">文件路径包含<input name="path" value="${esc(params.get("path") || "")}" maxlength="1000"></label><label class="field">扩展名<input name="extension" value="${esc(params.get("extension") || "")}" maxlength="32" placeholder="例如 ts、py"></label></div><button type="submit" class="btn primary">搜索</button><p class="hint">代码搜索至少输入三个字符，检索各项目默认分支的已发布索引快照。更新异步完成；结果中的版本和覆盖提示说明索引状态。协作搜索不包括评论及 Wiki 历史。</p></form><section id="search-results" class="panel" aria-live="polite" aria-busy="${!!q.trim()}"><div class="empty">${q.trim() ? i18nText("正在搜索…") : i18nText("输入关键词开始搜索")}</div></section>`,
     i18nText("搜索"),
     "search",
   );
@@ -45,8 +45,15 @@ export async function searchPage(h) {
       : "none";
     document.querySelector('#global-search [name="state"]').disabled = code;
     document.querySelector("#global-query").minLength = code ? 3 : 1;
+    document.querySelector("#global-query").placeholder =
+      code && document.querySelector('[name="mode"]').value !== "text"
+        ? i18nText("例如：哪里校验用户登录权限？")
+        : i18nText("搜索标题、正文或选择代码范围");
   };
   typeSelect.addEventListener("change", updateScope);
+  document
+    .querySelector('[name="mode"]')
+    .addEventListener("change", updateScope);
   updateScope();
   document
     .querySelector("#global-search")
@@ -80,7 +87,16 @@ export async function searchPage(h) {
       return html + esc((text || "").slice(at));
     };
     target.innerHTML =
-      i18nHTML`<div class="panelhead"><strong>本页 ${data.results.length} 条结果</strong><span>${data.has_more ? i18nText("还有更多结果") : i18nText("已到最后一页")}</span></div>` +
+      (data.semantic?.fallback
+        ? `<p class="detail-body info">${i18nText("语义服务未启用、暂时不可用或额度已用完；本次显示文字匹配结果。")}</p>`
+        : "") +
+      (data.semantic?.top_results
+        ? `<p class="detail-body info">${i18nText("显示相关性最高的结果，不提供翻页。索引异步更新，语义相似不等于代码行为相同。")}</p>`
+        : "") +
+      (data.semantic?.scope_limited
+        ? `<p class="detail-body info">${i18nText("可访问项目超过本次语义检索范围，请按空间缩小范围。")}</p>`
+        : "") +
+      i18nHTML`<div class="panelhead"><strong>本页 ${data.results.length} 条结果</strong><span>${data.semantic ? i18nText("相关结果") : data.has_more ? i18nText("还有更多结果") : i18nText("已到最后一页")}</span></div>` +
       (data.coverage
         ? i18nText('<p class="detail-body info">可访问项目 ') +
           data.coverage.projects +
@@ -119,7 +135,7 @@ export async function searchPage(h) {
                     ] +
                     "/" +
                     encodeURIComponent(item.id));
-          return `<article class="search-result"><div class="muted">${labels[item.type]} · <a data-link href="${esc(base)}">${esc(item.namespace)}/${esc(item.name)}</a>${item.state ? " · " + (states[item.state] || esc(item.state)) : ""}${item.archived_at ? i18nText(" · 已归档") : ""}</div><h2><a data-link href="${esc(url)}">${highlight(item.title || item.path)}</a></h2>${item.type === "code" ? i18nHTML`<p class="muted">${esc(item.indexed_branch)} @ <code>${esc(item.indexed_sha.slice(0, 12))}</code> · 第 ${item.line} 行 · ${esc(new Date(item.indexed_at).toLocaleString(getLocale()))}${item.stale ? i18nText(" · 索引更新中") : ""}</p>` : ""}${item.excerpt ? `<p>${highlight(item.excerpt)}</p>` : ""}${item.type === "project" ? i18nHTML`<a data-link class="small" href="${esc(base + "/search?q=" + encodeURIComponent(q.trim()))}">搜索这个项目的代码 →</a>` : ""}</article>`;
+          return `<article class="search-result"><div class="muted">${labels[item.type]} · <a data-link href="${esc(base)}">${esc(item.namespace)}/${esc(item.name)}</a>${item.match ? " · " + ({ text: i18nText("文字匹配"), semantic: i18nText("语义搜索"), hybrid: i18nText("混合搜索") }[item.match] || "") : ""}${item.state ? " · " + (states[item.state] || esc(item.state)) : ""}${item.archived_at ? i18nText(" · 已归档") : ""}</div><h2><a data-link href="${esc(url)}">${highlight(item.title || item.path)}</a></h2>${item.type === "code" ? i18nHTML`<p class="muted">${esc(item.indexed_branch)} @ <code>${esc(item.indexed_sha.slice(0, 12))}</code> · 第 ${item.line} 行 · ${esc(new Date(item.indexed_at).toLocaleString(getLocale()))}${item.stale ? i18nText(" · 索引更新中") : ""}</p>` : ""}${item.excerpt ? `<p>${highlight(item.excerpt)}</p>` : ""}${item.type === "project" ? i18nHTML`<a data-link class="small" href="${esc(base + "/search?q=" + encodeURIComponent(q.trim()))}">搜索这个项目的代码 →</a>` : ""}</article>`;
         })
         .join("") +
       (data.results.length
@@ -198,6 +214,9 @@ export function mountCodeIndex(host, r, ap, h) {
           ? i18nText(
               "<p>有待处理更新。下方项目内搜索直接读取 Git，跨项目搜索使用已发布索引快照。</p>",
             )
+          : "") +
+        (row.semantic
+          ? `<p>${i18nText("语义索引")} · ${h.esc(labels[row.semantic.status] || row.semantic.status)} · ${row.semantic.chunks || 0} ${i18nText("个代码片段")}</p>`
           : "") +
         (row.error ? '<p class="error">' + h.esc(row.error) + "</p>" : "") +
         '<a data-link href="/search?type=code&namespace=' +

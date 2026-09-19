@@ -1,3 +1,4 @@
+import { registerSemanticRoutes } from "./semantic-routes";
 import { requestLocale } from "./i18n/locale";
 import { canonicalPageURL } from "./domain";
 import packageInfo from "../package.json" with { type: "json" };
@@ -580,6 +581,7 @@ registerIdentityRoutes(app);
 registerAccount(app);
 registerPasswordRecovery(app);
 registerWorkspaceRoutes(app, { engine });
+registerSemanticRoutes(app);
 registerOIDC(app);
 registerMCP(app);
 app.get("/api/health", (c) =>

@@ -1,5 +1,7 @@
 export interface Env {
   DB: D1Database;
+  AI?: Ai;
+  CODE_VECTORS?: VectorizeIndex;
   LOADER?: WorkerLoader;
   BUILDER?: Fetcher;
   APPS_ORIGIN?: string;

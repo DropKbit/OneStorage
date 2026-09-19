@@ -1,3 +1,4 @@
+import { semanticConfigured } from "./semantic";
 import { activeRepo, contributionSource, familySQL } from "./fork-reviews";
 import { enqueueRun } from "./ci";
 import { resolvePipeline, type SavedPipeline } from "./ci-source";
@@ -40,10 +41,18 @@ export function registerCollaboration(app: Hono<App>, h: Helpers) {
     )
       .bind(repo.id)
       .first<any>();
+    const semantic = semanticConfigured(c.env)
+      ? await c.env.DB.prepare(
+          "SELECT status,chunks,skipped,generation,error FROM semantic_state WHERE repo_id=?",
+        )
+          .bind(repo.id)
+          .first()
+      : null;
     return c.json(
       row
         ? {
             ...row,
+            semantic,
             coverage: JSON.parse(row.coverage),
             stale: row.requested > row.completed,
           }

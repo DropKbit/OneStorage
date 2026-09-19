@@ -1,3 +1,4 @@
+import { prepareSemanticIndex } from "./semantic-deploy.mjs";
 // Cloudflare Deploy button provisions root bindings before this command runs.
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -39,6 +40,11 @@ export function deploymentConfigs(main, compiler, apps) {
     throw Error("Queue producer and consumer are required");
   if (main.queues.producers[0].queue !== main.queues.consumers[0].queue)
     throw Error("Queue producer/consumer must use the same provisioned queue");
+  if (
+    main.ai?.binding !== "AI" ||
+    !main.vectorize?.find((x) => x.binding === "CODE_VECTORS")?.index_name
+  )
+    throw Error("Workers AI and CODE_VECTORS bindings are required");
   const primary = structuredClone(main);
   primary.services = [{ binding: "BUILDER", service: name + "-build" }];
   primary.workers_dev = true;
@@ -76,11 +82,11 @@ function run(args, primary = false) {
       stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";
-    for (const stream of [child.stdout, child.stderr])
-      stream.on("data", (d) => {
-        output += d;
-        process.stdout.write(d);
-      });
+    child.stdout.on("data", (d) => {
+      output += d;
+      process.stdout.write(d);
+    });
+    child.stderr.on("data", (d) => process.stderr.write(d));
     child.on("error", reject);
     child.on("close", (code) =>
       code === 0
@@ -113,6 +119,9 @@ export async function deploy() {
   try {
     for (const [i, cfg] of [build, gateway, primary].entries())
       await fs.writeFile(files[i], JSON.stringify(cfg, null, 2) + "\n");
+    await prepareSemanticIndex(primary, (args) =>
+      run([...args, "--config", files[2]], true),
+    );
     await run(
       ["d1", "migrations", "apply", "DB", "--remote", "--config", files[2]],
       true,
